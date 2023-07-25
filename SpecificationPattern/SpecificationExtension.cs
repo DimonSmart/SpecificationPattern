@@ -2,7 +2,7 @@
 
 public static class SpecificationExtension
 {
-    public static IQueryable<T> BySpecification<T>(this IQueryable<T> query, Specification<T> specification)
+    public static IQueryable<T> BySpecification<T>(this IQueryable<T> query, ISpecification<T> specification)
     {
         if (specification.WhereExpression != null)
         {

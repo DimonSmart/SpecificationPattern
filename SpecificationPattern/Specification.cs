@@ -1,10 +1,10 @@
 ﻿using System.Linq.Expressions;
 namespace SpecificationPattern;
 
-public class Specification<T>
+
+public class Specification<T> : ISpecification<T>
 {
     public static Specification<T> Create() => new();
-    public static Specification<T> Where(Expression<Func<T, bool>> expr) => new(expr);
 
     protected Specification()
     {
@@ -14,6 +14,8 @@ public class Specification<T>
     {
         WhereExpression = expr;
     }
+
+    public virtual ISpecification<T> Where(Expression<Func<T, bool>> expr) => new Specification<T>(expr);
 
     public Expression<Func<T, bool>>? WhereExpression { get; private set; }
 
@@ -47,41 +49,12 @@ public class Specification<T>
         return this;
     }
 
-    public virtual Specification<T> Or(Specification<T> or)
+    public virtual ISpecification<T> Or(ISpecification<T> or)
     {
-        if (or?.WhereExpression == null)
-        {
-            return this;
-        }
-
-        if (WhereExpression == null)
-        {
-            WhereExpression = or.WhereExpression;
-            return this;
-        }
-
-        WhereExpression = ExpressionOperations.CombineExpressions(WhereExpression, or.WhereExpression, Expression.OrElse);
-        return this;
+        return Or(or.WhereExpression);
     }
 
-    public virtual Specification<T> And(Specification<T> and)
-    {
-        if (and?.WhereExpression == null)
-        {
-            return this;
-        }
-
-        if (WhereExpression == null)
-        {
-            WhereExpression = and.WhereExpression;
-            return this;
-        }
-
-        WhereExpression = ExpressionOperations.CombineExpressions(WhereExpression, and.WhereExpression, Expression.AndAlso);
-        return this;
-    }
-
-    public Specification<T> Or(Expression<Func<T, bool>>? or)
+    public virtual ISpecification<T> Or(Expression<Func<T, bool>>? or)
     {
         if (or == null)
         {
@@ -99,7 +72,13 @@ public class Specification<T>
         return this;
     }
 
-    public Specification<T> And(Expression<Func<T, bool>>? and)
+
+    public virtual ISpecification<T> And(ISpecification<T> and)
+    {
+        return And(and.WhereExpression);
+    }
+
+    public virtual ISpecification<T> And(Expression<Func<T, bool>>? and)
     {
         if (and == null)
         {

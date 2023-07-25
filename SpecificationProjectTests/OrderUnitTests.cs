@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using SpecificationPattern;
+using TestsCommon;
 using static SpecificationPattern.SpecificationExtension;
 
 namespace SpecificationProjectTests
@@ -46,7 +47,7 @@ namespace SpecificationProjectTests
             var ordered = Students.BySpecification(specification).ToList();
 
             // Assert
-            ordered.Should().BeEquivalentTo(new List<Student> {  Alex30, Alex22, Sofia20 });
+            ordered.Should().BeEquivalentTo(new List<Student> { Alex30, Alex22, Sofia20 });
         }
     }
 }

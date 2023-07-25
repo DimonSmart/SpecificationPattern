@@ -3,34 +3,41 @@ using System.Linq.Expressions;
 
 namespace EFSpecificationProject
 {
-    public class EFSpecification<T> : Specification<T>
+
+    public class EFSpecification<T> : Specification<T>, IEFSpecification<T>
     {
-        public EFSpecification(Expression<Func<T, bool>> expr) : base(expr)
-        {
-        }
-        public List<Expression<Func<T, object>>> IncludeExpressions { get; } =
-            new List<Expression<Func<T, object>>>();
+        public static new EFSpecification<T> Create() => new();
+        public List<string> Includes { get; } = new List<string>();
+
+        public string CurrentIncludeLevel { get; private set; } = string.Empty;
 
         public bool AsNoTracking { get; private set; }
 
-        public EFSpecification<T> Include(Expression<Func<T, object>> includeExpression)
+        public override IEFSpecification<T> Where(Expression<Func<T, bool>> expr)
         {
-            IncludeExpressions.Add(includeExpression);
+            base.Where(expr);
             return this;
         }
 
         public EFSpecification<T> And(EFSpecification<T> and)
         {
-            IncludeExpressions.AddRange(and.IncludeExpressions);
+            Includes.AddRange(and.Includes);
             _ = And(and.WhereExpression);
             return this;
         }
 
         public EFSpecification<T> Or(EFSpecification<T> and)
         {
-            IncludeExpressions.AddRange(and.IncludeExpressions);
+            Includes.AddRange(and.Includes);
             _ = Or(and.WhereExpression);
             return this;
+        }
+
+        public void AddInclude(string include)
+        {
+            include = string.IsNullOrEmpty(CurrentIncludeLevel) ? include : $"{CurrentIncludeLevel}.{include}";
+            Includes.Add(include);
+            CurrentIncludeLevel = include;
         }
     }
 }

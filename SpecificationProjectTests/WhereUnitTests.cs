@@ -1,18 +1,19 @@
 ﻿using FluentAssertions;
 using SpecificationPattern;
+using TestsCommon;
 using static SpecificationPattern.SpecificationExtension;
 
 namespace SpecificationProjectTests
 {
     public class WhereUnitTests : TestsBase
     {
-     
+
         [Fact]
         public void SimpleWhereCondition()
         {
             // Arrange
-            var specification = Specification<Student>.Where(s => s.Age < 21);
-            
+            var specification = Specification<Student>.Create().Where(s => s.Age < 21);
+
             // Act
             var under21 = Students.BySpecification(specification).ToList();
 
@@ -24,9 +25,15 @@ namespace SpecificationProjectTests
         public void WhereWithOrClauseTest()
         {
             // Arrange
-            var specification = Specification<Student>
-                .Where(s => s.Age < 21)
-                .Or(s => s.Age == 30);
+            var specification1 = Specification<Student>
+                .Create()
+                .Where(s => s.Age < 21);
+
+            var specification2 = Specification<Student>
+                .Create()
+                .Where(s => s.Age == 30);
+
+            var specification = specification1.Or(specification2);
 
             // Act
             var under21 = Students.BySpecification(specification).ToList();
