@@ -9,7 +9,7 @@ namespace SpecificationProjectTests
     {
 
         [Fact]
-        public void SimpleWhereCondition()
+        public void SimpleWhereConditionTest()
         {
             // Arrange
             var specification = Specification<Student>.Create().Where(s => s.Age < 21);
@@ -18,7 +18,7 @@ namespace SpecificationProjectTests
             var under21 = Students.BySpecification(specification).ToList();
 
             // Assert
-            under21.Should().ContainSingle(i => i == Sofia20);
+            under21.Should().BeEquivalentTo(new List<Student> { Sofia20 });
         }
 
         [Fact]
@@ -39,9 +39,7 @@ namespace SpecificationProjectTests
             var under21 = Students.BySpecification(specification).ToList();
 
             // Assert
-            under21.Should().Contain(Sofia20);
-            under21.Should().Contain(Alex30);
-            under21.Should().NotContain(Alex22);
+            under21.Should().BeEquivalentTo(new List<Student> { Sofia20, Alex30 });
         }
     }
 }

@@ -15,7 +15,16 @@ public class Specification<T> : ISpecification<T>
         WhereExpression = expr;
     }
 
-    public virtual ISpecification<T> Where(Expression<Func<T, bool>> expr) => new Specification<T>(expr);
+    public virtual ISpecification<T> Where(Expression<Func<T, bool>> expr)
+    {
+        if (WhereExpression == null)
+        {
+            WhereExpression = expr;
+            return this;
+        }
+        return And(expr);
+    }
+
 
     public Expression<Func<T, bool>>? WhereExpression { get; private set; }
 

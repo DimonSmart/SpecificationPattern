@@ -1,24 +1,32 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace TestsCommon;
 
-public record Author(string Name)
+public class Student
 {
-    public static implicit operator Author(string name)
+    public Student(int age, string name, School school, IEnumerable<Book> books)
     {
-        return new Author(name);
+        Age = age;
+        Name = name;
+        School = school;
+        Books = books.ToList();
     }
-}
 
-public record School(string Name, Book MainBook)
-{
-    public static implicit operator School(string name)
+    public Student()
     {
-        return new School(name);
+        Name = string.Empty;
+        School = default!;
+        Books = new List<Book>();
     }
+
+    [Key]
+    public int Id { get; set; }
+
+    public int Age { get; set; }
+
+    public string Name { get; set; }
+
+    public virtual School School { get; set; }
+
+    public virtual List<Book> Books { get; set; }
 }
-
-
-
-
-public record Student(int Age, string Name, School School, IEnumerable<Book> Books);
-
-public record Book(string Name, Author Author);

@@ -7,12 +7,13 @@ namespace EFSpecificationProject
 
     public static class EFSpecificationExtension
     {
-        public static IQueryable<T> BySpecification<T, TP>(this IQueryable<T> query, EFSpecification<T> efSpecification) where T : class
+        public static IQueryable<T> BySpecification<T>(this DbContext context, IEFSpecification<T> efSpecification) where T : class
         {
-            foreach (var includeExpression in efSpecification.Includes)
-            {
-                // TODO:
+            var query = context.Set<T>().AsQueryable<T>();
 
+            foreach (var include in efSpecification.Includes)
+            {
+                query = query.Include(include);
             }
 
             return SpecificationExtension.BySpecification(query, efSpecification);
