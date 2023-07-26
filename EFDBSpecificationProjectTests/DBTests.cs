@@ -61,5 +61,46 @@ namespace EFDBSpecificationProjectTests
                 .Should()
                 .BeEquivalentTo(new List<Student> { Sofia20 }, options => options.Excluding(e => e.Books));
         }
+
+        [Fact]
+        public void OrderOneLevelOrderByTest()
+        {
+            // Arrange
+            var specification = EFSpecification<Student>.Create().OrderBy(s => s.Age);
+
+            // Act
+            var ordered = Students.BySpecification(specification).ToList();
+
+            // Assert
+            ordered.Should().BeInAscendingOrder(i => i.Age);
+        }
+
+        [Fact]
+        public void OrderOneLevelOrderByDescTest()
+        {
+            // Arrange
+            var specification = EFSpecification<Student>.Create().OrderByDesc(s => s.Age);
+
+            // Act
+            var ordered = Students.BySpecification(specification).ToList();
+
+            // Assert
+            ordered.Should().BeInDescendingOrder(i => i.Age);
+        }
+
+        [Fact]
+        public void TwoLevelOrderByTest()
+        {
+            // Arrange
+            var specification = EFSpecification<Student>.Create()
+                .OrderBy(s => s.Name)
+                .OrderByDesc(s => s.Age);
+
+            // Act
+            var ordered = Students.BySpecification(specification).ToList();
+
+            // Assert
+            ordered.Should().BeEquivalentTo(new List<Student> { Alex30, Alex22, Sofia20 });
+        }
     }
 }
