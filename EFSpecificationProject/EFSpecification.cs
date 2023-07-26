@@ -36,8 +36,29 @@ namespace EFSpecificationProject
         public void AddInclude(string include)
         {
             include = string.IsNullOrEmpty(CurrentIncludeLevel) ? include : $"{CurrentIncludeLevel}.{include}";
-            Includes.Add(include);
             CurrentIncludeLevel = include;
+            if (CanBeExcluded(include))
+            {
+                return;
+            }
+            
+            Includes.Add(include);
+        }
+
+        public bool CanBeExcluded(string newLine)
+        {
+            string newLineWithDot = newLine + ".";
+            foreach (string existingLine in Includes)
+            {
+                string existingLineWithDot = existingLine + ".";
+
+                if (existingLineWithDot.StartsWith(newLineWithDot))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
