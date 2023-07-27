@@ -12,7 +12,6 @@ namespace EFSpecificationProject
             _parentSpecification = parentSpecification;
         }
 
-        public List<string> Includes => _parentSpecification.Includes;
 
         public Expression<Func<T, bool>>? WhereExpression => _parentSpecification.WhereExpression;
 
@@ -32,6 +31,11 @@ namespace EFSpecificationProject
             return _parentSpecification.And(and);
         }
 
+        public IReadOnlyCollection<string> GetIncludes()
+        {
+            return _parentSpecification.GetIncludes();
+        }
+
         public ISpecification<T> Or(ISpecification<T> or)
         {
             return _parentSpecification.Or(or);
@@ -45,8 +49,7 @@ namespace EFSpecificationProject
 
         public IEFSpecification<T> Where(Expression<Func<T, bool>> expr)
         {
-            // TODO:
-            return _parentSpecification;
+            return _parentSpecification.Where(expr);
         }
 
         ISpecification<T> ISpecification<T>.Where(Expression<Func<T, bool>> expr)

@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
 using SpecificationPattern;
 
 namespace EFSpecificationProject
@@ -11,7 +10,7 @@ namespace EFSpecificationProject
         {
             var query = context.Set<T>().AsQueryable<T>();
 
-            foreach (var include in efSpecification.Includes)
+            foreach (var include in efSpecification.GetIncludes())
             {
                 query = query.Include(include);
             }

@@ -6,11 +6,9 @@ namespace EFSpecificationProject
 
     public class EFSpecification<T> : Specification<T>, IEFSpecification<T>
     {
+        private List<string> Includes { get; } = new List<string>();
         public static new EFSpecification<T> Create() => new();
-        public List<string> Includes { get; } = new List<string>();
-
         public string CurrentIncludeLevel { get; private set; } = string.Empty;
-
         public bool AsNoTracking { get; private set; }
 
         public override IEFSpecification<T> Where(Expression<Func<T, bool>> expr)
@@ -41,16 +39,16 @@ namespace EFSpecificationProject
             {
                 return;
             }
-            
+
             Includes.Add(include);
         }
 
         public bool CanBeExcluded(string newLine)
         {
-            string newLineWithDot = newLine + ".";
-            foreach (string existingLine in Includes)
+            var newLineWithDot = newLine + ".";
+            foreach (var existingLine in Includes)
             {
-                string existingLineWithDot = existingLine + ".";
+                var existingLineWithDot = existingLine + ".";
 
                 if (existingLineWithDot.StartsWith(newLineWithDot))
                 {
@@ -59,6 +57,11 @@ namespace EFSpecificationProject
             }
 
             return false;
+        }
+
+        public IReadOnlyCollection<string> GetIncludes()
+        {
+            return Includes;
         }
     }
 }

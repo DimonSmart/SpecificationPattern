@@ -7,7 +7,7 @@ namespace EFSpecificationProject
     {
         void AddInclude(string include);
 
-        public List<string> Includes { get; }
+        public IReadOnlyCollection<string> GetIncludes();
 
         new IEFSpecification<T> Where(Expression<Func<T, bool>> expr);
     }
