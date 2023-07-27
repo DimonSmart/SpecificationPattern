@@ -9,7 +9,8 @@ namespace EFSpecificationProject
         private List<string> Includes { get; } = new List<string>();
         public static new EFSpecification<T> Create() => new();
         public string CurrentIncludeLevel { get; private set; } = string.Empty;
-        public bool AsNoTracking { get; private set; }
+        public bool IsAsNoTracking { get; private set; }
+        public bool IsIgnoreAutoIncludes { get; private set; }
 
         public override IEFSpecification<T> Where(Expression<Func<T, bool>> expr)
         {
@@ -62,6 +63,19 @@ namespace EFSpecificationProject
         public IReadOnlyCollection<string> GetIncludes()
         {
             return Includes;
+        }
+
+        public IEFSpecification<T> IgnoreAutoIncludes()
+        {
+
+            IsIgnoreAutoIncludes = true;
+            return this;
+        }
+
+        public IEFSpecification<T> AsNoTracking()
+        {
+            IsAsNoTracking = true;
+            return this;
         }
     }
 }

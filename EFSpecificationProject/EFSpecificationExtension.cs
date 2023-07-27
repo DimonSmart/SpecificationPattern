@@ -15,6 +15,16 @@ namespace EFSpecificationProject
                 query = query.Include(include);
             }
 
+            if (efSpecification.IsAsNoTracking)
+            {
+                query = query.AsNoTracking();
+            }
+
+            if (efSpecification.IsIgnoreAutoIncludes)
+            {
+                query = query.IgnoreAutoIncludes();
+            }
+
             return SpecificationExtension.BySpecification(query, efSpecification);
         }
     }

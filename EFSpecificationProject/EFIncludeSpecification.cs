@@ -5,13 +5,12 @@ namespace EFSpecificationProject
 {
     public class EFIncludeSpecification<T, TProperty> : IEFIncludeSpecification<T, TProperty> where T : class
     {
-        private IEFSpecification<T> _parentSpecification;
+        private readonly IEFSpecification<T> _parentSpecification;
 
         public EFIncludeSpecification(IEFSpecification<T> parentSpecification)
         {
             _parentSpecification = parentSpecification;
         }
-
 
         public Expression<Func<T, bool>>? WhereExpression => _parentSpecification.WhereExpression;
 
@@ -20,6 +19,10 @@ namespace EFSpecificationProject
         public int? TakeQ => _parentSpecification.TakeQ;
 
         public int? SkipQ => _parentSpecification.SkipQ;
+
+        public bool IsAsNoTracking => _parentSpecification.IsAsNoTracking;
+
+        public bool IsIgnoreAutoIncludes => _parentSpecification.IsIgnoreAutoIncludes;
 
         public void AddInclude(string include)
         {
@@ -36,11 +39,19 @@ namespace EFSpecificationProject
             return _parentSpecification.GetIncludes();
         }
 
+        public IEFSpecification<T> AsNoTracking()
+        {
+            return _parentSpecification.AsNoTracking();
+        }
+        public IEFSpecification<T> IgnoreAutoIncludes()
+        {
+            return _parentSpecification.IgnoreAutoIncludes();
+        }
+
         public ISpecification<T> Or(ISpecification<T> or)
         {
             return _parentSpecification.Or(or);
         }
-
         public EFIncludeSpecification<T, TProperty> ThenInclude(Expression<Func<TProperty, object>> includeExpression)
         {
             // TODO
