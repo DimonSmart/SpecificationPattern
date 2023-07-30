@@ -1,7 +1,6 @@
-﻿using FluentAssertions;
-using SpecificationPattern;
+﻿using DimonSmart.Specification;
+using FluentAssertions;
 using TestsCommon;
-using static SpecificationPattern.SpecificationExtension;
 
 namespace SpecificationProjectTests
 {
@@ -12,7 +11,9 @@ namespace SpecificationProjectTests
         public void OneLevelOrderByTest()
         {
             // Arrange
-            var specification = Specification<Student>.Create().OrderBy(s => s.Age);
+            var specification = Specification<Student>
+                .Create()
+                .OrderBy(s => s.Age);
 
             // Act
             var ordered = Students.BySpecification(specification).ToList();
@@ -26,7 +27,9 @@ namespace SpecificationProjectTests
         public void OneLevelOrderByDescTest()
         {
             // Arrange
-            var specification = Specification<Student>.Create().OrderByDesc(s => s.Age);
+            var specification = Specification<Student>
+                .Create()
+                .OrderByDesc(s => s.Age);
 
             // Act
             var ordered = Students.BySpecification(specification).ToList();
@@ -39,7 +42,9 @@ namespace SpecificationProjectTests
         public void TwoLevelOrderByTest()
         {
             // Arrange
-            var specification = Specification<Student>.Create()
+            var specification = Specification<Student>
+                .Create()
+                .As<ISpecification<Student>>()
                 .OrderBy(s => s.Name)
                 .OrderByDesc(s => s.Age);
 

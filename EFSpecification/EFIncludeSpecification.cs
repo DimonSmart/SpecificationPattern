@@ -1,7 +1,6 @@
-﻿using SpecificationPattern;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
-namespace EFSpecificationProject
+namespace DimonSmart.EFSpecification
 {
     public class EFIncludeSpecification<T, TProperty> : IEFIncludeSpecification<T, TProperty> where T : class
     {
@@ -14,24 +13,30 @@ namespace EFSpecificationProject
 
         public Expression<Func<T, bool>>? WhereExpression => _parentSpecification.WhereExpression;
 
+        public IEFSpecification<T> Where(Expression<Func<T, bool>> expr)
+        {
+            return _parentSpecification.Where(expr);
+        }
+
+        public IEFSpecification<T> OrderBy(Expression<Func<T, object>> orderByExpression)
+        {
+            return _parentSpecification.OrderBy(orderByExpression);
+        }
+
+        public IEFSpecification<T> OrderByDesc(Expression<Func<T, object>> orderByDescExpression)
+        {
+            return _parentSpecification.OrderByDesc(orderByDescExpression);
+        }
+
         public List<(bool direction, Expression<Func<T, object>> expr)> OrderExpressions => _parentSpecification.OrderExpressions;
 
         public int? TakeQ => _parentSpecification.TakeQ;
 
         public int? SkipQ => _parentSpecification.SkipQ;
 
-        public bool IsAsNoTracking => _parentSpecification.IsAsNoTracking;
-
-        public bool IsIgnoreAutoIncludes => _parentSpecification.IsIgnoreAutoIncludes;
-
         public void AddInclude(string include)
         {
             _parentSpecification.AddInclude(include);
-        }
-
-        public ISpecification<T> And(ISpecification<T> and)
-        {
-            return _parentSpecification.And(and);
         }
 
         public IReadOnlyCollection<string> GetIncludes()
@@ -39,33 +44,28 @@ namespace EFSpecificationProject
             return _parentSpecification.GetIncludes();
         }
 
+        public bool IsAsNoTracking => _parentSpecification.IsAsNoTracking;
+
         public IEFSpecification<T> AsNoTracking()
         {
             return _parentSpecification.AsNoTracking();
         }
+
+        public bool IsIgnoreAutoIncludes => _parentSpecification.IsIgnoreAutoIncludes;
+
         public IEFSpecification<T> IgnoreAutoIncludes()
         {
             return _parentSpecification.IgnoreAutoIncludes();
         }
 
-        public ISpecification<T> Or(ISpecification<T> or)
+        public IEFSpecification<T> Or(IEFSpecification<T> or)
         {
             return _parentSpecification.Or(or);
         }
-        public EFIncludeSpecification<T, TProperty> ThenInclude(Expression<Func<TProperty, object>> includeExpression)
-        {
-            // TODO
-            return this;
-        }
 
-        public IEFSpecification<T> Where(Expression<Func<T, bool>> expr)
+        public IEFSpecification<T> And(IEFSpecification<T> and)
         {
-            return _parentSpecification.Where(expr);
-        }
-
-        ISpecification<T> ISpecification<T>.Where(Expression<Func<T, bool>> expr)
-        {
-            return _parentSpecification.Where(expr);
+            return _parentSpecification.And(and);
         }
     }
 }

@@ -28,8 +28,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SpecificationPattern\SpecificationProject.csproj" />
-    <ProjectReference Include="..\TestsCommon\TestsCommon.csproj" />
+    <ProjectReference Include="..\Specification\DimonSmart.Specification.csproj" />
+    <ProjectReference Include="..\TestsCommon\DimonSmart.TestsCommon.csproj" />
   </ItemGroup>
 
 </Project>

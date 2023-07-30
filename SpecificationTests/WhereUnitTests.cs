@@ -1,7 +1,6 @@
-﻿using FluentAssertions;
-using SpecificationPattern;
+﻿using DimonSmart.Specification;
+using FluentAssertions;
 using TestsCommon;
-using static SpecificationPattern.SpecificationExtension;
 
 namespace SpecificationProjectTests
 {
@@ -12,7 +11,7 @@ namespace SpecificationProjectTests
         public void SimpleWhereConditionTest()
         {
             // Arrange
-            var specification = Specification<Student>.Create().Where(s => s.Age < 21);
+            Specification<Student> specification = Specification<Student>.Create().Where(s => s.Age < 21);
 
             // Act
             var under21 = Students.BySpecification(specification).ToList();
@@ -33,7 +32,7 @@ namespace SpecificationProjectTests
                 .Create()
                 .Where(s => s.Age == 30);
 
-            var specification = specification1.Or(specification2);
+            var specification = specification1.Or(specification2.WhereExpression);
 
             // Act
             var under21 = Students.BySpecification(specification).ToList();

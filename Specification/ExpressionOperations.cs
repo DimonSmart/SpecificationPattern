@@ -1,5 +1,5 @@
 ﻿using System.Linq.Expressions;
-namespace SpecificationPattern;
+namespace DimonSmart.Specification;
 
 internal static class ExpressionOperations
 {

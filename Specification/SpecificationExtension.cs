@@ -1,8 +1,10 @@
-﻿namespace SpecificationPattern;
+﻿namespace DimonSmart.Specification;
 
 public static class SpecificationExtension
 {
-    public static IQueryable<T> BySpecification<T>(this IQueryable<T> query, ISpecification<T> specification)
+    // Extension method to make the call shorter and provide a fluent API
+    public static IQueryable<T> BySpecification<T, TSpecification>(this IQueryable<T> query, TSpecification specification)
+        where TSpecification : IBaseSpecification<T, TSpecification> where T:class
     {
         if (specification.WhereExpression != null)
         {

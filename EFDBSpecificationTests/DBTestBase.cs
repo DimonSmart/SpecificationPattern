@@ -1,11 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TestsCommon;
+﻿using TestsCommon;
 
-namespace EFDBSpecificationProjectTests
+namespace DimonSmart.EFDBSpecificationTests
 {
     public class DBTestBase : TestsBase
     {
-        protected SchoolContext GetFreshDBContext()
+        protected static SchoolContext GetFreshDBContext()
         {
             var context = new SchoolContext();
             context.Database.EnsureDeleted();

@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SpecificationPattern;
+﻿using DimonSmart.Specification;
+using Microsoft.EntityFrameworkCore;
 
-namespace EFSpecificationProject
+namespace DimonSmart.EFSpecification
 {
 
     public static class EFSpecificationExtension
@@ -25,7 +25,7 @@ namespace EFSpecificationProject
                 query = query.IgnoreAutoIncludes();
             }
 
-            return SpecificationExtension.BySpecification(query, efSpecification);
+            return query.BySpecification(efSpecification);
         }
     }
 }

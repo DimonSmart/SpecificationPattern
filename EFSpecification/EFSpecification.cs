@@ -1,36 +1,16 @@
-﻿using SpecificationPattern;
+﻿using DimonSmart.Specification;
 using System.Linq.Expressions;
 
-namespace EFSpecificationProject
+namespace DimonSmart.EFSpecification
 {
-
-    public class EFSpecification<T> : Specification<T>, IEFSpecification<T>
+    public class EFSpecification<T> : BaseSpecification<T, EFSpecification<T>>, IEFSpecification<T> where T : class
     {
+        // private Specification<T> _specification = Specification<T>.Create();
         private List<string> Includes { get; } = new List<string>();
-        public static new EFSpecification<T> Create() => new();
+        public static IEFSpecification<T> Create() => new EFSpecification<T>();
         public string CurrentIncludeLevel { get; private set; } = string.Empty;
         public bool IsAsNoTracking { get; private set; }
         public bool IsIgnoreAutoIncludes { get; private set; }
-
-        public override IEFSpecification<T> Where(Expression<Func<T, bool>> expr)
-        {
-            base.Where(expr);
-            return this;
-        }
-
-        public EFSpecification<T> And(EFSpecification<T> and)
-        {
-            Includes.AddRange(and.Includes);
-            _ = And(and.WhereExpression);
-            return this;
-        }
-
-        public EFSpecification<T> Or(EFSpecification<T> and)
-        {
-            Includes.AddRange(and.Includes);
-            _ = Or(and.WhereExpression);
-            return this;
-        }
 
         public void AddInclude(string include)
         {
@@ -76,6 +56,40 @@ namespace EFSpecificationProject
         {
             IsAsNoTracking = true;
             return this;
+        }
+
+        public IEFSpecification<T> Or(IEFSpecification<T> or)
+        {
+            Includes.AddRange(or.GetIncludes());
+            Or(or.WhereExpression);
+            return this;
+        }
+
+        public IEFSpecification<T> And(IEFSpecification<T> and)
+        {
+            Includes.AddRange(and.GetIncludes());
+            And(and.WhereExpression);
+            return this;
+        }
+
+        protected override EFSpecification<T> AsTSpecification()
+        {
+            return this;
+        }
+
+        IEFSpecification<T> IBaseSpecification<T, IEFSpecification<T>>.Where(Expression<Func<T, bool>> expr)
+        {
+            return Where(expr);
+        }
+
+        IEFSpecification<T> IBaseSpecification<T, IEFSpecification<T>>.OrderBy(Expression<Func<T, object>> orderByExpression)
+        {
+            return OrderBy(orderByExpression);
+        }
+
+        IEFSpecification<T> IBaseSpecification<T, IEFSpecification<T>>.OrderByDesc(Expression<Func<T, object>> orderByDescExpression)
+        {
+            return OrderByDesc(orderByDescExpression);
         }
     }
 }

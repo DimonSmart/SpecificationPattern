@@ -1,10 +1,10 @@
-using EFSpecificationProject;
+using DimonSmart.EFSpecification;
+using DimonSmart.Specification;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using SpecificationPattern;
 using TestsCommon;
 
-namespace EFDBSpecificationProjectTests
+namespace DimonSmart.EFDBSpecificationTests
 {
     public class DBTests : DBTestBase
     {
@@ -13,7 +13,9 @@ namespace EFDBSpecificationProjectTests
         {
             // Arrange
             using var context = GetFreshDBContext();
-            var specification = EFSpecification<Student>.Create().Where(s => s.Age < 21);
+            var specification = EFSpecification<Student>
+                .Create()
+                .Where(s => s.Age < 21);
 
             // Act
             var under21 = context.Students.BySpecification(specification).ToList();
@@ -27,11 +29,11 @@ namespace EFDBSpecificationProjectTests
         {
             // Arrange
             using var context = GetFreshDBContext();
-            var specification1 = Specification<Student>
+            var specification1 = EFSpecification<Student>
                 .Create()
                 .Where(s => s.Age < 21);
 
-            var specification2 = Specification<Student>
+            var specification2 = EFSpecification<Student>
                 .Create()
                 .Where(s => s.Age == 30);
 
@@ -49,7 +51,8 @@ namespace EFDBSpecificationProjectTests
         {
             // Arrange
             using var context = GetFreshDBContext();
-            var specification = EFSpecification<Student>.Create()
+            var specification = EFSpecification<Student>
+                .Create()
                 .Where(s => s.Age < 21)
                 .Include(s => s.School.MainBook.Author);
 
@@ -66,10 +69,13 @@ namespace EFDBSpecificationProjectTests
         public void OrderOneLevelOrderByTest()
         {
             // Arrange
-            var specification = EFSpecification<Student>.Create().OrderBy(s => s.Age);
+            using var context = GetFreshDBContext();
+            var specification = EFSpecification<Student>
+                .Create()
+                .OrderBy(s => s.Age);
 
             // Act
-            var ordered = Students.BySpecification(specification).ToList();
+            var ordered = context.BySpecification(specification).ToList();
 
             // Assert
             ordered.Should().BeInAscendingOrder(i => i.Age);
@@ -79,10 +85,13 @@ namespace EFDBSpecificationProjectTests
         public void OrderOneLevelOrderByDescTest()
         {
             // Arrange
-            var specification = EFSpecification<Student>.Create().OrderByDesc(s => s.Age);
+            using var context = GetFreshDBContext();
+            var specification = EFSpecification<Student>
+                .Create()
+                .OrderByDesc(s => s.Age);
 
             // Act
-            var ordered = Students.BySpecification(specification).ToList();
+            var ordered = context.BySpecification(specification).ToList();
 
             // Assert
             ordered.Should().BeInDescendingOrder(i => i.Age);
@@ -92,12 +101,14 @@ namespace EFDBSpecificationProjectTests
         public void TwoLevelOrderByTest()
         {
             // Arrange
-            var specification = EFSpecification<Student>.Create()
+            using var context = GetFreshDBContext();
+            var specification = EFSpecification<Student>
+                .Create()
                 .OrderBy(s => s.Name)
                 .OrderByDesc(s => s.Age);
 
             // Act
-            var ordered = Students.BySpecification(specification).ToList();
+            var ordered = context.BySpecification(specification).ToList();
 
             // Assert
             ordered.Should().BeEquivalentTo(new List<Student> { Alex30, Alex22, Sofia20 });

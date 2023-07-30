@@ -1,6 +1,0 @@
-﻿using TestsCommon;
-
-namespace SpecificationProjectTests
-{
-
-}

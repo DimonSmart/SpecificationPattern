@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SpecificationPattern\SpecificationProject.csproj" />
+    <ProjectReference Include="..\Specification\DimonSmart.Specification.csproj" />
   </ItemGroup>
 
 </Project>

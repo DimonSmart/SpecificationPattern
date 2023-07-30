@@ -10,6 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="6.11.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.9" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
@@ -23,8 +25,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EFSpecificationProject\EFSpecificationProject.csproj" />
-    <ProjectReference Include="..\TestsCommon\TestsCommon.csproj" />
+    <ProjectReference Include="..\EFSpecification\DimonSmart.EFSpecification.csproj" />
+    <ProjectReference Include="..\TestsCommon\DimonSmart.TestsCommon.csproj" />
   </ItemGroup>
 
 </Project>
