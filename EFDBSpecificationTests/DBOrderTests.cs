@@ -1,38 +1,38 @@
-﻿using DimonSmart.Specification;
+using DimonSmart.EFSpecification;
 using FluentAssertions;
 using TestsCommon;
 
-namespace SpecificationProjectTests;
+namespace DimonSmart.EFDBSpecificationTests;
 
-public class OrderUnitTests : TestsBase
+public class DBOrderTests : DBTestBase
 {
-
     [Fact]
     public void OneLevelOrderByTest()
     {
         // Arrange
-        var specification = Specification<Student>
+        using var context = GetFreshDBContext();
+        var specification = EFSpecification<Student>
             .Create()
             .OrderBy(s => s.Age);
 
         // Act
-        var ordered = Students.BySpecification(specification).ToList();
+        var ordered = context.BySpecification(specification).ToList();
 
         // Assert
         ordered.Should().BeInAscendingOrder(i => i.Age);
     }
 
-
     [Fact]
     public void OneLevelOrderByDescTest()
     {
         // Arrange
-        var specification = Specification<Student>
+        using var context = GetFreshDBContext();
+        var specification = EFSpecification<Student>
             .Create()
             .OrderByDesc(s => s.Age);
 
         // Act
-        var ordered = Students.BySpecification(specification).ToList();
+        var ordered = context.BySpecification(specification).ToList();
 
         // Assert
         ordered.Should().BeInDescendingOrder(i => i.Age);
@@ -42,14 +42,14 @@ public class OrderUnitTests : TestsBase
     public void TwoLevelOrderByTest()
     {
         // Arrange
-        var specification = Specification<Student>
+        using var context = GetFreshDBContext();
+        var specification = EFSpecification<Student>
             .Create()
-            .As<ISpecification<Student>>()
             .OrderBy(s => s.Name)
             .OrderByDesc(s => s.Age);
 
         // Act
-        var ordered = Students.BySpecification(specification).ToList();
+        var ordered = context.BySpecification(specification).ToList();
 
         // Assert
         ordered.Should().BeEquivalentTo(new List<Student> { Alex30, Alex22, Sofia20 });
