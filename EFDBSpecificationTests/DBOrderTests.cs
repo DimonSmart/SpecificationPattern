@@ -1,13 +1,12 @@
 using DimonSmart.EFSpecification;
+using DimonSmart.TestsCommon;
 using FluentAssertions;
-using TestsCommon;
 
 namespace DimonSmart.EFDBSpecificationTests;
 
 [Collection("Database collection")]
 public class DBOrderTests : TestsBase
 {
-    public DatabaseFixture Fixture { get; }
     private readonly SchoolContext _testDBContext;
 
     public DBOrderTests(DatabaseFixture fixture)
@@ -15,6 +14,8 @@ public class DBOrderTests : TestsBase
         Fixture = fixture;
         _testDBContext = fixture.TestDBContext;
     }
+
+    public DatabaseFixture Fixture { get; }
 
     [Fact]
     public void OneLevelOrderByTest()

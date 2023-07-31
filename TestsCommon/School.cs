@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TestsCommon;
+namespace DimonSmart.TestsCommon;
 
 public class School
 {
@@ -16,8 +16,7 @@ public class School
         MainBook = default!;
     }
 
-    [Key]
-    public int Id { get; set; }
+    [Key] public int Id { get; set; }
 
     public string Name { get; set; }
 

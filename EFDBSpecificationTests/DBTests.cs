@@ -1,15 +1,14 @@
 using DimonSmart.EFSpecification;
 using DimonSmart.Specification;
+using DimonSmart.TestsCommon;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using TestsCommon;
 
 namespace DimonSmart.EFDBSpecificationTests;
 
 [Collection("Database collection")]
 public class DBTests : TestsBase
 {
-    public DatabaseFixture Fixture { get; }
     private readonly SchoolContext _testDBContext;
 
     public DBTests(DatabaseFixture fixture)
@@ -17,6 +16,8 @@ public class DBTests : TestsBase
         Fixture = fixture;
         _testDBContext = fixture.TestDBContext;
     }
+
+    public DatabaseFixture Fixture { get; }
 
     [Fact]
     public void SimpleWhereConditionTest()

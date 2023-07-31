@@ -28,7 +28,8 @@ public class EFIncludeSpecification<T, TProperty> : IEFIncludeSpecification<T, T
         return _parentSpecification.OrderByDesc(orderByDescExpression);
     }
 
-    public List<(bool direction, Expression<Func<T, object>> expr)> OrderExpressions => _parentSpecification.OrderExpressions;
+    public List<(bool direction, Expression<Func<T, object>> expr)> OrderExpressions =>
+        _parentSpecification.OrderExpressions;
 
     public int? TakeQ => _parentSpecification.TakeQ;
 

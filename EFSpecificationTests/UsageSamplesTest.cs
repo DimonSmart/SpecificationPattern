@@ -1,5 +1,5 @@
 using DimonSmart.EFSpecification;
-using TestsCommon;
+using DimonSmart.TestsCommon;
 
 namespace DimonSmart.EFSpecificationTests;
 

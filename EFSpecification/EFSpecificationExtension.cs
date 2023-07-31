@@ -5,7 +5,8 @@ namespace DimonSmart.EFSpecification;
 
 public static class EFSpecificationExtension
 {
-    public static IQueryable<T> BySpecification<T>(this DbContext context, IEFSpecification<T> efSpecification) where T : class
+    public static IQueryable<T> BySpecification<T>(this DbContext context, IEFSpecification<T> efSpecification)
+        where T : class
     {
         var query = context.Set<T>().AsQueryable<T>();
 

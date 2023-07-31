@@ -1,12 +1,11 @@
 ﻿using DimonSmart.Specification;
+using DimonSmart.TestsCommon;
 using FluentAssertions;
-using TestsCommon;
 
-namespace SpecificationProjectTests;
+namespace DimonSmart.SpecificationTests;
 
 public class OrderUnitTests : TestsBase
 {
-
     [Fact]
     public void OneLevelOrderByTest()
     {

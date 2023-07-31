@@ -1,12 +1,11 @@
-﻿using DimonSmart.Specification;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
+using DimonSmart.Specification;
 
 namespace DimonSmart.EFSpecification;
 
 public class EFSpecification<T> : BaseSpecification<T, EFSpecification<T>>, IEFSpecification<T> where T : class
 {
     private List<string> Includes { get; } = new();
-    public static IEFSpecification<T> Create() => new EFSpecification<T>();
     public string CurrentIncludeLevel { get; private set; } = string.Empty;
     public bool IsAsNoTracking { get; private set; }
     public bool IsIgnoreAutoIncludes { get; private set; }
@@ -23,22 +22,6 @@ public class EFSpecification<T> : BaseSpecification<T, EFSpecification<T>>, IEFS
         Includes.Add(include);
     }
 
-    public bool CanBeExcluded(string newLine)
-    {
-        var newLineWithDot = newLine + ".";
-        foreach (var existingLine in Includes)
-        {
-            var existingLineWithDot = existingLine + ".";
-
-            if (existingLineWithDot.StartsWith(newLineWithDot))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public IReadOnlyCollection<string> GetIncludes()
     {
         return Includes;
@@ -46,7 +29,6 @@ public class EFSpecification<T> : BaseSpecification<T, EFSpecification<T>>, IEFS
 
     public IEFSpecification<T> IgnoreAutoIncludes()
     {
-
         IsIgnoreAutoIncludes = true;
         return this;
     }
@@ -71,23 +53,46 @@ public class EFSpecification<T> : BaseSpecification<T, EFSpecification<T>>, IEFS
         return this;
     }
 
-    protected override EFSpecification<T> AsTSpecification()
-    {
-        return this;
-    }
-
     IEFSpecification<T> IBaseSpecification<T, IEFSpecification<T>>.Where(Expression<Func<T, bool>> expr)
     {
         return Where(expr);
     }
 
-    IEFSpecification<T> IBaseSpecification<T, IEFSpecification<T>>.OrderBy(Expression<Func<T, object>> orderByExpression)
+    IEFSpecification<T> IBaseSpecification<T, IEFSpecification<T>>.OrderBy(
+        Expression<Func<T, object>> orderByExpression)
     {
         return OrderBy(orderByExpression);
     }
 
-    IEFSpecification<T> IBaseSpecification<T, IEFSpecification<T>>.OrderByDesc(Expression<Func<T, object>> orderByDescExpression)
+    IEFSpecification<T> IBaseSpecification<T, IEFSpecification<T>>.OrderByDesc(
+        Expression<Func<T, object>> orderByDescExpression)
     {
         return OrderByDesc(orderByDescExpression);
+    }
+
+    public static IEFSpecification<T> Create()
+    {
+        return new EFSpecification<T>();
+    }
+
+    public bool CanBeExcluded(string newLine)
+    {
+        var newLineWithDot = newLine + ".";
+        foreach (var existingLine in Includes)
+        {
+            var existingLineWithDot = existingLine + ".";
+
+            if (existingLineWithDot.StartsWith(newLineWithDot))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected override EFSpecification<T> AsTSpecification()
+    {
+        return this;
     }
 }

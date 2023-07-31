@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+
 namespace DimonSmart.Specification;
 
 internal class ParameterReplacer : ExpressionVisitor

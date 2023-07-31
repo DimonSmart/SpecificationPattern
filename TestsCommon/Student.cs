@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TestsCommon;
+namespace DimonSmart.TestsCommon;
 
 public class Student
 {
@@ -19,8 +19,7 @@ public class Student
         Books = new List<Book>();
     }
 
-    [Key]
-    public int Id { get; set; }
+    [Key] public int Id { get; set; }
 
     public int Age { get; set; }
 

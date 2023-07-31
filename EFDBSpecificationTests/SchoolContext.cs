@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TestsCommon;
+﻿using DimonSmart.TestsCommon;
+using Microsoft.EntityFrameworkCore;
 
 namespace DimonSmart.EFDBSpecificationTests;
 

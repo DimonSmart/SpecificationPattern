@@ -1,17 +1,16 @@
 ﻿using DimonSmart.Specification;
+using DimonSmart.TestsCommon;
 using FluentAssertions;
-using TestsCommon;
 
-namespace SpecificationProjectTests;
+namespace DimonSmart.SpecificationTests;
 
 public class WhereUnitTests : TestsBase
 {
-
     [Fact]
     public void SimpleWhereConditionTest()
     {
         // Arrange
-        Specification<Student> specification = Specification<Student>.Create().Where(s => s.Age < 21);
+        var specification = Specification<Student>.Create().Where(s => s.Age < 21);
 
         // Act
         var under21 = Students.BySpecification(specification).ToList();
