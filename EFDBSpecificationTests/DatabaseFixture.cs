@@ -1,19 +1,26 @@
-﻿using TestsCommon;
+using TestsCommon;
 
 namespace DimonSmart.EFDBSpecificationTests;
 
-public class DBTestBase : TestsBase
+public class DatabaseFixture : TestsBase, IDisposable
 {
-    protected static SchoolContext GetFreshDBContext()
+    public SchoolContext TestDBContext { get; private set; } // = GetFreshDBContext();
+
+    public DatabaseFixture()
     {
         var context = new SchoolContext();
         context.Database.EnsureDeleted();
-        context.Database.EnsureCreated();
+
         context.Authors.AddRange(Authors);
         context.Books.AddRange(Books);
         context.Schools.AddRange(Schools);
         context.Students.AddRange(Students);
         context.SaveChanges();
-        return context;
+        TestDBContext = context;
+    }
+
+    public void Dispose()
+    {
+        TestDBContext.Database.EnsureDeleted();
     }
 }

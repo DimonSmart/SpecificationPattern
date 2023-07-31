@@ -6,19 +6,28 @@ using TestsCommon;
 
 namespace DimonSmart.EFDBSpecificationTests;
 
-public class DBTests : DBTestBase
+[Collection("Database collection")]
+public class DBTests : TestsBase
 {
+    public DatabaseFixture Fixture { get; }
+    private readonly SchoolContext _testDBContext;
+
+    public DBTests(DatabaseFixture fixture)
+    {
+        Fixture = fixture;
+        _testDBContext = fixture.TestDBContext;
+    }
+
     [Fact]
     public void SimpleWhereConditionTest()
     {
         // Arrange
-        using var context = GetFreshDBContext();
         var specification = EFSpecification<Student>
             .Create()
             .Where(s => s.Age < 21);
 
         // Act
-        var under21 = context.Students.BySpecification(specification).ToList();
+        var under21 = _testDBContext.Students.BySpecification(specification).ToList();
 
         // Assert
         under21.Should().BeEquivalentTo(new List<Student> { Sofia20 });
@@ -28,7 +37,6 @@ public class DBTests : DBTestBase
     public void WhereWithOrClauseTest()
     {
         // Arrange
-        using var context = GetFreshDBContext();
         var specification1 = EFSpecification<Student>
             .Create()
             .Where(s => s.Age < 21);
@@ -40,7 +48,7 @@ public class DBTests : DBTestBase
         var specification = specification1.Or(specification2);
 
         // Act
-        var under21 = context.Students.BySpecification(specification).ToList();
+        var under21 = _testDBContext.Students.BySpecification(specification).ToList();
 
         // Assert
         under21.Should().BeEquivalentTo(new List<Student> { Sofia20, Alex30 });
@@ -50,20 +58,17 @@ public class DBTests : DBTestBase
     public void IncludeTest()
     {
         // Arrange
-        using var context = GetFreshDBContext();
         var specification = EFSpecification<Student>
             .Create()
             .Where(s => s.Age < 21)
             .Include(s => s.School.MainBook.Author);
 
         // Act
-        var under21 = context.BySpecification(specification).AsNoTracking().ToList();
+        var under21 = _testDBContext.BySpecification(specification).AsNoTracking().ToList();
 
         // Assert
         under21
             .Should()
             .BeEquivalentTo(new List<Student> { Sofia20 }, options => options.Excluding(e => e.Books));
     }
-
-   
 }
