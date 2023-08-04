@@ -23,9 +23,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference
-			Include="..\DimonSmart.Specification.EntityFrameworkCore\DimonSmart.Specification.EntityFrameworkCore.csproj" />
-		<ProjectReference Include="..\DimonSmart.Tests.Common\DimonSmart.Tests.Common.csproj" />
+		<ProjectReference Include="..\DimonSmart.Specification.EntityFrameworkCore\DimonSmart.Specification.EntityFrameworkCore.csproj" />
+		<ProjectReference Include="..\DimonSmart.Specification.Tests.Common\DimonSmart.Specification.Tests.Common.csproj" />
 	</ItemGroup>
 
 </Project>
