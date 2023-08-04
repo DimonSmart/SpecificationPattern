@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace DimonSmart.EFSpecification;
+namespace DimonSmart.Specification.EntityFrameworkCore;
 
 public static class EFIncludeSpecificationExtensions
 {

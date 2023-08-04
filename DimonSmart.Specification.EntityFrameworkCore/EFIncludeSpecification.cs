@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace DimonSmart.EFSpecification;
+namespace DimonSmart.Specification.EntityFrameworkCore;
 
 public class EFIncludeSpecification<T, TProperty> : IEFIncludeSpecification<T, TProperty> where T : class
 {

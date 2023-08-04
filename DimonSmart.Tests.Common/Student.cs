@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DimonSmart.TestsCommon;
+namespace DimonSmart.Tests.Common;
 
 public class Student
 {

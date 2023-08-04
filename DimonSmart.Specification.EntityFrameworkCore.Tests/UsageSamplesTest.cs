@@ -1,7 +1,6 @@
-using DimonSmart.EFSpecification;
-using DimonSmart.TestsCommon;
+using DimonSmart.Tests.Common;
 
-namespace DimonSmart.EFSpecificationTests;
+namespace DimonSmart.Specification.EntityFrameworkCore.Tests;
 
 public class UsageSamplesTest
 {

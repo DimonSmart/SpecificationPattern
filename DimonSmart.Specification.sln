@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.Specification", "Specification\DimonSmart.Specification.csproj", "{1145F448-4250-416D-AEA8-43B1C33C3CAB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.Specification", "DimonSmart.Specification\DimonSmart.Specification.csproj", "{1145F448-4250-416D-AEA8-43B1C33C3CAB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.EFSpecification", "EFSpecification\DimonSmart.EFSpecification.csproj", "{7BC1ACAC-8ABB-4AB8-9B6D-C2734ECDA6AB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.Specification.EntityFrameworkCore", "DimonSmart.Specification.EntityFrameworkCore\DimonSmart.Specification.EntityFrameworkCore.csproj", "{7BC1ACAC-8ABB-4AB8-9B6D-C2734ECDA6AB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.SpecificationTests", "SpecificationTests\DimonSmart.SpecificationTests.csproj", "{4CEB8C15-15DF-4303-BA33-379811A8FCD0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.Specification.Tests", "DimonSmart.Specification.Tests\DimonSmart.Specification.Tests.csproj", "{4CEB8C15-15DF-4303-BA33-379811A8FCD0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.EFSpecificationTests", "EFSpecificationTests\DimonSmart.EFSpecificationTests.csproj", "{73F948D9-AC7A-4117-9643-EC03AB83B57D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.Specification.EntityFrameworkCore.Tests", "DimonSmart.Specification.EntityFrameworkCore.Tests\DimonSmart.Specification.EntityFrameworkCore.Tests.csproj", "{73F948D9-AC7A-4117-9643-EC03AB83B57D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.TestsCommon", "TestsCommon\DimonSmart.TestsCommon.csproj", "{1D2AAC67-6A4B-4BA4-B4F6-71CD97790A17}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.Tests.Common", "DimonSmart.Tests.Common\DimonSmart.Tests.Common.csproj", "{1D2AAC67-6A4B-4BA4-B4F6-71CD97790A17}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.EFDBSpecificationTests", "EFDBSpecificationTests\DimonSmart.EFDBSpecificationTests.csproj", "{50382C80-ACFA-42A0-8816-E1CA22CC79FE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.Specification.EntityFrameworkCore.Db.Tests", "Specification.EntityFrameworkCore.Db.Tests\DimonSmart.Specification.EntityFrameworkCore.Db.Tests.csproj", "{50382C80-ACFA-42A0-8816-E1CA22CC79FE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

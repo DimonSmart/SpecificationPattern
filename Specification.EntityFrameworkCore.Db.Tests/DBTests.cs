@@ -1,10 +1,8 @@
-using DimonSmart.EFSpecification;
-using DimonSmart.Specification;
-using DimonSmart.TestsCommon;
+using DimonSmart.Tests.Common;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
-namespace DimonSmart.EFDBSpecificationTests;
+namespace DimonSmart.Specification.EntityFrameworkCore.Db.Tests;
 
 [Collection("Database collection")]
 public class DBTests : TestsBase

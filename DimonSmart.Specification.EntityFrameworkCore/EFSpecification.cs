@@ -1,7 +1,6 @@
 ﻿using System.Linq.Expressions;
-using DimonSmart.Specification;
 
-namespace DimonSmart.EFSpecification;
+namespace DimonSmart.Specification.EntityFrameworkCore;
 
 public class EFSpecification<T> : BaseSpecification<T, EFSpecification<T>>, IEFSpecification<T> where T : class
 {

@@ -1,7 +1,6 @@
-﻿using DimonSmart.Specification;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
-namespace DimonSmart.EFSpecification;
+namespace DimonSmart.Specification.EntityFrameworkCore;
 
 public static class EFSpecificationExtension
 {

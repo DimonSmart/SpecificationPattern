@@ -1,4 +1,4 @@
-﻿namespace DimonSmart.TestsCommon;
+﻿namespace DimonSmart.Tests.Common;
 
 public class Author
 {

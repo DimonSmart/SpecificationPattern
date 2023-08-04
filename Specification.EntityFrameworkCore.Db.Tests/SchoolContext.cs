@@ -1,7 +1,7 @@
-﻿using DimonSmart.TestsCommon;
+﻿using DimonSmart.Tests.Common;
 using Microsoft.EntityFrameworkCore;
 
-namespace DimonSmart.EFDBSpecificationTests;
+namespace DimonSmart.Specification.EntityFrameworkCore.Db.Tests;
 
 public class SchoolContext : DbContext
 {

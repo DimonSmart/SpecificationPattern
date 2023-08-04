@@ -1,8 +1,7 @@
-﻿using DimonSmart.Specification;
-using DimonSmart.TestsCommon;
+﻿using DimonSmart.Tests.Common;
 using FluentAssertions;
 
-namespace DimonSmart.SpecificationTests;
+namespace DimonSmart.Specification.Tests;
 
 public class OrderUnitTests : TestsBase
 {

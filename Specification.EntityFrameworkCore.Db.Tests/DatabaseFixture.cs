@@ -1,6 +1,6 @@
-using DimonSmart.TestsCommon;
+using DimonSmart.Tests.Common;
 
-namespace DimonSmart.EFDBSpecificationTests;
+namespace DimonSmart.Specification.EntityFrameworkCore.Db.Tests;
 
 public class DatabaseFixture : TestsBase, IDisposable
 {

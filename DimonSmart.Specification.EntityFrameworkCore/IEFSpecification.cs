@@ -1,6 +1,4 @@
-﻿using DimonSmart.Specification;
-
-namespace DimonSmart.EFSpecification;
+﻿namespace DimonSmart.Specification.EntityFrameworkCore;
 
 public interface IEFSpecification<T> : IBaseSpecification<T, IEFSpecification<T>> where T : class
 {
