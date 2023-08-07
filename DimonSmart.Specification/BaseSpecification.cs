@@ -6,9 +6,8 @@ namespace DimonSmart.Specification;
 public abstract class BaseSpecification<T, TSpecification> : IBaseSpecification<T, TSpecification>
     where TSpecification : IBaseSpecification<T, TSpecification> where T : class
 {
-    public ISpecificationData<T> SpecificationData => _specificationData;
-
     private readonly SpecificationData<T> _specificationData = new();
+    public ISpecificationData<T> SpecificationData => _specificationData;
 
     public TSpecification Where(Expression<Func<T, bool>> expr)
     {
