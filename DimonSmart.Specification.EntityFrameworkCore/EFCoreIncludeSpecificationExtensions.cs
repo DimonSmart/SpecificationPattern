@@ -27,7 +27,7 @@ public static class EFCoreIncludeSpecificationExtensions
         specification.AddInclude(GetPropertyName(thenIncludeExpression));
         return new EFCoreIncludeSpecification<T, TProperty>(specification);
     }
-    
+
     public static string GetPropertyName<T, TProperty>(Expression<Func<T, TProperty>> includeExpression)
     {
         var body = includeExpression.Body as MemberExpression ?? throw new InvalidOperationException();

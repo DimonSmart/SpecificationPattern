@@ -44,7 +44,7 @@ public class EFCoreIncludeSpecification<T, TProperty> : IEFCoreIncludeSpecificat
     public int? TakeQ => _parentSpecification.TakeQ;
 
     public int? SkipQ => _parentSpecification.SkipQ;
-    
+
     public void AddInclude(string include)
     {
         _parentSpecification.AddInclude(include);

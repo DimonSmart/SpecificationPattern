@@ -2,7 +2,8 @@
 
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
-public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T>>, IEFCoreSpecification<T> where T : class
+public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T>>, IEFCoreSpecification<T>
+    where T : class
 {
     private List<string> Includes { get; } = new();
     public string CurrentIncludeLevel { get; private set; } = string.Empty;
@@ -51,7 +52,7 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
         IsAsNoTrackingWithIdentityResolution = true;
         return this;
     }
-    
+
     public IEFCoreSpecification<T> Or(IEFCoreSpecification<T> or)
     {
         Includes.AddRange(or.GetIncludes());

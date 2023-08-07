@@ -5,7 +5,6 @@ namespace DimonSmart.Specification;
 public abstract class BaseSpecification<T, TSpecification> : IBaseSpecification<T, TSpecification>
     where TSpecification : IBaseSpecification<T, TSpecification> where T : class
 {
-   
     public List<(bool direction, Expression<Func<T, object>> expr)> OrderExpressions { get; } = new();
 
     public TSpecification Where(Expression<Func<T, bool>> expr)
@@ -19,7 +18,7 @@ public abstract class BaseSpecification<T, TSpecification> : IBaseSpecification<
         And(expr);
         return AsTSpecification();
     }
-    
+
     public TSpecification Take(int take)
     {
         TakeQ = take;

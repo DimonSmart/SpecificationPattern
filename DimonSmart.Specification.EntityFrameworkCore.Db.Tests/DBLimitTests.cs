@@ -48,6 +48,7 @@ public class DBLimitTests : TestsBase
         var limited = _testDBContext.BySpecification(specification).ToList();
 
         // Assert
-        limited.Should().BeEquivalentTo(new List<Student> { Alex30, Sofia20 }, options => options.Excluding(e => e.Books));
+        limited.Should()
+            .BeEquivalentTo(new List<Student> { Alex30, Sofia20 }, options => options.Excluding(e => e.Books));
     }
 }

@@ -28,7 +28,8 @@ public class Specification<T> : BaseSpecification<T, Specification<T>>, ISpecifi
         return OrderBy(orderByExpression);
     }
 
-    ISpecification<T> IBaseSpecification<T, ISpecification<T>>.OrderByDesc(Expression<Func<T, object>> orderByDescExpression)
+    ISpecification<T> IBaseSpecification<T, ISpecification<T>>.OrderByDesc(
+        Expression<Func<T, object>> orderByDescExpression)
     {
         return OrderByDesc(orderByDescExpression);
     }
