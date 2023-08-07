@@ -11,7 +11,7 @@ public static class EFCoreSpecificationExtension
 
         var query = context.Set<T>().AsQueryable<T>();
 
-        foreach (var include in efCoreSpecification.GetIncludes())
+        foreach (var include in efCoreSpecification.EFCoreSpecificationData.Includes)
         {
             query = query.Include(include);
         }

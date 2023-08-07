@@ -6,4 +6,5 @@ public interface IEFCoreSpecificationData<T>
     bool IsAsNoTrackingWithIdentityResolution { get; }
     bool IsIgnoreAutoIncludes { get; }
     bool IsIgnoreQueryFilters { get; }
+    IEnumerable<string> Includes { get; }
 }

@@ -7,24 +7,13 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
 {
     private readonly EFCoreSpecificationData<T> _efCoreSpecificationData = new();
     public IEFCoreSpecificationData<T> EFCoreSpecificationData => _efCoreSpecificationData;
-    private List<string> Includes { get; } = new();
     public string CurrentIncludeLevel { get; private set; } = string.Empty;
 
     public void AddInclude(string include)
     {
         include = string.IsNullOrEmpty(CurrentIncludeLevel) ? include : $"{CurrentIncludeLevel}.{include}";
         CurrentIncludeLevel = include;
-        if (CanBeExcluded(include))
-        {
-            return;
-        }
-
-        Includes.Add(include);
-    }
-
-    public IReadOnlyCollection<string> GetIncludes()
-    {
-        return Includes;
+        _efCoreSpecificationData.AddInclude(include);
     }
 
     public IEFCoreSpecification<T> IgnoreAutoIncludes()
@@ -53,14 +42,20 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
 
     public IEFCoreSpecification<T> Or(IEFCoreSpecification<T> or)
     {
-        Includes.AddRange(or.GetIncludes());
+        foreach (var include in or.EFCoreSpecificationData.Includes)
+        {
+            _efCoreSpecificationData.AddInclude(include);
+        }
         Or(or.SpecificationData.WhereExpression);
         return this;
     }
 
     public IEFCoreSpecification<T> And(IEFCoreSpecification<T> and)
     {
-        Includes.AddRange(and.GetIncludes());
+        foreach (var include in and.EFCoreSpecificationData.Includes)
+        {
+            _efCoreSpecificationData.AddInclude(include);
+        }
         And(and.SpecificationData.WhereExpression);
         return this;
     }
@@ -95,22 +90,6 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
     public static IEFCoreSpecification<T> Create()
     {
         return new EFCoreSpecification<T>();
-    }
-
-    public bool CanBeExcluded(string newLine)
-    {
-        var newLineWithDot = newLine + ".";
-        foreach (var existingLine in Includes)
-        {
-            var existingLineWithDot = existingLine + ".";
-
-            if (existingLineWithDot.StartsWith(newLineWithDot))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     protected override EFCoreSpecification<T> AsTSpecification()
