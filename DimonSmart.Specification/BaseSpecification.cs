@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using static DimonSmart.Specification.OrderDirectionEnum;
 
 namespace DimonSmart.Specification;
 
@@ -40,13 +41,13 @@ public abstract class BaseSpecification<T, TSpecification> : IBaseSpecification<
 
     public virtual TSpecification OrderBy(Expression<Func<T, object>> orderByExpression)
     {
-        SpecificationData.OrderExpressions.Add((true, orderByExpression));
+        SpecificationData.OrderExpressions.Add((Ascending, orderByExpression));
         return AsTSpecification();
     }
 
     public virtual TSpecification OrderByDesc(Expression<Func<T, object>> orderByExpression)
     {
-        SpecificationData.OrderExpressions.Add((false, orderByExpression));
+        SpecificationData.OrderExpressions.Add((Descending, orderByExpression));
         return AsTSpecification();
     }
 

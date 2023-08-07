@@ -1,4 +1,6 @@
-﻿namespace DimonSmart.Specification;
+﻿using static DimonSmart.Specification.OrderDirectionEnum;
+
+namespace DimonSmart.Specification;
 
 public static class SpecificationExtension
 {
@@ -15,10 +17,10 @@ public static class SpecificationExtension
         if (specData.OrderExpressions.Any())
         {
             var (direction, expr) = specData.OrderExpressions.First();
-            var orderedQuery = direction ? query.OrderBy(expr) : query.OrderByDescending(expr);
+            var orderedQuery = direction == Ascending ? query.OrderBy(expr) : query.OrderByDescending(expr);
             var thenOrderBy = specData.OrderExpressions.Skip(1);
             query = thenOrderBy.Aggregate(orderedQuery,
-                (current, orderBy) => orderBy.direction
+                (current, orderBy) => orderBy.direction == Ascending
                     ? orderedQuery.ThenBy(orderBy.expr)
                     : orderedQuery.ThenByDescending(orderBy.expr));
         }

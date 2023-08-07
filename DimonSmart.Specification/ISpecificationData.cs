@@ -2,6 +2,16 @@
 
 namespace DimonSmart.Specification;
 
+/// <summary>
+/// Order direction
+/// </summary>
+public enum OrderDirectionEnum
+{
+    Ascending,
+    Descending
+}
+
+
 public interface ISpecificationData<T>
 {
     /// <summary>
@@ -12,7 +22,7 @@ public interface ISpecificationData<T>
     /// <summary>
     /// OrderBy property and direction list
     /// </summary>
-    public List<(bool direction, Expression<Func<T, object>> expr)> OrderExpressions { get; }
+    public List<(OrderDirectionEnum direction, Expression<Func<T, object>> expr)> OrderExpressions { get; }
 
     /// <summary>
     /// Specify how many elements should be skipped
