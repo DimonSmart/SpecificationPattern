@@ -44,17 +44,17 @@ public class EFCoreIncludeSpecification<T, TProperty> : IEFCoreIncludeSpecificat
         return _parentSpecification.OrderByDesc(orderByDescExpression);
     }
 
-    public bool IsAsNoTracking =>
-        _parentSpecification.IsAsNoTracking;
+    //public bool IsAsNoTracking =>
+    //    _parentSpecification.IsAsNoTracking;
 
-    public bool IsAsNoTrackingWithIdentityResolution =>
-        _parentSpecification.IsAsNoTrackingWithIdentityResolution;
+    //public bool IsAsNoTrackingWithIdentityResolution =>
+    //    _parentSpecification.IsAsNoTrackingWithIdentityResolution;
 
-    public bool IsIgnoreAutoIncludes =>
-        _parentSpecification.IsIgnoreAutoIncludes;
+    //public bool IsIgnoreAutoIncludes =>
+    //    _parentSpecification.IsIgnoreAutoIncludes;
 
-    public bool IsIgnoreQueryFilters =>
-        _parentSpecification.IsIgnoreQueryFilters;
+    //public bool IsIgnoreQueryFilters =>
+    //    _parentSpecification.IsIgnoreQueryFilters;
 
     public IEFCoreSpecification<T> AsNoTracking()
     {
@@ -85,6 +85,9 @@ public class EFCoreIncludeSpecification<T, TProperty> : IEFCoreIncludeSpecificat
     {
         return _parentSpecification.And(and);
     }
+
+    public IEFCoreSpecificationData<T> EFCoreSpecificationData =>
+        _parentSpecification.EFCoreSpecificationData;
 
     public void AddInclude(string include)
     {

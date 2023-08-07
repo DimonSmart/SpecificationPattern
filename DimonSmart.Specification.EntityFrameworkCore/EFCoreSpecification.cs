@@ -5,12 +5,10 @@ namespace DimonSmart.Specification.EntityFrameworkCore;
 public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T>>, IEFCoreSpecification<T>
     where T : class
 {
+    private readonly EFCoreSpecificationData<T> _efCoreSpecificationData = new();
+    public IEFCoreSpecificationData<T> EFCoreSpecificationData => _efCoreSpecificationData;
     private List<string> Includes { get; } = new();
     public string CurrentIncludeLevel { get; private set; } = string.Empty;
-    public bool IsAsNoTracking { get; private set; }
-    public bool IsAsNoTrackingWithIdentityResolution { get; private set; }
-    public bool IsIgnoreAutoIncludes { get; private set; }
-    public bool IsIgnoreQueryFilters { get; private set; }
 
     public void AddInclude(string include)
     {
@@ -31,25 +29,25 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
 
     public IEFCoreSpecification<T> IgnoreAutoIncludes()
     {
-        IsIgnoreAutoIncludes = true;
+        _efCoreSpecificationData.IsIgnoreAutoIncludes = true;
         return this;
     }
 
     public IEFCoreSpecification<T> IgnoreQueryFilters()
     {
-        IsIgnoreQueryFilters = true;
+        _efCoreSpecificationData.IsIgnoreQueryFilters = true;
         return this;
     }
 
     public IEFCoreSpecification<T> AsNoTracking()
     {
-        IsAsNoTracking = true;
+        _efCoreSpecificationData.IsAsNoTracking = true;
         return this;
     }
 
     public IEFCoreSpecification<T> AsNoTrackingWithIdentityResolution()
     {
-        IsAsNoTrackingWithIdentityResolution = true;
+        _efCoreSpecificationData.IsAsNoTrackingWithIdentityResolution = true;
         return this;
     }
 

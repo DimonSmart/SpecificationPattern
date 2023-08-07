@@ -2,10 +2,12 @@
 
 public interface IEFCoreSpecification<T> : IBaseSpecification<T, IEFCoreSpecification<T>> where T : class
 {
-    bool IsAsNoTracking { get; }
-    bool IsAsNoTrackingWithIdentityResolution { get; }
-    bool IsIgnoreAutoIncludes { get; }
-    bool IsIgnoreQueryFilters { get; }
+
+    /// <summary>
+    /// Gets the specification data that contains Entity Framework specific data.
+    /// </summary>
+    IEFCoreSpecificationData<T> EFCoreSpecificationData { get; }
+
     void AddInclude(string include);
     public IReadOnlyCollection<string> GetIncludes();
     IEFCoreSpecification<T> AsNoTracking();
