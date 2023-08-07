@@ -5,13 +5,15 @@ namespace DimonSmart.Specification;
 public abstract class BaseSpecification<T, TSpecification> : IBaseSpecification<T, TSpecification>
     where TSpecification : IBaseSpecification<T, TSpecification> where T : class
 {
-    public List<(bool direction, Expression<Func<T, object>> expr)> OrderExpressions { get; } = new();
+    public ISpecificationData<T> SpecificationData => _specificationData;
+
+    private readonly SpecificationData<T> _specificationData = new();
 
     public TSpecification Where(Expression<Func<T, bool>> expr)
     {
-        if (WhereExpression == null)
+        if (_specificationData.WhereExpression == null)
         {
-            WhereExpression = expr;
+            _specificationData.WhereExpression = expr;
             return AsTSpecification();
         }
 
@@ -19,33 +21,32 @@ public abstract class BaseSpecification<T, TSpecification> : IBaseSpecification<
         return AsTSpecification();
     }
 
+    public Expression<Func<T, bool>>? GetWhereExpression()
+    {
+        return SpecificationData.WhereExpression;
+    }
+
     public TSpecification Take(int take)
     {
-        TakeQ = take;
+        _specificationData.TakeQ = take;
         return AsTSpecification();
     }
 
     public TSpecification Skip(int skip)
     {
-        SkipQ = skip;
+        _specificationData.SkipQ = skip;
         return AsTSpecification();
     }
 
-    public Expression<Func<T, bool>>? WhereExpression { get; protected set; }
-
-    public int? TakeQ { get; protected set; }
-
-    public int? SkipQ { get; protected set; }
-
     public virtual TSpecification OrderBy(Expression<Func<T, object>> orderByExpression)
     {
-        OrderExpressions.Add((true, orderByExpression));
+        SpecificationData.OrderExpressions.Add((true, orderByExpression));
         return AsTSpecification();
     }
 
     public virtual TSpecification OrderByDesc(Expression<Func<T, object>> orderByExpression)
     {
-        OrderExpressions.Add((false, orderByExpression));
+        SpecificationData.OrderExpressions.Add((false, orderByExpression));
         return AsTSpecification();
     }
 
@@ -56,13 +57,14 @@ public abstract class BaseSpecification<T, TSpecification> : IBaseSpecification<
             return AsTSpecification();
         }
 
-        if (WhereExpression == null)
+        if (_specificationData.WhereExpression == null)
         {
-            WhereExpression = and;
+            _specificationData.WhereExpression = and;
             return AsTSpecification();
         }
 
-        WhereExpression = ExpressionOperations.CombineExpressions(WhereExpression, and, Expression.AndAlso);
+        _specificationData.WhereExpression = ExpressionOperations
+            .CombineExpressions(_specificationData.WhereExpression, and, Expression.AndAlso);
 
         return AsTSpecification();
     }
@@ -74,13 +76,14 @@ public abstract class BaseSpecification<T, TSpecification> : IBaseSpecification<
             return AsTSpecification();
         }
 
-        if (WhereExpression == null)
+        if (_specificationData.WhereExpression == null)
         {
-            WhereExpression = or;
+            _specificationData.WhereExpression = or;
             return AsTSpecification();
         }
 
-        WhereExpression = ExpressionOperations.CombineExpressions(WhereExpression, or, Expression.Or);
+        _specificationData.WhereExpression = ExpressionOperations
+            .CombineExpressions(_specificationData.WhereExpression, or, Expression.Or);
 
         return AsTSpecification();
     }

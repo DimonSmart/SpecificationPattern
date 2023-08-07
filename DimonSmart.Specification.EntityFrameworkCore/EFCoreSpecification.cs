@@ -56,14 +56,14 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
     public IEFCoreSpecification<T> Or(IEFCoreSpecification<T> or)
     {
         Includes.AddRange(or.GetIncludes());
-        Or(or.WhereExpression);
+        Or(or.SpecificationData.WhereExpression);
         return this;
     }
 
     public IEFCoreSpecification<T> And(IEFCoreSpecification<T> and)
     {
         Includes.AddRange(and.GetIncludes());
-        And(and.WhereExpression);
+        And(and.SpecificationData.WhereExpression);
         return this;
     }
 

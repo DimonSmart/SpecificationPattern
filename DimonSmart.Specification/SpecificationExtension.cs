@@ -6,30 +6,31 @@ public static class SpecificationExtension
         TSpecification specification)
         where TSpecification : IBaseSpecification<T, TSpecification> where T : class
     {
-        if (specification.WhereExpression != null)
+        var specData = specification.SpecificationData;
+        if (specData.WhereExpression != null)
         {
-            query = query.Where(specification.WhereExpression);
+            query = query.Where(specData.WhereExpression);
         }
 
-        if (specification.OrderExpressions.Any())
+        if (specData.OrderExpressions.Any())
         {
-            var (direction, expr) = specification.OrderExpressions.First();
+            var (direction, expr) = specData.OrderExpressions.First();
             var orderedQuery = direction ? query.OrderBy(expr) : query.OrderByDescending(expr);
-            var thenOrderBy = specification.OrderExpressions.Skip(1);
+            var thenOrderBy = specData.OrderExpressions.Skip(1);
             query = thenOrderBy.Aggregate(orderedQuery,
                 (current, orderBy) => orderBy.direction
                     ? orderedQuery.ThenBy(orderBy.expr)
                     : orderedQuery.ThenByDescending(orderBy.expr));
         }
 
-        if (specification.SkipQ.HasValue)
+        if (specData.SkipQ.HasValue)
         {
-            query = query.Skip(specification.SkipQ.Value);
+            query = query.Skip(specData.SkipQ.Value);
         }
 
-        if (specification.TakeQ.HasValue)
+        if (specData.TakeQ.HasValue)
         {
-            query = query.Take(specification.TakeQ.Value);
+            query = query.Take(specData.TakeQ.Value);
         }
 
         return query;

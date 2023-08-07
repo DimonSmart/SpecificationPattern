@@ -30,12 +30,33 @@ public class WhereUnitTests : TestsBase
             .Create()
             .Where(s => s.Age == 30);
 
-        var specification = specification1.Or(specification2.WhereExpression);
+        var specification = specification1.Or(specification2.GetWhereExpression());
 
         // Act
         var under21 = Students.BySpecification(specification).ToList();
 
         // Assert
         under21.Should().BeEquivalentTo(new List<Student> { Sofia20, Alex30 });
+    }
+
+    [Fact]
+    public void WhereWithAndClauseTest()
+    {
+        // Arrange
+        var specification1 = Specification<Student>
+            .Create()
+            .Where(s => s.Age < 30);
+
+        var specification2 = Specification<Student>
+            .Create()
+            .Where(s => s.Age > 20);
+
+        var specification = specification1.And(specification2.GetWhereExpression());
+
+        // Act
+        var under30AndAbove20 = Students.BySpecification(specification).ToList();
+
+        // Assert
+        under30AndAbove20.Should().BeEquivalentTo(new List<Student> { Alex22 });
     }
 }

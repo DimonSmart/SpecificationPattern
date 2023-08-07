@@ -5,13 +5,13 @@ namespace DimonSmart.Specification;
 public interface IBaseSpecification<T, out TSpecification> where T : class
     where TSpecification : IBaseSpecification<T, TSpecification>
 {
-    Expression<Func<T, bool>>? WhereExpression { get; }
+    ISpecificationData<T> SpecificationData { get; }
 
-    public List<(bool direction, Expression<Func<T, object>> expr)> OrderExpressions { get; }
-
-    public int? TakeQ { get; }
-
-    public int? SkipQ { get; }
+    /// <summary>
+    /// Return filtering condition or null if not specified
+    /// </summary>
+    /// <returns>Where condition</returns>
+    Expression<Func<T, bool>>? GetWhereExpression();
 
     /// <summary>
     /// Specify how many elements will be taken from query
