@@ -1,9 +1,40 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Title>Specification for use with IQueriable interface</Title>
+		<Description>Specification: Simplify querying with the Specification
+pattern over IQueryable interface. Base package for the
+DimonSmart.Specification.EntityFrameworkCore
+		</Description>
+		<Copyright>DimonSmart</Copyright>
+		<PackageProjectUrl>https://github.com/DimonSmart/SpecificationPattern</PackageProjectUrl>
+		<PackageIcon>Specification.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/DimonSmart/SpecificationPattern</RepositoryUrl>
+		<PackageTags>Specification;IQueryable</PackageTags>
+		<PackageLicenseExpression>0BSD</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="EFSpecification.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Update="Specification.png">
+		  <Pack>True</Pack>
+		  <PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 
 </Project>

@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DimonSmart.Tests.Common;
+namespace DimonSmart.Specification.Tests.Common;
 
-public class School
+public sealed class School
 {
     public School(string name, Book mainBook)
     {
@@ -20,5 +20,5 @@ public class School
 
     public string Name { get; set; }
 
-    public virtual Book MainBook { get; set; }
+    public Book MainBook { get; set; }
 }

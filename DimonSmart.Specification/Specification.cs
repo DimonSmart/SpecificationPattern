@@ -4,13 +4,18 @@ namespace DimonSmart.Specification;
 
 public class Specification<T> : BaseSpecification<T, Specification<T>>, ISpecification<T> where T : class
 {
-    protected Specification()
+    private Specification()
     {
     }
 
-    protected Specification(Expression<Func<T, bool>> expr)
+    ISpecification<T> IBaseSpecification<T, ISpecification<T>>.Take(int take)
     {
-        WhereExpression = expr;
+        return Take(take);
+    }
+
+    ISpecification<T> IBaseSpecification<T, ISpecification<T>>.Skip(int skip)
+    {
+        return Skip(skip);
     }
 
     ISpecification<T> IBaseSpecification<T, ISpecification<T>>.Where(Expression<Func<T, bool>> expr)
@@ -23,8 +28,7 @@ public class Specification<T> : BaseSpecification<T, Specification<T>>, ISpecifi
         return OrderBy(orderByExpression);
     }
 
-    ISpecification<T> IBaseSpecification<T, ISpecification<T>>.OrderByDesc(
-        Expression<Func<T, object>> orderByDescExpression)
+    ISpecification<T> IBaseSpecification<T, ISpecification<T>>.OrderByDesc(Expression<Func<T, object>> orderByDescExpression)
     {
         return OrderByDesc(orderByDescExpression);
     }
@@ -32,18 +36,6 @@ public class Specification<T> : BaseSpecification<T, Specification<T>>, ISpecifi
     public static Specification<T> Create()
     {
         return new Specification<T>();
-    }
-
-    public ISpecification<T> Take(int take)
-    {
-        TakeQ = take;
-        return this;
-    }
-
-    public ISpecification<T> Skip(int skip)
-    {
-        SkipQ = skip;
-        return this;
     }
 
     protected override Specification<T> AsTSpecification()

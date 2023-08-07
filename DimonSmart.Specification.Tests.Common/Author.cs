@@ -1,6 +1,6 @@
-﻿namespace DimonSmart.Tests.Common;
+﻿namespace DimonSmart.Specification.Tests.Common;
 
-public class Author
+public sealed class Author
 {
     public Author(string name)
     {

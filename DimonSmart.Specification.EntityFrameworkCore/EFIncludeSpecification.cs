@@ -2,28 +2,38 @@
 
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
-public class EFIncludeSpecification<T, TProperty> : IEFIncludeSpecification<T, TProperty> where T : class
+public class EFCoreIncludeSpecification<T, TProperty> : IEFCoreIncludeSpecification<T, TProperty> where T : class
 {
-    private readonly IEFSpecification<T> _parentSpecification;
+    private readonly IEFCoreSpecification<T> _parentSpecification;
 
-    public EFIncludeSpecification(IEFSpecification<T> parentSpecification)
+    public EFCoreIncludeSpecification(IEFCoreSpecification<T> parentSpecification)
     {
         _parentSpecification = parentSpecification;
     }
 
     public Expression<Func<T, bool>>? WhereExpression => _parentSpecification.WhereExpression;
 
-    public IEFSpecification<T> Where(Expression<Func<T, bool>> expr)
+    public IEFCoreSpecification<T> Where(Expression<Func<T, bool>> expr)
     {
         return _parentSpecification.Where(expr);
     }
 
-    public IEFSpecification<T> OrderBy(Expression<Func<T, object>> orderByExpression)
+    public IEFCoreSpecification<T> Take(int take)
+    {
+        return _parentSpecification.Take(take);
+    }
+
+    public IEFCoreSpecification<T> Skip(int skip)
+    {
+        return _parentSpecification.Skip(skip);
+    }
+
+    public IEFCoreSpecification<T> OrderBy(Expression<Func<T, object>> orderByExpression)
     {
         return _parentSpecification.OrderBy(orderByExpression);
     }
 
-    public IEFSpecification<T> OrderByDesc(Expression<Func<T, object>> orderByDescExpression)
+    public IEFCoreSpecification<T> OrderByDesc(Expression<Func<T, object>> orderByDescExpression)
     {
         return _parentSpecification.OrderByDesc(orderByDescExpression);
     }
@@ -34,7 +44,7 @@ public class EFIncludeSpecification<T, TProperty> : IEFIncludeSpecification<T, T
     public int? TakeQ => _parentSpecification.TakeQ;
 
     public int? SkipQ => _parentSpecification.SkipQ;
-
+    
     public void AddInclude(string include)
     {
         _parentSpecification.AddInclude(include);
@@ -47,24 +57,38 @@ public class EFIncludeSpecification<T, TProperty> : IEFIncludeSpecification<T, T
 
     public bool IsAsNoTracking => _parentSpecification.IsAsNoTracking;
 
-    public IEFSpecification<T> AsNoTracking()
+    public bool IsAsNoTrackingWithIdentityResolution => _parentSpecification.IsAsNoTrackingWithIdentityResolution;
+
+    public IEFCoreSpecification<T> AsNoTracking()
     {
         return _parentSpecification.AsNoTracking();
     }
 
+    public IEFCoreSpecification<T> AsNoTrackingWithIdentityResolution()
+    {
+        return _parentSpecification.AsNoTrackingWithIdentityResolution();
+    }
+
     public bool IsIgnoreAutoIncludes => _parentSpecification.IsIgnoreAutoIncludes;
 
-    public IEFSpecification<T> IgnoreAutoIncludes()
+    public IEFCoreSpecification<T> IgnoreAutoIncludes()
     {
         return _parentSpecification.IgnoreAutoIncludes();
     }
 
-    public IEFSpecification<T> Or(IEFSpecification<T> or)
+    public bool IsIgnoreQueryFilters => _parentSpecification.IsIgnoreQueryFilters;
+
+    public IEFCoreSpecification<T> IgnoreQueryFilters()
+    {
+        return _parentSpecification.IgnoreQueryFilters();
+    }
+
+    public IEFCoreSpecification<T> Or(IEFCoreSpecification<T> or)
     {
         return _parentSpecification.Or(or);
     }
 
-    public IEFSpecification<T> And(IEFSpecification<T> and)
+    public IEFCoreSpecification<T> And(IEFCoreSpecification<T> and)
     {
         return _parentSpecification.And(and);
     }

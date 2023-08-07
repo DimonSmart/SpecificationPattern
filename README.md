@@ -11,7 +11,7 @@ and reused to build complex queries.
 
 In this C# implementation of the Specification Pattern, we have two parts:
 
-### 1. Classical Specification
+### 1. Classical Specification (DimonSmart.Specification)
 
 The classical specification provides the core functionality to build query
 specifications. It contains methods to define filtering criteria (Where),
@@ -37,7 +37,7 @@ to eagerly load related entities in the query.
 #### Usage Example:
 
 ```csharp
-var specification = EFSpecification<Student>
+var specification = EFCoreSpecification<Student>
     .Create()
     .Where(s => s.Age < 21)
     .Include(s => s.School.MainBook.Author);

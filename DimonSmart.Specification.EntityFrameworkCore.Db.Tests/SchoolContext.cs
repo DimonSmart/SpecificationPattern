@@ -1,4 +1,4 @@
-﻿using DimonSmart.Tests.Common;
+﻿using DimonSmart.Specification.Tests.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace DimonSmart.Specification.EntityFrameworkCore.Db.Tests;

@@ -15,6 +15,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.Specification.Te
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DimonSmart.Specification.EntityFrameworkCore.Db.Tests", "DimonSmart.Specification.EntityFrameworkCore.Db.Tests\DimonSmart.Specification.EntityFrameworkCore.Db.Tests.csproj", "{50382C80-ACFA-42A0-8816-E1CA22CC79FE}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0598FC2F-76CF-469D-A3F3-112C28F20E3D}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

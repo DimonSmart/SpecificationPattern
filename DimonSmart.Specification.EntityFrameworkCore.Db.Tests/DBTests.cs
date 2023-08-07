@@ -1,4 +1,4 @@
-using DimonSmart.Tests.Common;
+using DimonSmart.Specification.Tests.Common;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,7 +21,7 @@ public class DBTests : TestsBase
     public void SimpleWhereConditionTest()
     {
         // Arrange
-        var specification = EFSpecification<Student>
+        var specification = EFCoreSpecification<Student>
             .Create()
             .Where(s => s.Age < 21);
 
@@ -36,11 +36,11 @@ public class DBTests : TestsBase
     public void WhereWithOrClauseTest()
     {
         // Arrange
-        var specification1 = EFSpecification<Student>
+        var specification1 = EFCoreSpecification<Student>
             .Create()
             .Where(s => s.Age < 21);
 
-        var specification2 = EFSpecification<Student>
+        var specification2 = EFCoreSpecification<Student>
             .Create()
             .Where(s => s.Age == 30);
 
@@ -57,13 +57,13 @@ public class DBTests : TestsBase
     public void IncludeTest()
     {
         // Arrange
-        var specification = EFSpecification<Student>
+        var specification = EFCoreSpecification<Student>
             .Create()
             .Where(s => s.Age < 21)
             .Include(s => s.School.MainBook.Author);
 
         // Act
-        var under21 = _testDBContext.BySpecification(specification).AsNoTracking().ToList();
+        var under21 = _testDBContext.BySpecification(specification).IgnoreQueryFilters().ToList();
 
         // Assert
         under21

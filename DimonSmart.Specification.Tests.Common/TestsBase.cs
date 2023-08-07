@@ -1,4 +1,4 @@
-﻿namespace DimonSmart.Tests.Common;
+﻿namespace DimonSmart.Specification.Tests.Common;
 
 public class TestsBase
 {

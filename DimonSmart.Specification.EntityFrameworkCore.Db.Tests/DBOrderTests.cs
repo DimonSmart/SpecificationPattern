@@ -1,4 +1,4 @@
-using DimonSmart.Tests.Common;
+using DimonSmart.Specification.Tests.Common;
 using FluentAssertions;
 
 namespace DimonSmart.Specification.EntityFrameworkCore.Db.Tests;
@@ -20,7 +20,7 @@ public class DBOrderTests : TestsBase
     public void OneLevelOrderByTest()
     {
         // Arrange
-        var specification = EFSpecification<Student>
+        var specification = EFCoreSpecification<Student>
             .Create()
             .OrderBy(s => s.Age);
 
@@ -35,7 +35,7 @@ public class DBOrderTests : TestsBase
     public void OneLevelOrderByDescTest()
     {
         // Arrange
-        var specification = EFSpecification<Student>
+        var specification = EFCoreSpecification<Student>
             .Create()
             .OrderByDesc(s => s.Age);
 
@@ -50,7 +50,7 @@ public class DBOrderTests : TestsBase
     public void TwoLevelOrderByTest()
     {
         // Arrange
-        var specification = EFSpecification<Student>
+        var specification = EFCoreSpecification<Student>
             .Create()
             .OrderBy(s => s.Name)
             .OrderByDesc(s => s.Age);

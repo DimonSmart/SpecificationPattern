@@ -2,12 +2,14 @@
 
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
-public class EFSpecification<T> : BaseSpecification<T, EFSpecification<T>>, IEFSpecification<T> where T : class
+public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T>>, IEFCoreSpecification<T> where T : class
 {
     private List<string> Includes { get; } = new();
     public string CurrentIncludeLevel { get; private set; } = string.Empty;
     public bool IsAsNoTracking { get; private set; }
+    public bool IsAsNoTrackingWithIdentityResolution { get; private set; }
     public bool IsIgnoreAutoIncludes { get; private set; }
+    public bool IsIgnoreQueryFilters { get; private set; }
 
     public void AddInclude(string include)
     {
@@ -26,52 +28,74 @@ public class EFSpecification<T> : BaseSpecification<T, EFSpecification<T>>, IEFS
         return Includes;
     }
 
-    public IEFSpecification<T> IgnoreAutoIncludes()
+    public IEFCoreSpecification<T> IgnoreAutoIncludes()
     {
         IsIgnoreAutoIncludes = true;
         return this;
     }
 
-    public IEFSpecification<T> AsNoTracking()
+    public IEFCoreSpecification<T> IgnoreQueryFilters()
+    {
+        IsIgnoreQueryFilters = true;
+        return this;
+    }
+
+    public IEFCoreSpecification<T> AsNoTracking()
     {
         IsAsNoTracking = true;
         return this;
     }
 
-    public IEFSpecification<T> Or(IEFSpecification<T> or)
+    public IEFCoreSpecification<T> AsNoTrackingWithIdentityResolution()
+    {
+        IsAsNoTrackingWithIdentityResolution = true;
+        return this;
+    }
+    
+    public IEFCoreSpecification<T> Or(IEFCoreSpecification<T> or)
     {
         Includes.AddRange(or.GetIncludes());
         Or(or.WhereExpression);
         return this;
     }
 
-    public IEFSpecification<T> And(IEFSpecification<T> and)
+    public IEFCoreSpecification<T> And(IEFCoreSpecification<T> and)
     {
         Includes.AddRange(and.GetIncludes());
         And(and.WhereExpression);
         return this;
     }
 
-    IEFSpecification<T> IBaseSpecification<T, IEFSpecification<T>>.Where(Expression<Func<T, bool>> expr)
+    IEFCoreSpecification<T> IBaseSpecification<T, IEFCoreSpecification<T>>.Where(Expression<Func<T, bool>> expr)
     {
         return Where(expr);
     }
 
-    IEFSpecification<T> IBaseSpecification<T, IEFSpecification<T>>.OrderBy(
+    IEFCoreSpecification<T> IBaseSpecification<T, IEFCoreSpecification<T>>.Take(int take)
+    {
+        return Take(take);
+    }
+
+    IEFCoreSpecification<T> IBaseSpecification<T, IEFCoreSpecification<T>>.Skip(int skip)
+    {
+        return Skip(skip);
+    }
+
+    IEFCoreSpecification<T> IBaseSpecification<T, IEFCoreSpecification<T>>.OrderBy(
         Expression<Func<T, object>> orderByExpression)
     {
         return OrderBy(orderByExpression);
     }
 
-    IEFSpecification<T> IBaseSpecification<T, IEFSpecification<T>>.OrderByDesc(
+    IEFCoreSpecification<T> IBaseSpecification<T, IEFCoreSpecification<T>>.OrderByDesc(
         Expression<Func<T, object>> orderByDescExpression)
     {
         return OrderByDesc(orderByDescExpression);
     }
 
-    public static IEFSpecification<T> Create()
+    public static IEFCoreSpecification<T> Create()
     {
-        return new EFSpecification<T>();
+        return new EFCoreSpecification<T>();
     }
 
     public bool CanBeExcluded(string newLine)
@@ -90,7 +114,7 @@ public class EFSpecification<T> : BaseSpecification<T, EFSpecification<T>>, IEFS
         return false;
     }
 
-    protected override EFSpecification<T> AsTSpecification()
+    protected override EFCoreSpecification<T> AsTSpecification()
     {
         return this;
     }

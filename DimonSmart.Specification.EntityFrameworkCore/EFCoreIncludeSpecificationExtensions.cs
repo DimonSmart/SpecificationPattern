@@ -2,34 +2,32 @@
 
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
-public static class EFIncludeSpecificationExtensions
+public static class EFCoreIncludeSpecificationExtensions
 {
-    public static IEFIncludeSpecification<T, TProperty> Include<T, TProperty>(
-        this IEFSpecification<T> specification,
+    public static IEFCoreIncludeSpecification<T, TProperty> Include<T, TProperty>(
+        this IEFCoreSpecification<T> specification,
         Expression<Func<T, TProperty>> includeExpression) where T : class
     {
-        // specification.ResetIncludeLevel();
         specification.AddInclude(GetPropertyName(includeExpression));
-        return new EFIncludeSpecification<T, TProperty>(specification);
+        return new EFCoreIncludeSpecification<T, TProperty>(specification);
     }
 
-    public static IEFIncludeSpecification<T, TProperty> ThenInclude<T, TPreviousProperty, TProperty>(
-        this IEFIncludeSpecification<T, IEnumerable<TPreviousProperty>> specification,
+    public static IEFCoreIncludeSpecification<T, TProperty> ThenInclude<T, TPreviousProperty, TProperty>(
+        this IEFCoreIncludeSpecification<T, IEnumerable<TPreviousProperty>> specification,
         Expression<Func<TPreviousProperty, TProperty>> thenIncludeExpression) where T : class
     {
         specification.AddInclude(GetPropertyName(thenIncludeExpression));
-        return new EFIncludeSpecification<T, TProperty>(specification);
+        return new EFCoreIncludeSpecification<T, TProperty>(specification);
     }
 
-    public static IEFIncludeSpecification<T, TProperty> ThenInclude<T, TPreviousProperty, TProperty>(
-        this IEFIncludeSpecification<T, TPreviousProperty> specification,
+    public static IEFCoreIncludeSpecification<T, TProperty> ThenInclude<T, TPreviousProperty, TProperty>(
+        this IEFCoreIncludeSpecification<T, TPreviousProperty> specification,
         Expression<Func<TPreviousProperty, TProperty>> thenIncludeExpression) where T : class
     {
         specification.AddInclude(GetPropertyName(thenIncludeExpression));
-        return new EFIncludeSpecification<T, TProperty>(specification);
+        return new EFCoreIncludeSpecification<T, TProperty>(specification);
     }
-
-
+    
     public static string GetPropertyName<T, TProperty>(Expression<Func<T, TProperty>> includeExpression)
     {
         var body = includeExpression.Body as MemberExpression ?? throw new InvalidOperationException();

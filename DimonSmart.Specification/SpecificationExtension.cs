@@ -24,7 +24,7 @@ public static class SpecificationExtension
 
         if (specification.SkipQ.HasValue)
         {
-            query = query.Take(specification.SkipQ.Value);
+            query = query.Skip(specification.SkipQ.Value);
         }
 
         if (specification.TakeQ.HasValue)
