@@ -11,7 +11,7 @@ and reused to build complex queries.
 
 In this C# implementation of the Specification Pattern, we have two parts:
 
-### 1. Classical Specification (DimonSmart.Specification)
+### 1. Classical Specification (Specification class)
 
 The classical specification provides the core functionality to build query
 specifications. It contains methods to define filtering criteria (Where),
@@ -28,7 +28,7 @@ var specification = Specification<Student>
     .OrderByDesc(s => s.Age);
 ```
 
-### 2. EntityFrameworkCore Support
+### 2. Specification for use with EntityFrameworkCore (EFCoreSpecification)
 
 The EntityFrameworkCore support extends the classical specification with
 EF-specific operations, such as Include and ThenInclude,
@@ -46,7 +46,7 @@ var specification = EFCoreSpecification<Student>
 ### Executing Specifications
 
 To execute the specifications, you can use extension methods on
-the IQueryable<TEntity> provided by EntityFrameworkCore.
+the DBContext provided.
 
 ```csharp
 var under21 = _testDBContext.BySpecification(specification).ToList();
