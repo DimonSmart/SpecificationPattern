@@ -16,7 +16,7 @@ public static class EFCoreIncludeSpecificationExtensions
         this IEFCoreIncludeSpecification<T, IEnumerable<TPreviousProperty>> specification,
         Expression<Func<TPreviousProperty, TProperty>> thenIncludeExpression) where T : class
     {
-        specification.AddInclude(GetPropertyName(thenIncludeExpression));
+        specification.AddInclude(GetPropertyName(thenIncludeExpression), false);
         return new EFCoreIncludeSpecification<T, TProperty>(specification);
     }
 
@@ -24,7 +24,7 @@ public static class EFCoreIncludeSpecificationExtensions
         this IEFCoreIncludeSpecification<T, TPreviousProperty> specification,
         Expression<Func<TPreviousProperty, TProperty>> thenIncludeExpression) where T : class
     {
-        specification.AddInclude(GetPropertyName(thenIncludeExpression));
+        specification.AddInclude(GetPropertyName(thenIncludeExpression), false);
         return new EFCoreIncludeSpecification<T, TProperty>(specification);
     }
 

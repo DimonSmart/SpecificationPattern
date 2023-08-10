@@ -6,7 +6,11 @@ namespace DimonSmart.Specification;
 /// Interface for building specifications to filter and order data queries.
 /// </summary>
 /// <typeparam name="T">The type of entity being queried.</typeparam>
-/// <typeparam name="TSpecification">The type of specification being built.</typeparam>
+/// <typeparam name="TSpecification">
+/// The type of specification being built, which should implement this <see cref="IBaseSpecification{T,TSpecification}" />
+/// interface.
+/// This allows fluent query construction, method chaining, and composition of specifications.
+/// </typeparam>
 public interface IBaseSpecification<T, out TSpecification> where T : class
     where TSpecification : IBaseSpecification<T, TSpecification>
 {

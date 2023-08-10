@@ -2,12 +2,12 @@ using DimonSmart.Specification.Tests.Common;
 
 namespace DimonSmart.Specification.EntityFrameworkCore.Tests;
 
-public class UsageSamplesTest
+public class UsageSamplesTests
 {
     [Fact]
     public void SequentialWhere()
     {
-        var specification = EFCoreSpecification<Student>.Create()
+        _ = EFCoreSpecification<Student>.Create()
             .Where(s => s.Age < 21)
             .Where(s => s.Age > 16);
     }
@@ -15,7 +15,7 @@ public class UsageSamplesTest
     [Fact]
     public void SequentialInclude()
     {
-        var specification = EFCoreSpecification<Student>.Create()
+        _ = EFCoreSpecification<Student>.Create()
             .Include(s => s.School)
             .Include(s => s.School.MainBook)
             .Include(s => s.Books)
@@ -29,7 +29,7 @@ public class UsageSamplesTest
     [Fact]
     public void MixedWhereInclude()
     {
-        var specification = EFCoreSpecification<Student>.Create()
+        _ = EFCoreSpecification<Student>.Create()
             .Include(s => s.School)
             .Where(s => s.Age < 21)
             .Include(s => s.School.MainBook)

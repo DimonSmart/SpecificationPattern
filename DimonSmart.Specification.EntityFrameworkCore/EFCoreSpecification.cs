@@ -6,11 +6,16 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
     where T : class
 {
     private readonly EFCoreSpecificationData<T> _efCoreSpecificationData = new();
-    public IEFCoreSpecificationData<T> EFCoreSpecificationData => _efCoreSpecificationData;
     public string CurrentIncludeLevel { get; private set; } = string.Empty;
+    public IEFCoreSpecificationData<T> EFCoreSpecificationData => _efCoreSpecificationData;
 
-    public void AddInclude(string include)
+    public void AddInclude(string include, bool resetIncludeLevel)
     {
+        if (resetIncludeLevel)
+        {
+            CurrentIncludeLevel = string.Empty;
+        }
+
         include = string.IsNullOrEmpty(CurrentIncludeLevel) ? include : $"{CurrentIncludeLevel}.{include}";
         CurrentIncludeLevel = include;
         _efCoreSpecificationData.AddInclude(include);
@@ -46,6 +51,7 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
         {
             _efCoreSpecificationData.AddInclude(include);
         }
+
         Or(or.SpecificationData.WhereExpression);
         return this;
     }
@@ -56,6 +62,7 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
         {
             _efCoreSpecificationData.AddInclude(include);
         }
+
         And(and.SpecificationData.WhereExpression);
         return this;
     }

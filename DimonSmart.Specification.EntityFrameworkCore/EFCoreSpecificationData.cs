@@ -11,14 +11,22 @@ public class EFCoreSpecificationData<T> : IEFCoreSpecificationData<T>
 
     public void AddInclude(string include)
     {
-        if (_includeLines.Contains(include))
+        if (string.IsNullOrWhiteSpace(include))
         {
-            return;
+            throw new ArgumentException("Include cannot be null or empty.", nameof(include));
         }
 
         var includeWithDot = include + ".";
-        var shorterLines = _includeLines.FindAll(line => line.StartsWith(includeWithDot));
-        _includeLines.RemoveAll(line => shorterLines.Contains(line) || line.StartsWith(includeWithDot));
+        if (_includeLines.Contains(include) || _includeLines.Any(i => i.StartsWith(includeWithDot)))
+        {
+            // Already included or overlapping
+            return;
+        }
+
+        var shorterLines = _includeLines
+            .FindAll(line => includeWithDot.StartsWith(line + "."))
+            .ToList();
+        _includeLines.RemoveAll(line => shorterLines.Contains(line));
         _includeLines.Add(include);
     }
 }
