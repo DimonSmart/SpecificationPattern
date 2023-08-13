@@ -33,6 +33,18 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
         return this;
     }
 
+    public IEFCoreSpecification<T> AsSingleQuery()
+    {
+        _efCoreSpecificationData.IsAsSingleQuery = true;
+        return this;
+    }
+
+    public IEFCoreSpecification<T> AsSplitQuery()
+    {
+        _efCoreSpecificationData.IsAsSplitQuery = true;
+        return this;
+    }
+
     public IEFCoreSpecification<T> AsNoTracking()
     {
         _efCoreSpecificationData.IsAsNoTracking = true;

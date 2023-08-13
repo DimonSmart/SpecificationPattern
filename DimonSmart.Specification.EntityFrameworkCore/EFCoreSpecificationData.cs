@@ -7,6 +7,8 @@ public class EFCoreSpecificationData<T> : IEFCoreSpecificationData<T>
     public bool IsAsNoTrackingWithIdentityResolution { get; set; }
     public bool IsIgnoreAutoIncludes { get; set; }
     public bool IsIgnoreQueryFilters { get; set; }
+    public bool IsAsSingleQuery { get; set; }
+    public bool IsAsSplitQuery { get; set; }
     public IEnumerable<string> Includes => _includeLines;
 
     public void AddInclude(string include)

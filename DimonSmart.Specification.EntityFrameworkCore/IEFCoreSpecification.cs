@@ -26,6 +26,18 @@ public interface IEFCoreSpecification<T> : IBaseSpecification<T, IEFCoreSpecific
     IEFCoreSpecification<T> AsNoTracking();
 
     /// <summary>
+    /// Specifies that the query should be executed with "SplitQuery" behavior.
+    /// </summary>
+    /// <returns>The current specification with "SplitQuery" applied.</returns>
+    IEFCoreSpecification<T> AsSplitQuery();
+
+    /// <summary>
+    /// Specifies that the query should be executed with "SingleQuery" behavior.
+    /// </summary>
+    /// <returns>The current specification with "SingleQuery" applied.</returns>
+    IEFCoreSpecification<T> AsSingleQuery();
+
+    /// <summary>
     /// Specifies that the query should be executed with "NoTracking" and identity resolution behavior.
     /// </summary>
     /// <returns>The current specification with "NoTracking" and identity resolution applied.</returns>

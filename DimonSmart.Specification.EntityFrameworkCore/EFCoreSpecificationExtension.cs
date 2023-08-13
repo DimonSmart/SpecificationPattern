@@ -36,6 +36,16 @@ public static class EFCoreSpecificationExtension
             query = query.IgnoreQueryFilters();
         }
 
+        if (spec.IsAsSingleQuery)
+        {
+            query = query.AsSingleQuery();
+        }
+
+        if (spec.IsAsSplitQuery)
+        {
+            query = query.AsSplitQuery();
+        }
+
         return query.BySpecification(efCoreSpecification);
     }
 }

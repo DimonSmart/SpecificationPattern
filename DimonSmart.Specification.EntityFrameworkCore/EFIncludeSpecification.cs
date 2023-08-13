@@ -49,6 +49,16 @@ public class EFCoreIncludeSpecification<T, TProperty> : IEFCoreIncludeSpecificat
         return _parentSpecification.AsNoTracking();
     }
 
+    IEFCoreSpecification<T> IEFCoreSpecification<T>.AsSplitQuery()
+    {
+        return _parentSpecification.AsSplitQuery();
+    }
+
+    IEFCoreSpecification<T> IEFCoreSpecification<T>.AsSingleQuery()
+    {
+        return _parentSpecification.AsSingleQuery();
+    }
+
     public IEFCoreSpecification<T> AsNoTrackingWithIdentityResolution()
     {
         return _parentSpecification.AsNoTrackingWithIdentityResolution();

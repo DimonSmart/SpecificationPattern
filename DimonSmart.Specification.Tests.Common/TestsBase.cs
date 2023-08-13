@@ -48,8 +48,14 @@ public class TestsBase
     protected static readonly IQueryable<Student>
         Students = new List<Student> { Alex22, Sofia20, Alex30 }.AsQueryable();
 
-    protected static readonly IQueryable<School> Schools =
-        new List<School> { HighSchool, ElementarySchool }.AsQueryable();
+    protected static readonly IQueryable<School> Schools = new List<School>
+    {
+        HighSchool, ElementarySchool
+    }.AsQueryable();
 
-    protected static readonly IQueryable<Author> Authors = new List<Author>(Books.Select(b => b.Author)).AsQueryable();
+    protected static readonly IQueryable<Author> Authors = new List<Author>
+    {
+        FScottFitzgerald, HarperLee, JaneAusten, JDSalinger, GeorgeOrwell, JRRTolkien,
+        PauloCoelho, KhaledHosseini, MargaretAtwood, MarkusZusak
+    }.AsQueryable();
 }
