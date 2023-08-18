@@ -82,55 +82,56 @@ by inheriting from the base Specification class,
 making the pattern even more flexible and adaptable to various business
 requirements.
 
-# Supported functions
-## `Where(Expression<Func<T, bool>> expr)`
+## Supported functions
+### `Where(Expression<Func<T, bool>> expr)`
 Specifies a filtering condition for the data query.
 
-### Example:
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
     .Where(s => s.Age < 21);
 ```
 
-## `OrderBy(Expression<Func<T, object>> orderByExpression)`
+### `OrderBy(Expression<Func<T, object>> orderByExpression)`
 Specifies an ascending order for the data query.
-### Example:
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
     .OrderBy(s => s.Name);
 ```
 
-## `OrderByDesc(Expression<Func<T, object>> orderByExpression)`
+### `OrderByDesc(Expression<Func<T, object>> orderByExpression)`
 Specifies an ascending order for the data query
-### Example:
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
     .OrderByDesc(s => s.Name);
 ```
 
-## `Take(int take)`
+### `Take(int take)`
 Specifies the number of elements to be skipped from the query.
-### Example:
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
     .Take(10);
 ```
 
-## `Skip(int skip)`
+### `Skip(int skip)`
 Specifies the number of elements to be skipped from the query.
-### Example:
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
     .Skip(20);
 ```
 
-## `Include(Expression<Func<T, TProperty>> includeExpression) / ThenInclude`
+### `Include(Expression<Func<T, TProperty>> includeExpression) / ThenInclude`
 Adds an "Include" statement to the query, specifying related entities to be loaded.
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
@@ -138,56 +139,64 @@ var specification = EFCoreSpecification<Student>
         .ThenInclude(order => order.OrderDetails);
 ```
 
-## `AsNoTracking()`
-Specifies that the query should be executed with "NoTracking" behavior.
+### `AsNoTracking()`
+[AsNoTracking](https://learn.microsoft.com/en-us/dotnet/api/system.data.entity.dbextensions.asnotracking?view=entity-framework-5.0.0#system-data-entity-dbextensions-asnotracking(system-linq-iqueryable)) Specifies that the query should be executed with "NoTracking" behavior.
+
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
     .AsNoTracking();
 ```
 
-## `AsNoTrackingWithIdentityResolution()`
+### `AsNoTrackingWithIdentityResolution()`
 Specifies that the query should be executed with "NoTracking" and identity resolution behavior.
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
     .AsNoTrackingWithIdentityResolution();
 ```
 
-## `AsSplitQuery()`
+### `AsSplitQuery()`
 Specifies that the query should be executed with "SplitQuery" behavior.
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
     .AsSplitQuery();
 ```
 
-## `AsSingleQuery()`
+### `AsSingleQuery()`
 Specifies that the query should be executed with "SingleQuery" behavior.
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
     .AsSingleQuery();
 ```
 
-## `IgnoreAutoIncludes()`
+### `IgnoreAutoIncludes()`
 Specifies to ignore automatically included related entities in the query.
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
     .IgnoreAutoIncludes();
 ```
 
-## `IgnoreQueryFilters()`
+### `IgnoreQueryFilters()`
 Specifies to ignore query filters defined in the model.
+#### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
     .Create()
     .IgnoreQueryFilters();
 ```
 
-## `Or(IEFCoreSpecification<T> or)`
+### `Or(IEFCoreSpecification<T> or)`
 Combines the current specification with another specification using the logical OR operator.
+#### Example:
 ```csharp
 var youngStudentsSpec = EFCoreSpecification<Student>
     .Create()
@@ -200,8 +209,9 @@ var studentsFromNewYorkSpec = EFCoreSpecification<Student>
 var combinedSpecificationWithOr = youngStudentsSpec.Or(studentsFromNewYorkSpec);
 ```
 
-## `And(IEFCoreSpecification<T> and)`
+### `And(IEFCoreSpecification<T> and)`
 Combines the current specification with another specification using the logical AND operator.
+#### Example:
 ```csharp
 var youngStudentsSpec = EFCoreSpecification<Student>
     .Create()
@@ -213,5 +223,3 @@ var studentsFromNewYorkSpec = EFCoreSpecification<Student>
 
 var combinedSpecificationWithAnd = youngStudentsSpec.And(studentsFromNewYorkSpec);
 ```
-
-
