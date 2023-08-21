@@ -140,7 +140,7 @@ var specification = EFCoreSpecification<Student>
 ```
 
 ### `AsNoTracking()`
-[AsNoTracking](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.astracking))
+[AsNoTracking](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.astracking)
 specifies that the query should be executed with "NoTracking" behavior.
 
 #### Example:
@@ -151,7 +151,7 @@ var specification = EFCoreSpecification<Student>
 ```
 
 ### `AsNoTrackingWithIdentityResolution()`
-[AsNoTrackingWithIdentityResolution](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.asnotrackingwithidentityresolution))
+[AsNoTrackingWithIdentityResolution](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.asnotrackingwithidentityresolution)
 specifies that the query should be executed with "NoTracking" and identity resolution behavior.
 #### Example:
 ```csharp
