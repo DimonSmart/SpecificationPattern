@@ -10,6 +10,7 @@ public class EFCoreSpecificationData<T> : IEFCoreSpecificationData<T>
     public bool IsAsSingleQuery { get; set; }
     public bool IsAsSplitQuery { get; set; }
     public IEnumerable<string> Includes => _includeLines;
+    public string Tag { get; set; } = string.Empty;
 
     public void AddInclude(string include)
     {

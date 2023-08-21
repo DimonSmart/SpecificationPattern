@@ -84,6 +84,11 @@ public class EFCoreIncludeSpecification<T, TProperty> : IEFCoreIncludeSpecificat
         return _parentSpecification.And(and);
     }
 
+    public IEFCoreSpecification<T> TagWith(string tag)
+    {
+        return _parentSpecification.TagWith(tag);
+    }
+
     public IEFCoreSpecificationData<T> EFCoreSpecificationData =>
         _parentSpecification.EFCoreSpecificationData;
 

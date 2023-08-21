@@ -76,4 +76,11 @@ public interface IEFCoreSpecification<T> : IBaseSpecification<T, IEFCoreSpecific
     /// <param name="and">The specification to combine with using AND.</param>
     /// <returns>The combined specification using AND.</returns>
     IEFCoreSpecification<T> And(IEFCoreSpecification<T> and);
+
+    /// <summary>
+    /// Annotate generated query with tag specified
+    /// </summary>
+    /// <param name="tag">Query tag, name</param>
+    /// <returns>The current specification with query tagged.</returns>
+    IEFCoreSpecification<T> TagWith(string tag);
 }

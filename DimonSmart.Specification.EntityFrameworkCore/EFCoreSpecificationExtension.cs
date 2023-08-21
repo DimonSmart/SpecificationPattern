@@ -46,6 +46,11 @@ public static class EFCoreSpecificationExtension
             query = query.AsSplitQuery();
         }
 
+        if (!string.IsNullOrWhiteSpace(spec.Tag))
+        {
+            query = query.TagWith(spec.Tag);
+        }
+
         return query.BySpecification(efCoreSpecification);
     }
 }

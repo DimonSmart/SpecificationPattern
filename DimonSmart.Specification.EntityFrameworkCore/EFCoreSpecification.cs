@@ -79,6 +79,12 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
         return this;
     }
 
+    public IEFCoreSpecification<T> TagWith(string tag)
+    {
+        _efCoreSpecificationData.Tag = tag;
+        return this;
+    }
+
     IEFCoreSpecification<T> IBaseSpecification<T, IEFCoreSpecification<T>>.Where(Expression<Func<T, bool>> expr)
     {
         return Where(expr);

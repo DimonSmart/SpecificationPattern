@@ -41,4 +41,9 @@ public interface IEFCoreSpecificationData<T>
     /// Gets the list of related entities to include when executing the specification.
     /// </summary>
     IEnumerable<string> Includes { get; }
+
+    /// <summary>
+    /// Gets the query tag.
+    /// </summary>
+    string Tag { get; }
 }
