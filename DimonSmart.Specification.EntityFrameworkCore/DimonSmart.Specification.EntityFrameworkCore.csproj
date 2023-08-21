@@ -1,46 +1,55 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-        <Title>Specification for Entity Framework</Title>
-        <Description>EFSpecification: Simplify querying with the Specification
-pattern in Entity Framework Core.
-Build expressive, composable, and reusable query specifications
-to enhance your application's data retrieval capabilities
-effortlessly.
-Enjoy!</Description>
-        <Copyright>DimonSmart</Copyright>
-        <PackageProjectUrl>https://github.com/DimonSmart/SpecificationPattern</PackageProjectUrl>
-        <PackageIcon>EFCoreSpecification.png</PackageIcon>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <RepositoryUrl>https://github.com/DimonSmart/SpecificationPattern</RepositoryUrl>
-        <PackageTags>Specification;Entity Framwork Core</PackageTags>
-        <PackageLicenseExpression>0BSD</PackageLicenseExpression>
-    </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Title>Specification for Entity Framework</Title>
+		<Description>
+			EFSpecification: Simplify querying with the Specification
+			pattern in Entity Framework Core.
+			Build expressive, composable, and reusable query specifications
+			to enhance your application's data retrieval capabilities
+			effortlessly.
+			Enjoy!
+		</Description>
+		<Copyright>DimonSmart</Copyright>
+		<PackageProjectUrl>https://github.com/DimonSmart/SpecificationPattern</PackageProjectUrl>
+		<PackageIcon>EFCoreSpecification.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/DimonSmart/SpecificationPattern</RepositoryUrl>
+		<PackageTags>Specification;Entity Framwork Core</PackageTags>
+		<PackageLicenseExpression>0BSD</PackageLicenseExpression>
 
-    <ItemGroup>
-      <None Include="..\README.md">
-        <Pack>True</Pack>
-        <PackagePath>\</PackagePath>
-      </None>
-    </ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.10" />
-    </ItemGroup>
+		<PackageReleaseNotes>
+			- Added `TagWith`. [TagWith](https://github.com/DimonSmart/SpecificationPattern/releases/tag/TagWith)
+		</PackageReleaseNotes>
 
-    <ItemGroup>
-        <ProjectReference Include="..\DimonSmart.Specification\DimonSmart.Specification.csproj" />
-    </ItemGroup>
 
-    <ItemGroup>
-      <None Update="EFCoreSpecification.png">
-        <Pack>True</Pack>
-        <PackagePath>\</PackagePath>
-      </None>
-    </ItemGroup>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.10" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\DimonSmart.Specification\DimonSmart.Specification.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="EFCoreSpecification.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 
 </Project>
