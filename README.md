@@ -230,3 +230,27 @@ var studentsFromNewYorkSpec = EFCoreSpecification<Student>
 
 var combinedSpecificationWithAnd = youngStudentsSpec.And(studentsFromNewYorkSpec);
 ```
+
+### `TagWith(string tag)`
+[TagWith](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.tagwith)
+function adds a comment to the SQL query that is executed.
+This is helpful in case you have many queries and it is hard to correlate the SQL log with the right query
+
+```csharp
+var specification = EFCoreSpecification<Student>
+    .Create()
+    .OrderBy(s => s.Name)
+    .TagWith("My ordered by name query");
+```
+
+### `TagWithCallSite(string tag)`
+[TagWithCallSite](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.tagwithcallsite)
+function not only adds a comment to the SQL query that is executed but also the calling location in a source code.
+
+```csharp
+var specification = EFCoreSpecification<Student>
+    .Create()
+    .OrderBy(s => s.Name)
+    .TagWithCallSite("My ordered by name query");
+```
+
