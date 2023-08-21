@@ -140,7 +140,8 @@ var specification = EFCoreSpecification<Student>
 ```
 
 ### `AsNoTracking()`
-[AsNoTracking](https://learn.microsoft.com/en-us/dotnet/api/system.data.entity.dbextensions.asnotracking?view=entity-framework-5.0.0#system-data-entity-dbextensions-asnotracking(system-linq-iqueryable)) Specifies that the query should be executed with "NoTracking" behavior.
+[AsNoTracking](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.astracking))
+specifies that the query should be executed with "NoTracking" behavior.
 
 #### Example:
 ```csharp
@@ -150,7 +151,8 @@ var specification = EFCoreSpecification<Student>
 ```
 
 ### `AsNoTrackingWithIdentityResolution()`
-Specifies that the query should be executed with "NoTracking" and identity resolution behavior.
+[AsNoTrackingWithIdentityResolution](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.asnotrackingwithidentityresolution))
+specifies that the query should be executed with "NoTracking" and identity resolution behavior.
 #### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
@@ -159,7 +161,9 @@ var specification = EFCoreSpecification<Student>
 ```
 
 ### `AsSplitQuery()`
-Specifies that the query should be executed with "SplitQuery" behavior.
+[AsSplitQuery](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.relationalqueryableextensions.assplitquery)
+specifies that the query should be executed with "SplitQuery" behavior.
+
 #### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
@@ -168,6 +172,7 @@ var specification = EFCoreSpecification<Student>
 ```
 
 ### `AsSingleQuery()`
+[AsSingleQuery](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.relationalqueryableextensions.assinglequery)
 Specifies that the query should be executed with "SingleQuery" behavior.
 #### Example:
 ```csharp
@@ -177,7 +182,8 @@ var specification = EFCoreSpecification<Student>
 ```
 
 ### `IgnoreAutoIncludes()`
-Specifies to ignore automatically included related entities in the query.
+[IgnoreAutoIncludes](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.ignoreautoincludes)
+specifies to ignore automatically included related entities in the query.
 #### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
@@ -186,7 +192,8 @@ var specification = EFCoreSpecification<Student>
 ```
 
 ### `IgnoreQueryFilters()`
-Specifies to ignore query filters defined in the model.
+[IgnoreQueryFilters](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.ignorequeryfilters)
+specifies to ignore query filters defined in the model.
 #### Example:
 ```csharp
 var specification = EFCoreSpecification<Student>
