@@ -81,8 +81,19 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
 
     public IEFCoreSpecification<T> TagWith(string tag)
     {
-        _efCoreSpecificationData.Tag = tag;
+        _efCoreSpecificationData.Tag += tag;
         return this;
+    }
+
+    public IEFCoreSpecification<T> TagWithCallSite(string tag, string callerMemberName = "", string callerFilePath = "",
+        int callerLineNumber = 0)
+    {
+        if (!string.IsNullOrWhiteSpace(tag))
+        {
+            tag += tag + Environment.NewLine;
+        }
+
+        return TagWith($"{tag}{callerMemberName}() -> {callerFilePath}:{callerLineNumber}");
     }
 
     IEFCoreSpecification<T> IBaseSpecification<T, IEFCoreSpecification<T>>.Where(Expression<Func<T, bool>> expr)

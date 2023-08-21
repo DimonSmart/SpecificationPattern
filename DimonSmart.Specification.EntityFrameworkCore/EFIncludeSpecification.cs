@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
@@ -87,6 +88,14 @@ public class EFCoreIncludeSpecification<T, TProperty> : IEFCoreIncludeSpecificat
     public IEFCoreSpecification<T> TagWith(string tag)
     {
         return _parentSpecification.TagWith(tag);
+    }
+
+    [SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
+    public IEFCoreSpecification<T> TagWithCallSite(string tag = "", string callerMemberName = "",
+        string callerFilePath = "",
+        int callerLineNumber = 0)
+    {
+        return _parentSpecification.TagWithCallSite(tag, callerMemberName, callerFilePath, callerLineNumber);
     }
 
     public IEFCoreSpecificationData<T> EFCoreSpecificationData =>

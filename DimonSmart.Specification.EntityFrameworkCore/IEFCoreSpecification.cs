@@ -1,4 +1,7 @@
-﻿namespace DimonSmart.Specification.EntityFrameworkCore;
+﻿using System.Runtime.CompilerServices;
+using Microsoft.EntityFrameworkCore.Query;
+
+namespace DimonSmart.Specification.EntityFrameworkCore;
 
 /// <inheritdoc />
 /// <summary>
@@ -78,9 +81,19 @@ public interface IEFCoreSpecification<T> : IBaseSpecification<T, IEFCoreSpecific
     IEFCoreSpecification<T> And(IEFCoreSpecification<T> and);
 
     /// <summary>
-    /// Annotate generated query with tag specified
+    /// Annotate the generated query with tag specified.
     /// </summary>
     /// <param name="tag">Query tag, name</param>
     /// <returns>The current specification with query tagged.</returns>
     IEFCoreSpecification<T> TagWith(string tag);
+
+    /// <summary>
+    /// Annotate the generated query with the source code where the specification was made.
+    /// </summary>
+    /// <returns>The current specification with query tagged.</returns>
+    IEFCoreSpecification<T> TagWithCallSite(
+        string tag = "",
+        [NotParameterized] [CallerMemberName] string callerMemberName = "",
+        [NotParameterized] [CallerFilePath] string callerFilePath = "",
+        [NotParameterized] [CallerLineNumber] int callerLineNumber = 0);
 }

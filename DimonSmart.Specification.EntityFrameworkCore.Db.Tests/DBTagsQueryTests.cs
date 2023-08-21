@@ -1,5 +1,8 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using DimonSmart.Specification.Tests.Common;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace DimonSmart.Specification.EntityFrameworkCore.Db.Tests;
 
@@ -37,5 +40,40 @@ public class DBTagQueryTests : TestsBase
             .Single()
             .Should()
             .Contain(tag);
+    }
+
+    [Fact]
+    public void QueryShouldBeTaggedWithCallerSideInfo()
+    {
+        // Arrange
+        _testDBContext.DbCommandsLog.Clear();
+
+        // Act
+        var taggedSpecification = EFCoreSpecification<Student>
+            .Create()
+            .OrderBy(s => s.Name)
+            .OrderBy(s => s.Age)
+            .TagWithCallSite();
+
+        _ = _testDBContext.BySpecification(taggedSpecification.AsSplitQuery()).ToList();
+
+        // Assert
+        _testDBContext.DbCommandsLog
+            .Single()
+            .Should()
+            .Contain(GetCallerFilePath());
+    }
+
+    public static string GetCallerFilePath([NotParameterized] [CallerFilePath] string callerFilePath = "")
+    {
+        return callerFilePath;
+    }
+
+    public static string MakePathRelativeToSolution(string filePath)
+    {
+        var assemblyLocation = Assembly.GetEntryAssembly()!.Location;
+        var solutionRoot = Path.GetDirectoryName(assemblyLocation)!;
+        var fullPath = Path.GetFullPath(filePath);
+        return Path.GetRelativePath(solutionRoot, fullPath);
     }
 }
