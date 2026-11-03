@@ -52,4 +52,28 @@ public class OrderUnitTests : TestsBase
         // Assert
         ordered.Should().BeEquivalentTo(new List<Student> { Alex30, Alex22, Sofia20 });
     }
+
+    [Fact]
+    public void ThreeLevelOrderByPreservesIntermediateSortTest()
+    {
+        var students = new[]
+        {
+            new Student { Id = 4, Age = 20, Name = "B" },
+            new Student { Id = 1, Age = 20, Name = "A" },
+            new Student { Id = 2, Age = 20, Name = "A" },
+            new Student { Id = 3, Age = 20, Name = "A" },
+            new Student { Id = 5, Age = 19, Name = "Z" }
+        }.AsQueryable();
+
+        var specification = Specification<Student>.Create()
+            .OrderBy(s => s.Age)
+            .OrderBy(s => s.Name)
+            .OrderByDesc(s => s.Id);
+
+        var orderedIds = students.BySpecification(specification)
+            .Select(s => s.Id)
+            .ToList();
+
+        orderedIds.Should().Equal(5, 3, 2, 1, 4);
+    }
 }

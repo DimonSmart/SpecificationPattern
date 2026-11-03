@@ -61,4 +61,19 @@ public class DBOrderTests : TestsBase
         // Assert
         ordered.Should().BeEquivalentTo(new List<Student> { Alex30, Alex22, Sofia20 });
     }
+
+    [Fact]
+    public void ThreeLevelOrderByPreservesIntermediateSortTest()
+    {
+        var specification = EFCoreSpecification<Student>.Create()
+            .OrderBy(s => s.School.Name)
+            .OrderBy(s => s.Name)
+            .OrderBy(s => s.Age);
+
+        var orderedAges = _testDBContext.BySpecification(specification)
+            .Select(s => s.Age)
+            .ToList();
+
+        orderedAges.Should().Equal(22, 30, 20);
+    }
 }

@@ -21,8 +21,8 @@ public static class SpecificationExtension
             var thenOrderBy = specData.OrderExpressions.Skip(1);
             query = thenOrderBy.Aggregate(orderedQuery,
                 (current, orderBy) => orderBy.direction == Ascending
-                    ? orderedQuery.ThenBy(orderBy.expr)
-                    : orderedQuery.ThenByDescending(orderBy.expr));
+                    ? current.ThenBy(orderBy.expr)
+                    : current.ThenByDescending(orderBy.expr));
         }
 
         if (specData.SkipQ.HasValue)
