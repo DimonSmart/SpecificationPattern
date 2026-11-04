@@ -1,13 +1,13 @@
 using DimonSmart.Specification;
-using DimonSmart.Specification.Tests.Common;
+using StudentEntity = DimonSmart.Specification.Tests.Common.Student;
 
 namespace DocumentationExamples;
 
 public static class TypedOrderingExample
 {
-    public static IQueryable<Student> Query(IQueryable<Student> students)
+    public static IQueryable<StudentEntity> Query(IQueryable<StudentEntity> students)
     {
-        var spec = Specification.Create<Student>()
+        var spec = Specification.Create<StudentEntity>()
             .OrderBy(s => s.Name)
             .ThenByDesc(s => s.Age)
             .ThenBy(s => s.Id);

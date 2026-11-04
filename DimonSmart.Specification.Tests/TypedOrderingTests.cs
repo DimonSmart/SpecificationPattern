@@ -345,7 +345,7 @@ public sealed class TypedOrderingTests
         Assert.Throws<InvalidOperationException>(() =>
             ordering.And(Specification.Create<OrderingItem>().OrderBy(i => i.Rank)));
         Assert.Throws<InvalidOperationException>(() =>
-            ordering.Or(Specification.Create<OrderingItem>().ThenBy(i => i.Id)));
+            ordering.Or(Specification.Create<OrderingItem>().OrderBy(i => i.Id)));
 
         var rows = new[]
         {
