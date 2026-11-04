@@ -141,7 +141,7 @@ This example is compiled as [`ProjectionExample.cs`](DimonSmart.Specification.Te
 <!-- compiled-example: ProjectionExample -->
 ```csharp
 using DimonSmart.Specification;
-using DimonSmart.Specification.Tests.Common;
+using StudentEntity = DimonSmart.Specification.Tests.Common.Student;
 
 namespace DocumentationExamples;
 
@@ -149,10 +149,10 @@ public sealed record StudentSummary(int Id, string Name);
 
 public static class ProjectionExample
 {
-    public static IQueryable<StudentSummary> Query(IQueryable<Student> students)
+    public static IQueryable<StudentSummary> Query(IQueryable<StudentEntity> students)
     {
-        var adults = Specification.Create<Student>().Where(s => s.Age >= 18);
-        var page = Specification.Create<Student>()
+        var adults = Specification.Create<StudentEntity>().Where(s => s.Age >= 18);
+        var page = Specification.Create<StudentEntity>()
             .OrderBy(s => s.Name).Skip(10).Take(20);
 
         var projection = adults.And(page)

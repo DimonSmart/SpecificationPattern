@@ -7,6 +7,17 @@ public class ProjectionTests : TestsBase
 {
     private sealed record StudentSummary(int Age, string Name);
 
+    private sealed class SelectionCounter
+    {
+        public int Calls { get; private set; }
+
+        public string Transform(string name)
+        {
+            Calls++;
+            return name.ToUpperInvariant();
+        }
+    }
+
     [Fact]
     public void SupportsDtoScalarAnonymousAndEntityResults()
     {
@@ -111,7 +122,7 @@ public class ProjectionTests : TestsBase
     public void ConstructionDoesNotEnumerateOrInvokeSelector()
     {
         var enumerations = 0;
-        var selections = 0;
+        var tracker = new SelectionCounter();
 
         IEnumerable<Student> Source()
         {
@@ -120,21 +131,15 @@ public class ProjectionTests : TestsBase
             yield return Sofia20;
         }
 
-        string Transform(string name)
-        {
-            selections++;
-            return name.ToUpperInvariant();
-        }
-
         IQueryable<Student> source = Source().AsQueryable();
-        Expression<Func<Student, string>> selector = s => Transform(s.Name);
+        Expression<Func<Student, string>> selector = s => tracker.Transform(s.Name);
         var projected = Specification.Create<Student>().Where(s => s.Age > 18).Select(selector);
         IQueryable<string> query = source.BySpecification(projected);
         Assert.Equal(0, enumerations);
-        Assert.Equal(0, selections);
+        Assert.Equal(0, tracker.Calls);
 
         Assert.Equal(new[] { "ALEX", "SOFIA" }, query.ToArray());
         Assert.Equal(1, enumerations);
-        Assert.Equal(2, selections);
+        Assert.Equal(2, tracker.Calls);
     }
 }
