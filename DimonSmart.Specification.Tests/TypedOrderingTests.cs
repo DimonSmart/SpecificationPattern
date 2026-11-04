@@ -217,11 +217,11 @@ public sealed class TypedOrderingTests
         Assert.All(keys, x => Assert.NotEqual(ExpressionType.Convert, x.expr.Body.NodeType));
 
         var source = new[] { new OrderingItem() }.AsQueryable();
-        var third = Assert.IsType<MethodCallExpression>(source.BySpecification(spec).Expression);
+        var third = Assert.IsAssignableFrom<MethodCallExpression>(source.BySpecification(spec).Expression);
         AssertCall(third, nameof(Queryable.ThenBy), typeof(int?), optional);
-        var second = Assert.IsType<MethodCallExpression>(third.Arguments[0]);
+        var second = Assert.IsAssignableFrom<MethodCallExpression>(third.Arguments[0]);
         AssertCall(second, nameof(Queryable.ThenByDescending), typeof(long), rank);
-        var first = Assert.IsType<MethodCallExpression>(second.Arguments[0]);
+        var first = Assert.IsAssignableFrom<MethodCallExpression>(second.Arguments[0]);
         AssertCall(first, nameof(Queryable.OrderBy), typeof(string), name);
         Assert.Same(source.Expression, first.Arguments[0]);
     }
@@ -244,11 +244,11 @@ public sealed class TypedOrderingTests
 
         Assert.Equal(new[] { 3, 2, 4, 1 },
             rows.BySpecification(spec).Select(i => i.Id).ToArray());
-        var third = Assert.IsType<MethodCallExpression>(rows.BySpecification(spec).Expression);
+        var third = Assert.IsAssignableFrom<MethodCallExpression>(rows.BySpecification(spec).Expression);
         Assert.Equal(nameof(Queryable.ThenBy), third.Method.Name);
-        var second = Assert.IsType<MethodCallExpression>(third.Arguments[0]);
+        var second = Assert.IsAssignableFrom<MethodCallExpression>(third.Arguments[0]);
         Assert.Equal(nameof(Queryable.ThenByDescending), second.Method.Name);
-        var first = Assert.IsType<MethodCallExpression>(second.Arguments[0]);
+        var first = Assert.IsAssignableFrom<MethodCallExpression>(second.Arguments[0]);
         Assert.Equal(nameof(Queryable.OrderByDescending), first.Method.Name);
     }
 
