@@ -14,9 +14,11 @@ public class TypedIncludeDbTests
 
         var spec = EFCoreSpecification.Create<IncludeBlog>()
             .Include(b => b.MainPost!.Author)
+            .Include(b => b.MainPost!)
+            .ThenInclude(p => p.Remarks)
+            .ThenInclude(r => r.Reviewer)
             .Include(b => b.Posts)
             .ThenInclude(p => p.Author)
-            .ThenInclude(a => a.Posts)
             .Include(b => b.Posts)
             .ThenInclude(p => p.Remarks)
             .AsNoTracking();
@@ -24,11 +26,11 @@ public class TypedIncludeDbTests
         var blog = db.BySpecification(spec).Single();
         Assert.NotNull(blog.MainPost);
         Assert.NotNull(blog.MainPost.Author);
+        Assert.All(blog.MainPost.Remarks, r => Assert.NotNull(r.Reviewer));
         Assert.Equal(5, blog.Posts.Count);
         Assert.All(blog.Posts, p =>
         {
             Assert.NotNull(p.Author);
-            Assert.NotEmpty(p.Author.Posts);
             Assert.Equal(2, p.Remarks.Count);
         });
     }
@@ -43,8 +45,8 @@ public class TypedIncludeDbTests
         var spec = EFCoreSpecification.Create<IncludeBlog>()
             .Include(b => b.Posts
                 .Where(p => p.Name.StartsWith(prefix))
-                .OrderBy(p => p.Name.Length)
-                .ThenBy(p => p.Name)
+                .OrderBy(p => p.Name)
+                .ThenBy(p => p.Id)
                 .Skip(1)
                 .Take(limit))
             .ThenInclude(p => p.Author)
@@ -147,7 +149,11 @@ public class TypedIncludeDbTests
             .TagWith("A").TagWith("A").TagWith("B").TagWith("  ");
         var sql = db.BySpecification(options).ToQueryString();
 
-        Assert.StartsWith("-- A\n-- A\n-- B\n", sql);
+        // EF Core itself deduplicates identical SQL tags; the specification
+        // retains both in its immutable ordered diagnostic representation.
+        Assert.Equal(string.Join(Environment.NewLine, "A", "A", "B"),
+            options.EFCoreSpecificationData.Tag);
+        Assert.StartsWith("-- A\n-- B\n", sql);
     }
 
     [Fact]
@@ -176,8 +182,8 @@ public class TypedIncludeDbTests
             Publisher = new IncludePublisher { Name = "Publisher " + n },
             Remarks =
             [
-                new IncludeRemark { Text = "Yes " + n },
-                new IncludeRemark { Text = "No " + n }
+                new IncludeRemark { Text = "Yes " + n, Reviewer = new IncludePublisher { Name = "Reviewer yes " + n } },
+                new IncludeRemark { Text = "No " + n, Reviewer = new IncludePublisher { Name = "Reviewer no " + n } }
             ]
         }).ToList();
 
@@ -233,4 +239,5 @@ public sealed class IncludeRemark
 {
     public int Id { get; set; }
     public string Text { get; set; } = "";
+    public IncludePublisher Reviewer { get; set; } = null!;
 }
