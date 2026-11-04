@@ -13,7 +13,7 @@ The specification's generic state tracks whether it contains query configuration
 - `Composable` — a specification with only `Where` and, for EF Core, `Include` or `ThenInclude`.
 - `Configured` — a specification after `OrderBy`, `OrderByDesc`, `Skip`, `Take`, tracking modes, split/single-query, tags, or query-filter options.
 
-All builder operations create **new** specifications, leaving the originals unchanged.
+All state-changing builder operations create **new** specifications, leaving the originals unchanged. A conditional `Where` with a false condition returns the original instance.
 
 ### LINQ
 
@@ -119,6 +119,45 @@ Conflicts are rejected with `InvalidOperationException`: both operands specifyin
 
 The merged configuration applies to the **final combined query**, not separately to each branch of `Or`.
 
+### Conditional Where
+
+Both packages support `Where(predicate, condition)` for optional filters. A true
+condition behaves exactly like `Where(predicate)` and combines consecutive filters
+with AND. A false condition skips the predicate entirely and returns the same
+immutable specification instance. The predicate is checked for null even when
+the condition is false. The condition is evaluated in C# during specification
+construction; it is not sent to SQL.
+
+The following example is compiled as
+[`ConditionalWhereExample.cs`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/ConditionalWhereExample.cs)
+and verified against README by CI.
+
+<!-- compiled-example: ConditionalWhereExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using DimonSmart.Specification.Tests.Common;
+using Microsoft.EntityFrameworkCore;
+
+namespace DocumentationExamples;
+
+public static class ConditionalWhereExample
+{
+    public static IQueryable<Student> Query(DbContext dbContext, string? name, int? maxAge)
+    {
+        var specification = EFCoreSpecification.Create<Student>()
+            .Where(s => s.Age >= 18)
+            .Where(s => s.Name == name, !string.IsNullOrWhiteSpace(name))
+            .Where(s => s.Age <= maxAge, maxAge.HasValue)
+            .OrderBy(s => s.Id)
+            .Take(20);
+
+        return dbContext.BySpecification(specification);
+    }
+}
+```
+
+With missing `name` and `maxAge`, only the required age predicate is applied.
+With values present, both optional predicates are added with AND.
 ### Filtered Include and composition
 
 EF Core `Include` and `ThenInclude` are executed with **original typed expressions**, including filtered collections. Paths in `EFCoreSpecificationData.Includes` are read-only diagnostics, not executable inputs.
