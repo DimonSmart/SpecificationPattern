@@ -86,7 +86,7 @@ public sealed class SeekAfterTests
     [Fact]
     public void HandlesLongDecimalAndDateOnlyKeys()
     {
-        Assert.Equal(new[] { 5, 4, 3 },
+        Assert.Equal(new[] { 3L, 2L, 1L },
             Items.AsQueryable().BySpecification(Specification.Create<Item>()
                 .OrderByDesc(x => x.Sequence).SeekAfter(4L))
                 .Select(x => x.Sequence).ToArray());
