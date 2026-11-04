@@ -82,6 +82,45 @@ by inheriting from the base Specification class,
 making the pattern even more flexible and adaptable to various business
 requirements.
 
+
+## Type-safe composition (Composable / Configured)
+
+The type-state API is available alongside the original mutable API. It creates a fresh
+specification for each operation, so a variable typed as `Composable` never secretly
+acquires sorting or paging through an alias.
+
+```csharp
+var filter = EFCoreSpecification.Create<Student>()
+    .Where(s => s.Age >= 18)
+    .Include(s => s.School);
+
+var ordered = EFCoreSpecification.Create<Student>()
+    .OrderBy(s => s.Name);
+
+var paged = EFCoreSpecification.Create<Student>()
+    .Take(10);
+
+// Sorting and Take are compatible. Result has type EFCoreSpecification<Student, Configured>.
+var result = filter.And(ordered).And(paged);
+var students = dbContext.BySpecification(result).ToList();
+```
+
+`Where`, `Include`, and `ThenInclude` preserve `Composable`; query options
+(`OrderBy`, `Skip`, `Take`, tracking, split/single-query, tags, and
+ignore-filters) return `Configured`. `And` and `Or` combine `Where`
+expressions and deduplicated `Include` paths from both sides, and merge
+compatible query options. Combining two specifications that both specify
+sorting, both specify `Skip`, or both specify `Take` throws
+`InvalidOperationException`. Conflicting tracking or split/single-query
+modes also throw. Matching modes, idempotent ignore flags, and independent
+options can be combined; tags are appended. Combined options apply to
+the final combined query, not separately to each `Where` branch.
+
+For plain `IQueryable<T>` use `Specification.Create<T>()` and
+`query.BySpecification(result)`. Existing
+`Specification<T>.Create()` and `EFCoreSpecification<T>.Create()`
+continue to provide the original mutable API for compatibility.
+
 ## Supported functions
 ### `Where(Expression<Func<T, bool>> expr)`
 Specifies a filtering condition for the data query.

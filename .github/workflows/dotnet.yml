@@ -1,0 +1,18 @@
+name: .NET 10
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore DimonSmart.Specification.sln
+      - run: dotnet test DimonSmart.Specification.sln --no-restore --configuration Release

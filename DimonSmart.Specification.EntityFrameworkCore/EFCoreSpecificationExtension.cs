@@ -4,14 +4,22 @@ namespace DimonSmart.Specification.EntityFrameworkCore;
 
 public static class EFCoreSpecificationExtension
 {
-    public static IQueryable<T> BySpecification<T>(this DbContext context, IEFCoreSpecification<T> efCoreSpecification)
+    public static IQueryable<T> BySpecification<T>(this DbContext context, IEFCoreSpecification<T> specification)
+        where T : class =>
+        PrepareQuery(context, specification.EFCoreSpecificationData).BySpecification(specification);
+
+    public static IQueryable<T> BySpecification<T, TState>(
+        this DbContext context, EFCoreSpecification<T, TState> specification)
+        where T : class
+        where TState : SpecificationState =>
+        PrepareQuery(context, specification.EFCoreSpecificationData).BySpecification(specification.Core);
+
+    private static IQueryable<T> PrepareQuery<T>(DbContext context, IEFCoreSpecificationData<T> spec)
         where T : class
     {
-        var spec = efCoreSpecification.EFCoreSpecificationData;
-
         var query = context.Set<T>().AsQueryable<T>();
 
-        foreach (var include in efCoreSpecification.EFCoreSpecificationData.Includes)
+        foreach (var include in spec.Includes)
         {
             query = query.Include(include);
         }
@@ -51,6 +59,6 @@ public static class EFCoreSpecificationExtension
             query = query.TagWith(spec.Tag);
         }
 
-        return query.BySpecification(efCoreSpecification);
+        return query;
     }
 }

@@ -8,7 +8,21 @@ public static class SpecificationExtension
         TSpecification specification)
         where TSpecification : IBaseSpecification<T, TSpecification> where T : class
     {
-        var specData = specification.SpecificationData;
+        return Apply(query, specification.SpecificationData);
+    }
+
+    public static IQueryable<T> BySpecification<T, TState>(this IQueryable<T> query,
+        Specification<T, TState> specification)
+        where T : class
+        where TState : SpecificationState
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        return Apply(query, specification.Data);
+    }
+
+    private static IQueryable<T> Apply<T>(IQueryable<T> query, ISpecificationData<T> specData)
+        where T : class
+    {
         if (specData.WhereExpression != null)
         {
             query = query.Where(specData.WhereExpression);
