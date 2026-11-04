@@ -20,7 +20,6 @@ public class UsageSamplesTests
             .Include(s => s.School.MainBook)
             .Include(s => s.Books)
             .ThenInclude(b => b.Author)
-            .ThenInclude(a => a.Name)
             .Include(s => s.Books)
             .Where(s => (s.Age & 1) == 1)
             .Include(s => s.Books);
@@ -34,5 +33,14 @@ public class UsageSamplesTests
             .Where(s => s.Age < 21)
             .Include(s => s.School.MainBook)
             .Where(s => s.Age > 16);
+    }
+
+    [Fact]
+    public void FilteredIncludeWithThenInclude()
+    {
+        _ = EFCoreSpecification.Create<Student>()
+            .Include(s => s.Books.Where(b => b.Name.StartsWith("A"))
+                .OrderBy(b => b.Name).ThenBy(b => b.Id).Skip(1).Take(2))
+            .ThenInclude(b => b.Author);
     }
 }

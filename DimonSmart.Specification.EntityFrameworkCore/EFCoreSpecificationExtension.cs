@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
@@ -7,54 +7,39 @@ public static class EFCoreSpecificationExtension
     public static IQueryable<T> BySpecification<T, TState>(
         this DbContext context, EFCoreSpecification<T, TState> specification)
         where T : class
-        where TState : SpecificationState =>
-        PrepareQuery(context, specification.EFCoreSpecificationData).BySpecification(specification.Core);
-
-    private static IQueryable<T> PrepareQuery<T>(DbContext context, IEFCoreSpecificationData<T> spec)
-        where T : class
+        where TState : SpecificationState
     {
-        var query = context.Set<T>().AsQueryable<T>();
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(specification);
 
-        foreach (var include in spec.Includes)
-        {
-            query = query.Include(include);
-        }
+        var options = specification.Options;
+        IQueryable<T> query = context.Set<T>();
 
-        if (spec.IsAsNoTracking)
-        {
-            query = query.AsNoTracking();
-        }
+        foreach (var include in options.Includes)
+            query = include.Apply(query);
 
-        if (spec.IsAsNoTrackingWithIdentityResolution)
+        query = options.Tracking switch
         {
-            query = query.AsNoTrackingWithIdentityResolution();
-        }
+            TrackingMode.NoTracking => query.AsNoTracking(),
+            TrackingMode.NoTrackingWithIdentityResolution => query.AsNoTrackingWithIdentityResolution(),
+            _ => query
+        };
 
-        if (spec.IsIgnoreAutoIncludes)
-        {
+        if (options.IgnoreAutoIncludes)
             query = query.IgnoreAutoIncludes();
-        }
-
-        if (spec.IsIgnoreQueryFilters)
-        {
+        if (options.IgnoreQueryFilters)
             query = query.IgnoreQueryFilters();
-        }
 
-        if (spec.IsAsSingleQuery)
+        query = options.Splitting switch
         {
-            query = query.AsSingleQuery();
-        }
+            QuerySplittingMode.Single => query.AsSingleQuery(),
+            QuerySplittingMode.Split => query.AsSplitQuery(),
+            _ => query
+        };
 
-        if (spec.IsAsSplitQuery)
-        {
-            query = query.AsSplitQuery();
-        }
+        foreach (var tag in options.Tags)
+            query = query.TagWith(tag);
 
-        if (!string.IsNullOrWhiteSpace(spec.Tag))
-        {
-            query = query.TagWith(spec.Tag);
-        }
-
-        return query;
+        return query.BySpecification(specification.Core);
     }
 }

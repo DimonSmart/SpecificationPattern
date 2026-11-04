@@ -79,11 +79,56 @@ var result = dbContext.BySpecification(combined).ToList();
 
 `Where`, `Include`, and `ThenInclude` preserve `Composable`. Other query options return `Configured`.
 
-`And` / `Or` combine `Where` expressions and retain `Include` paths from **both** specifications (with duplicates removed). Compatible query configurations are merged — for example, sorting from one operand and `Take` from the other.
+`And` / `Or` combine `Where` expressions and compatible typed `Include` plans from **both** specifications (with duplicates and covered prefixes removed). Compatible query configurations are merged — for example, sorting from one operand and `Take` from the other.
 
-Conflicts are rejected with `InvalidOperationException`: both operands specifying ordering, both specifying `Skip`, both specifying `Take`, or incompatible tracking/split-query modes. Tags are appended; ignore-filter options are combined.
+Conflicts are rejected with `InvalidOperationException`: both operands specifying ordering, both specifying `Skip`, both specifying `Take`, incompatible tracking/split-query modes, or conflicting filtered Includes. Tags are appended as separate SQL comments in left-to-right order (including duplicates); ignore-filter options are combined.
 
 The merged configuration applies to the **final combined query**, not separately to each branch of `Or`.
+
+### Filtered Include and composition
+
+EF Core `Include` and `ThenInclude` are executed with **original typed expressions**, including filtered collections. Paths in `EFCoreSpecificationData.Includes` are read-only diagnostics, not executable inputs.
+
+This example is compiled as [`FilteredIncludeExample.cs`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/FilteredIncludeExample.cs). CI checks that this README block matches its compiled source.
+
+<!-- compiled-example: FilteredIncludeExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using DimonSmart.Specification.Tests.Common;
+using Microsoft.EntityFrameworkCore;
+
+namespace DocumentationExamples;
+
+public static class FilteredIncludeExample
+{
+    public static IQueryable<Student> Query(DbContext dbContext)
+    {
+        var books = EFCoreSpecification.Create<Student>()
+            .Include(s => s.Books
+                .Where(b => b.Name.StartsWith("A"))
+                .OrderBy(b => b.Name)
+                .Take(5))
+            .ThenInclude(b => b.Author);
+
+        var school = EFCoreSpecification.Create<Student>()
+            .Include(s => s.School);
+
+        return dbContext.BySpecification(books.And(school).AsNoTracking());
+    }
+}
+```
+
+Allowed collection filters: `Where`, `OrderBy`, `OrderByDescending`, `ThenBy`, `ThenByDescending`, `Skip`, `Take`. A filtered collection may be followed by `ThenInclude`; the collection element type is preserved. A collection reached via `ThenInclude` may itself be filtered.
+
+Compatible paths are normalized: duplicate Includes are removed, longer chains cover their prefixes, and distinct child branches remain. **Strict conflict policy:** independently created filters on the same collection conflict, even when their expression text is identical. Filtered and unfiltered Includes for the same collection also conflict. Checks run at `Include`, `ThenInclude`, `And`, and `Or`, including shared intermediate collection segments. Branches derived from the **same** filtered Include share a descriptor and are compatible.
+
+Only member-access paths and the seven collection operators listed above are recognized. `EF.Property`, shadow navigations, derived-type casts, `Select`, `Distinct` and arbitrary extension methods are unsupported in v1. EF Core validates whether members are mapped navigations and whether filter predicates translate to SQL.
+
+### Query options and tags
+
+Tracking (default/no-tracking/identity resolution) and splitting (default/single/split) have one internal state each. Within a specification, the last setter wins. Across `And`/`Or`, different explicit settings conflict; default does not override the `DbContext` configuration.
+
+`TagWith("A").TagWith("B")` generates separate ordered SQL comments. Duplicate tags remain, but empty/whitespace-only strings are ignored (the specification still becomes `Configured`). `TagWith(null)` throws. `TagWithCallSite("A")` adds one user tag plus one call-site tag with caller method, file and line; the file path may be absolute and is visible in SQL.
 
 ## Supported operations
 
