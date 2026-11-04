@@ -46,8 +46,12 @@ public static class EFCoreSpecificationExtension
 
         if (options.IgnoreAutoIncludes)
             query = query.IgnoreAutoIncludes();
-        if (options.IgnoreQueryFilters)
-            query = query.IgnoreQueryFilters();
+        query = options.QueryFilters.Mode switch
+        {
+            QueryFilterMode.All => query.IgnoreQueryFilters(),
+            QueryFilterMode.Named => query.IgnoreQueryFilters(options.QueryFilters.Names),
+            _ => query
+        };
 
         query = options.Splitting switch
         {

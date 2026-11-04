@@ -11,7 +11,7 @@ internal sealed record QueryOptions<TEntity> where TEntity : class
     internal TrackingMode Tracking { get; init; }
     internal QuerySplittingMode Splitting { get; init; }
     internal bool IgnoreAutoIncludes { get; init; }
-    internal bool IgnoreQueryFilters { get; init; }
+    internal QueryFilterOptions QueryFilters { get; init; } = QueryFilterOptions.Default;
     internal ImmutableArray<string> Tags { get; init; } = ImmutableArray<string>.Empty;
     internal ImmutableArray<IIncludePlan<TEntity>> Includes { get; init; } = ImmutableArray<IIncludePlan<TEntity>>.Empty;
 
@@ -49,7 +49,7 @@ internal sealed record QueryOptions<TEntity> where TEntity : class
             Tracking = Tracking == TrackingMode.Default ? other.Tracking : Tracking,
             Splitting = Splitting == QuerySplittingMode.Default ? other.Splitting : Splitting,
             IgnoreAutoIncludes = IgnoreAutoIncludes || other.IgnoreAutoIncludes,
-            IgnoreQueryFilters = IgnoreQueryFilters || other.IgnoreQueryFilters,
+            QueryFilters = QueryFilters.Merge(other.QueryFilters),
             Tags = Tags.AddRange(other.Tags)
         };
     }

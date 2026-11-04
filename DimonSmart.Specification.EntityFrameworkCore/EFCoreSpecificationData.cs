@@ -19,7 +19,8 @@ public sealed class EFCoreSpecificationData<T> : IEFCoreSpecificationData<T> whe
     public bool IsAsNoTracking => _options.Tracking == TrackingMode.NoTracking;
     public bool IsAsNoTrackingWithIdentityResolution => _options.Tracking == TrackingMode.NoTrackingWithIdentityResolution;
     public bool IsIgnoreAutoIncludes => _options.IgnoreAutoIncludes;
-    public bool IsIgnoreQueryFilters => _options.IgnoreQueryFilters;
+    public bool IsIgnoreQueryFilters => _options.QueryFilters.Mode == QueryFilterMode.All;
+    public IReadOnlyCollection<string> IgnoredQueryFilterNames => _options.QueryFilters.Names;
     public bool IsAsSingleQuery => _options.Splitting == QuerySplittingMode.Single;
     public bool IsAsSplitQuery => _options.Splitting == QuerySplittingMode.Split;
     public IEnumerable<string> Includes => _paths;
