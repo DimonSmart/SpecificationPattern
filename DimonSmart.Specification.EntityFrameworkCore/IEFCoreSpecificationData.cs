@@ -7,6 +7,11 @@
 public interface IEFCoreSpecificationData<T>
 {
     /// <summary>
+    /// Gets a value indicating whether the specification explicitly enables EF Core change tracking.
+    /// </summary>
+    bool IsAsTracking { get; }
+
+    /// <summary>
     /// Gets a value indicating whether the specification should be executed with the AsNoTracking option.
     /// </summary>
     bool IsAsNoTracking { get; }

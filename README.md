@@ -203,7 +203,30 @@ public static class NamedQueryFiltersExample
 
 ### Query options and tags
 
-Tracking (default/no-tracking/identity resolution) and splitting (default/single/split) have one internal state each. Within a specification, the last setter wins. Across `And`/`Or`, different explicit settings conflict; default does not override the `DbContext` configuration.
+Tracking supports four states: default (use the `DbContext` setting), explicit `AsTracking()`, `AsNoTracking()`, and `AsNoTrackingWithIdentityResolution()`. `AsTracking()` enables change tracking even when `DbContext` defaults to `QueryTrackingBehavior.NoTracking`. Tracking and splitting (default/single/split) each have one internal state. Within one specification, the last setter wins. Across `And`/`Or`, identical explicit modes are compatible, different explicit modes conflict, and default is neutral. The diagnostic snapshot exposes `IsAsTracking`, `IsAsNoTracking`, and `IsAsNoTrackingWithIdentityResolution`.
+
+This example is compiled as [`TrackingExample.cs`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/TrackingExample.cs) and checked by CI.
+
+<!-- compiled-example: TrackingExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using DimonSmart.Specification.Tests.Common;
+using Microsoft.EntityFrameworkCore;
+
+namespace DocumentationExamples;
+
+public static class TrackingExample
+{
+    public static IQueryable<Student> Query(DbContext dbContext)
+    {
+        var specification = EFCoreSpecification.Create<Student>()
+            .Where(s => s.Age >= 18)
+            .AsTracking();
+
+        return dbContext.BySpecification(specification);
+    }
+}
+```
 
 `TagWith("A").TagWith("B")` generates separate ordered SQL comments. Duplicate tags remain in immutable specification state (EF Core 10 may deduplicate identical SQL comments), but empty/whitespace-only strings are ignored (the specification still becomes `Configured`). `TagWith(null)` throws. `TagWithCallSite("A")` adds one user tag plus one call-site tag with caller method, file and line; the file path may be absolute and is visible in SQL.
 
@@ -285,7 +308,7 @@ The library passes the selector expression to the LINQ provider: it does not use
 | `OrderBy`, `OrderByDesc` | Yes | Yes |
 | `Skip`, `Take` | Yes | Yes |
 | `Include`, `ThenInclude` | — | Yes |
-| `AsNoTracking`, `AsNoTrackingWithIdentityResolution` | — | Yes |
+| `AsTracking`, `AsNoTracking`, `AsNoTrackingWithIdentityResolution` | — | Yes |
 | `AsSplitQuery`, `AsSingleQuery` | — | Yes |
 | `IgnoreAutoIncludes`, `IgnoreQueryFilters` | — | Yes |
 | `TagWith`, `TagWithCallSite` | — | Yes |

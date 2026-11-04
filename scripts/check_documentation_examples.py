@@ -11,6 +11,7 @@ examples = {
     "ProjectionExample": root / "DimonSmart.Specification.Tests/Documentation/ProjectionExample.cs",
     "EFCoreProjectionExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/EFCoreProjectionExample.cs",
     "NamedQueryFiltersExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/NamedQueryFiltersExample.cs",
+    "TrackingExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/TrackingExample.cs",
 }
 
 for name, source in examples.items():

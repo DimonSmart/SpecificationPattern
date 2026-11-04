@@ -16,6 +16,7 @@ public sealed class EFCoreSpecificationData<T> : IEFCoreSpecificationData<T> whe
             .ToImmutableArray();
     }
 
+    public bool IsAsTracking => _options.Tracking == TrackingMode.Tracking;
     public bool IsAsNoTracking => _options.Tracking == TrackingMode.NoTracking;
     public bool IsAsNoTrackingWithIdentityResolution => _options.Tracking == TrackingMode.NoTrackingWithIdentityResolution;
     public bool IsIgnoreAutoIncludes => _options.IgnoreAutoIncludes;

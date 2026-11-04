@@ -39,6 +39,7 @@ public static class EFCoreSpecificationExtension
 
         query = options.Tracking switch
         {
+            TrackingMode.Tracking => query.AsTracking(),
             TrackingMode.NoTracking => query.AsNoTracking(),
             TrackingMode.NoTrackingWithIdentityResolution => query.AsNoTrackingWithIdentityResolution(),
             _ => query

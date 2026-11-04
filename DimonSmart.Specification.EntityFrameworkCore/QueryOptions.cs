@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
-internal enum TrackingMode { Default, NoTracking, NoTrackingWithIdentityResolution }
+internal enum TrackingMode { Default, Tracking, NoTracking, NoTrackingWithIdentityResolution }
 internal enum QuerySplittingMode { Default, Single, Split }
 
 /// <summary>Immutable EF-only state; no diagnostic string is used to execute a query.</summary>
