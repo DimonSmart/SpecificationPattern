@@ -1,18 +1,20 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace DimonSmart.Specification;
 
-internal class ParameterReplacer : ExpressionVisitor
+internal sealed class ParameterReplacer : ExpressionVisitor
 {
-    private readonly ParameterExpression _parameter;
+    private readonly ParameterExpression _source;
+    private readonly ParameterExpression _target;
 
-    public ParameterReplacer(ParameterExpression parameter)
+    public ParameterReplacer(ParameterExpression source, ParameterExpression target)
     {
-        _parameter = parameter;
+        _source = source;
+        _target = target;
     }
 
     protected override Expression VisitParameter(ParameterExpression node)
     {
-        return _parameter;
+        return ReferenceEquals(node, _source) ? _target : node;
     }
 }

@@ -10,7 +10,7 @@ internal static class ExpressionOperations
         Func<Expression, Expression, BinaryExpression> logicalOperator)
     {
         var parameter = expression1.Parameters[0];
-        var body2 = new ParameterReplacer(parameter).Visit(expression2.Body);
+        var body2 = new ParameterReplacer(expression2.Parameters[0], parameter).Visit(expression2.Body);
 
         var combinedBody = logicalOperator(expression1.Body, body2);
 
