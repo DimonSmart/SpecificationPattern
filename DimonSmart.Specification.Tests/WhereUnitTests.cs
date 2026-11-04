@@ -9,7 +9,7 @@ public class WhereUnitTests : TestsBase
     public void SimpleWhereConditionTest()
     {
         // Arrange
-        var specification = Specification<Student>.Create().Where(s => s.Age < 21);
+        var specification = Specification.Create<Student>().Where(s => s.Age < 21);
 
         // Act
         var under21 = Students.BySpecification(specification).ToList();
@@ -22,15 +22,13 @@ public class WhereUnitTests : TestsBase
     public void WhereWithOrClauseTest()
     {
         // Arrange
-        var specification1 = Specification<Student>
-            .Create()
+        var specification1 = Specification.Create<Student>()
             .Where(s => s.Age < 21);
 
-        var specification2 = Specification<Student>
-            .Create()
+        var specification2 = Specification.Create<Student>()
             .Where(s => s.Age == 30);
 
-        var specification = specification1.Or(specification2.GetWhereExpression());
+        var specification = specification1.Or(specification2);
 
         // Act
         var under21 = Students.BySpecification(specification).ToList();
@@ -43,15 +41,13 @@ public class WhereUnitTests : TestsBase
     public void WhereWithAndClauseTest()
     {
         // Arrange
-        var specification1 = Specification<Student>
-            .Create()
+        var specification1 = Specification.Create<Student>()
             .Where(s => s.Age < 30);
 
-        var specification2 = Specification<Student>
-            .Create()
+        var specification2 = Specification.Create<Student>()
             .Where(s => s.Age > 20);
 
-        var specification = specification1.And(specification2.GetWhereExpression());
+        var specification = specification1.And(specification2);
 
         // Act
         var under30AndAbove20 = Students.BySpecification(specification).ToList();

@@ -20,8 +20,7 @@ public class DBOrderTests : TestsBase
     public void OneLevelOrderByTest()
     {
         // Arrange
-        var specification = EFCoreSpecification<Student>
-            .Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Age);
 
         // Act
@@ -35,8 +34,7 @@ public class DBOrderTests : TestsBase
     public void OneLevelOrderByDescTest()
     {
         // Arrange
-        var specification = EFCoreSpecification<Student>
-            .Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .OrderByDesc(s => s.Age);
 
         // Act
@@ -50,8 +48,7 @@ public class DBOrderTests : TestsBase
     public void TwoLevelOrderByTest()
     {
         // Arrange
-        var specification = EFCoreSpecification<Student>
-            .Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name)
             .OrderByDesc(s => s.Age);
 
@@ -65,7 +62,7 @@ public class DBOrderTests : TestsBase
     [Fact]
     public void ThreeLevelOrderByPreservesIntermediateSortTest()
     {
-        var specification = EFCoreSpecification<Student>.Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.School.Name)
             .OrderBy(s => s.Name)
             .OrderBy(s => s.Age);

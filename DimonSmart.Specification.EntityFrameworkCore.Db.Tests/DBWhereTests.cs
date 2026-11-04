@@ -20,12 +20,11 @@ public class DBWhereTests : TestsBase
     public void SimpleWhereConditionTest()
     {
         // Arrange
-        var specification = EFCoreSpecification<Student>
-            .Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age < 21);
 
         // Act
-        var under21 = _testDBContext.Students.BySpecification(specification).ToList();
+        var under21 = _testDBContext.BySpecification(specification).ToList();
 
         // Assert
         under21.Should().BeEquivalentTo(new List<Student> { Sofia20 });
@@ -35,18 +34,16 @@ public class DBWhereTests : TestsBase
     public void WhereWithOrClauseTest()
     {
         // Arrange
-        var specification1 = EFCoreSpecification<Student>
-            .Create()
+        var specification1 = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age < 21);
 
-        var specification2 = EFCoreSpecification<Student>
-            .Create()
+        var specification2 = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age == 30);
 
         var specification = specification1.Or(specification2);
 
         // Act
-        var under21 = _testDBContext.Students.BySpecification(specification).ToList();
+        var under21 = _testDBContext.BySpecification(specification).ToList();
 
         // Assert
         under21.Should().BeEquivalentTo(new List<Student> { Sofia20, Alex30 });

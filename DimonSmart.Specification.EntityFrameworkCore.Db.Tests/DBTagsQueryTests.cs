@@ -27,8 +27,7 @@ public class DBTagQueryTests : TestsBase
         const string tag = "Name and Age ordered query";
 
         // Act
-        var taggedSpecification = EFCoreSpecification<Student>
-            .Create()
+        var taggedSpecification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name)
             .OrderBy(s => s.Age)
             .TagWith(tag);
@@ -49,8 +48,7 @@ public class DBTagQueryTests : TestsBase
         _testDBContext.DbCommandsLog.Clear();
 
         // Act
-        var taggedSpecification = EFCoreSpecification<Student>
-            .Create()
+        var taggedSpecification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name)
             .OrderBy(s => s.Age)
             .TagWithCallSite();

@@ -9,8 +9,7 @@ public class OrderUnitTests : TestsBase
     public void OneLevelOrderByTest()
     {
         // Arrange
-        var specification = Specification<Student>
-            .Create()
+        var specification = Specification.Create<Student>()
             .OrderBy(s => s.Age);
 
         // Act
@@ -25,8 +24,7 @@ public class OrderUnitTests : TestsBase
     public void OneLevelOrderByDescTest()
     {
         // Arrange
-        var specification = Specification<Student>
-            .Create()
+        var specification = Specification.Create<Student>()
             .OrderByDesc(s => s.Age);
 
         // Act
@@ -40,9 +38,7 @@ public class OrderUnitTests : TestsBase
     public void TwoLevelOrderByTest()
     {
         // Arrange
-        var specification = Specification<Student>
-            .Create()
-            .As<ISpecification<Student>>()
+        var specification = Specification.Create<Student>()
             .OrderBy(s => s.Name)
             .OrderByDesc(s => s.Age);
 
@@ -65,7 +61,7 @@ public class OrderUnitTests : TestsBase
             new Student { Id = 5, Age = 19, Name = "Z" }
         }.AsQueryable();
 
-        var specification = Specification<Student>.Create()
+        var specification = Specification.Create<Student>()
             .OrderBy(s => s.Age)
             .OrderBy(s => s.Name)
             .OrderByDesc(s => s.Id);

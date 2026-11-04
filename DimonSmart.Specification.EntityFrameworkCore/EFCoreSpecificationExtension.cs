@@ -4,10 +4,6 @@ namespace DimonSmart.Specification.EntityFrameworkCore;
 
 public static class EFCoreSpecificationExtension
 {
-    public static IQueryable<T> BySpecification<T>(this DbContext context, IEFCoreSpecification<T> specification)
-        where T : class =>
-        PrepareQuery(context, specification.EFCoreSpecificationData).BySpecification(specification);
-
     public static IQueryable<T> BySpecification<T, TState>(
         this DbContext context, EFCoreSpecification<T, TState> specification)
         where T : class
