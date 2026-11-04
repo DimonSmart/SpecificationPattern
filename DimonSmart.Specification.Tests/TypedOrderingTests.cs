@@ -50,7 +50,7 @@ public sealed class TypedOrderingTests
         Assert.IsAssignableFrom<Expression<Func<OrderingItem, TKey>>>(entry.expr);
 
         var query = new[] { new OrderingItem() }.AsQueryable().BySpecification(spec);
-        var call = Assert.IsType<MethodCallExpression>(query.Expression);
+        var call = Assert.IsAssignableFrom<MethodCallExpression>(query.Expression);
         AssertCall(call, nameof(Queryable.OrderBy), typeof(TKey), entry.expr);
     }
 
@@ -74,11 +74,11 @@ public sealed class TypedOrderingTests
 
         IQueryable<OrderingItem> source = new[] { new OrderingItem() }.AsQueryable();
         IQueryable<OrderingItem> query = source.BySpecification(spec);
-        var third = Assert.IsType<MethodCallExpression>(query.Expression);
+        var third = Assert.IsAssignableFrom<MethodCallExpression>(query.Expression);
         AssertCall(third, nameof(Queryable.ThenBy), typeof(long), diagnostics[2].expr);
-        var second = Assert.IsType<MethodCallExpression>(third.Arguments[0]);
+        var second = Assert.IsAssignableFrom<MethodCallExpression>(third.Arguments[0]);
         AssertCall(second, nameof(Queryable.ThenByDescending), typeof(int), diagnostics[1].expr);
-        var first = Assert.IsType<MethodCallExpression>(second.Arguments[0]);
+        var first = Assert.IsAssignableFrom<MethodCallExpression>(second.Arguments[0]);
         AssertCall(first, nameof(Queryable.OrderBy), typeof(string), diagnostics[0].expr);
         Assert.Same(source.Expression, first.Arguments[0]);
     }
@@ -88,7 +88,7 @@ public sealed class TypedOrderingTests
         Assert.Equal(name, call.Method.Name);
         Assert.Equal(typeof(Queryable), call.Method.DeclaringType);
         Assert.Equal(keyType, call.Method.GetGenericArguments()[1]);
-        var quoted = Assert.IsType<UnaryExpression>(call.Arguments[1]);
+        var quoted = Assert.IsAssignableFrom<UnaryExpression>(call.Arguments[1]);
         Assert.Equal(ExpressionType.Quote, quoted.NodeType);
         Assert.Same(selector, quoted.Operand);
     }
