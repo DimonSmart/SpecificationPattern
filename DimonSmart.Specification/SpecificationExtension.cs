@@ -13,7 +13,18 @@ public static class SpecificationExtension
         return Apply(query, specification.Data);
     }
 
-    private static IQueryable<T> Apply<T>(IQueryable<T> query, ISpecificationData<T> specData)
+    /// <summary>Applies source query operations before projecting to TResult.</summary>
+    public static IQueryable<TResult> BySpecification<TEntity, TResult>(
+        this IQueryable<TEntity> query,
+        ProjectedSpecification<TEntity, TResult> specification)
+        where TEntity : class
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(specification);
+        return Apply(query, specification.SourceData).Select(specification.Selector);
+    }
+
+    internal static IQueryable<T> Apply<T>(IQueryable<T> query, ISpecificationData<T> specData)
         where T : class
     {
         if (specData.WhereExpression != null)

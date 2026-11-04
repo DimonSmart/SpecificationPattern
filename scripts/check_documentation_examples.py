@@ -8,6 +8,8 @@ readme = (root / "README.md").read_text(encoding="utf-8")
 examples = {
     "CustomStudentSpecification": root / "DimonSmart.Specification.Tests/Documentation/CustomStudentSpecification.cs",
     "FilteredIncludeExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/FilteredIncludeExample.cs",
+    "ProjectionExample": root / "DimonSmart.Specification.Tests/Documentation/ProjectionExample.cs",
+    "EFCoreProjectionExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/EFCoreProjectionExample.cs",
 }
 
 for name, source in examples.items():

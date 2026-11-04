@@ -23,6 +23,17 @@ public class EFCoreSpecification<T, TState>
     // Expose diagnostics as a snapshot. Query execution uses Options, never this projection.
     public IEFCoreSpecificationData<T> EFCoreSpecificationData => new EFCoreSpecificationData<T>(Options);
 
+    /// <summary>Creates a terminal projection; explicit Include plans are incompatible with Select.</summary>
+    public EFCoreProjectedSpecification<T, TResult> Select<TResult>(Expression<Func<T, TResult>> selector)
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        if (!Options.Includes.IsEmpty)
+            throw new InvalidOperationException(
+                "Select cannot be combined with explicit Include/ThenInclude plans. Project navigations directly in the selector.");
+
+        return new EFCoreProjectedSpecification<T, TResult>(Core.Select(selector), Options);
+    }
+
     public EFCoreSpecification<T, TState> Where(Expression<Func<T, bool>> predicate) =>
         new(Core.Where(predicate), Options);
 
