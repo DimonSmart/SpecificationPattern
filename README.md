@@ -122,7 +122,7 @@ Allowed collection filters: `Where`, `OrderBy`, `OrderByDescending`, `ThenBy`, `
 
 Compatible paths are normalized: duplicate Includes are removed, longer chains cover their prefixes, and distinct child branches remain. **Strict conflict policy:** independently created filters on the same collection conflict, even when their expression text is identical. Filtered and unfiltered Includes for the same collection also conflict. Checks run at `Include`, `ThenInclude`, `And`, and `Or`, including shared intermediate collection segments. Branches derived from the **same** filtered Include share a descriptor and are compatible.
 
-Only member-access paths and the seven collection operators listed above are recognized. `EF.Property`, shadow navigations, derived-type casts, `Select`, `Distinct` and arbitrary extension methods are unsupported in v1. EF Core validates whether members are mapped navigations and whether filter predicates translate to SQL. Provider restrictions still apply: for example, EF Core 10 with SQLite can reject filtered pagination followed by a child `ThenInclude` if its translation requires SQL `APPLY`.
+Only member-access paths and the seven collection operators listed above are recognized. `EF.Property`, shadow navigations, derived-type casts, `Select`, `Distinct` and arbitrary extension methods are unsupported in v1. EF Core validates whether members are mapped navigations and whether filter predicates translate to SQL. Provider restrictions still apply: for example, EF Core 10 with SQLite can reject filtered pagination followed by a child `ThenInclude` if its translation requires SQL `APPLY`. Successful compilation of the example checks the public API, not SQL translation on every provider.
 
 ### Query options and tags
 
