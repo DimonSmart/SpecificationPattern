@@ -90,7 +90,7 @@ public class EFCoreSpecification<T> : BaseSpecification<T, EFCoreSpecification<T
     {
         if (!string.IsNullOrWhiteSpace(tag))
         {
-            tag += tag + Environment.NewLine;
+            tag += Environment.NewLine;
         }
 
         return TagWith($"{tag}{callerMemberName}() -> {callerFilePath}:{callerLineNumber}");
