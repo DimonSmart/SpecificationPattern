@@ -31,6 +31,8 @@ public static class SpecificationExtension
         }
 
         var clauses = specData.OrderClauses;
+        if (specData.Seek is { } boundary)
+            query = query.Where(SeekPredicateBuilder.Build(clauses, boundary));
         if (clauses.Count > 0)
         {
             IOrderedQueryable<T> ordered = clauses[0].ApplyFirst(query);

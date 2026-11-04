@@ -49,6 +49,9 @@ public class EFCoreSpecification<T, TState>
     public EFCoreSpecification<T, Configured> Skip(int count) =>
         new(Core.Skip(count), Options);
 
+    public EFCoreSpecification<T, Configured> SeekAfter<TCursor>(TCursor cursor) =>
+        new(Core.SeekAfter(cursor), Options);
+
     /// <summary>Explicitly enables EF Core change tracking, even when the context defaults to NoTracking.</summary>
     public EFCoreSpecification<T, Configured> AsTracking() =>
         new(CoreForConfigured(), Options with { Tracking = TrackingMode.Tracking });

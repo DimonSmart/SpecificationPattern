@@ -40,6 +40,7 @@ public class Specification<T, TState>
     {
         WhereExpression = source.WhereExpression,
         OrderClauses = new List<IOrderClause<T>>(source.OrderClauses),
+        Seek = source.Seek,
         TakeQ = source.TakeQ,
         SkipQ = source.SkipQ
     };
@@ -63,6 +64,8 @@ public class Specification<T, TState>
     public Specification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
+        if (_data.Seek is not null)
+            throw new InvalidOperationException("Cannot add ordering after SeekAfter.");
         var data = Copy(_data);
         data.OrderClauses.Add(new OrderClause<T, TKey>(expression, OrderDirectionEnum.Ascending));
         return new Specification<T, Configured>(data);
@@ -71,6 +74,8 @@ public class Specification<T, TState>
     public Specification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
+        if (_data.Seek is not null)
+            throw new InvalidOperationException("Cannot add ordering after SeekAfter.");
         var data = Copy(_data);
         data.OrderClauses.Add(new OrderClause<T, TKey>(expression, OrderDirectionEnum.Descending));
         return new Specification<T, Configured>(data);
@@ -87,8 +92,27 @@ public class Specification<T, TState>
     public Specification<T, Configured> Skip(int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
+        if (_data.Seek is not null)
+            throw new InvalidOperationException("Skip cannot be combined with SeekAfter.");
         var data = Copy(_data);
         data.SkipQ = count;
+        return new Specification<T, Configured>(data);
+    }
+
+    /// <summary>
+    /// Returns rows strictly after the supplied key values in the configured ordering.
+    /// For multiple keys, pass a ValueTuple with one element per ordering clause.
+    /// </summary>
+    public Specification<T, Configured> SeekAfter<TCursor>(TCursor cursor)
+    {
+        ArgumentNullException.ThrowIfNull(cursor);
+        if (_data.Seek is not null)
+            throw new InvalidOperationException("SeekAfter is already configured.");
+        if (_data.SkipQ.HasValue)
+            throw new InvalidOperationException("SeekAfter cannot be combined with Skip.");
+        var seek = SeekBoundary.Create(cursor, _data.OrderClauses);
+        var data = Copy(_data);
+        data.Seek = seek;
         return new Specification<T, Configured>(data);
     }
 
@@ -107,6 +131,11 @@ public class Specification<T, TState>
             throw new InvalidOperationException("Cannot combine specifications: both define Skip.");
         if (left.TakeQ.HasValue && right.TakeQ.HasValue)
             throw new InvalidOperationException("Cannot combine specifications: both define Take.");
+        if (left.Seek is not null && right.Seek is not null)
+            throw new InvalidOperationException("Cannot combine specifications: both define SeekAfter.");
+        if ((left.Seek is not null || right.Seek is not null) &&
+            (left.SkipQ.HasValue || right.SkipQ.HasValue))
+            throw new InvalidOperationException("Cannot combine specifications: Skip conflicts with SeekAfter.");
 
         var result = Copy(left);
         if (right.WhereExpression is not null)
@@ -118,6 +147,7 @@ public class Specification<T, TState>
         }
 
         result.OrderClauses.AddRange(right.OrderClauses);
+        result.Seek ??= right.Seek;
         result.SkipQ ??= right.SkipQ;
         result.TakeQ ??= right.TakeQ;
         return new Specification<T, TResult>(result);

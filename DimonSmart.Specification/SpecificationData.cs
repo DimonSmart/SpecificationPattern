@@ -9,6 +9,7 @@ public class SpecificationData<T> : ISpecificationData<T>
 
     // Executable query configuration is never exposed through the diagnostic API.
     internal List<IOrderClause<T>> OrderClauses { get; set; } = new();
+    internal SeekBoundary? Seek { get; set; }
 
     public IReadOnlyList<(OrderDirectionEnum direction, LambdaExpression expr)> OrderExpressions =>
         OrderClauses.Select(clause => (direction: clause.Direction, expr: clause.KeySelector))
