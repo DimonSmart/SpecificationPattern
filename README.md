@@ -28,6 +28,38 @@ Specification<Student, Configured> combined = filter.And(sorting);
 var result = students.AsQueryable().BySpecification(combined).ToList();
 ```
 
+### Custom specifications by inheritance
+
+To define a reusable custom specification, derive from `Specification<T, Composable>`
+and pass a configured specification to the protected constructor. The API is immutable:
+calling `Where()` without using the returned value does not change the instance.
+
+The following example is compiled as
+[`CustomStudentSpecification.cs`](DimonSmart.Specification.Tests/Documentation/CustomStudentSpecification.cs).
+CI checks that the code block and the compiled C# file match exactly.
+
+<!-- compiled-example: CustomStudentSpecification -->
+```csharp
+using DimonSmart.Specification;
+
+namespace DocumentationExamples;
+
+public sealed record School(string Name);
+public sealed record Student(int Age, School School);
+
+public sealed class CustomStudentSpecification : Specification<Student, Composable>
+{
+    public CustomStudentSpecification(int minAge, string schoolName)
+        : base(Specification.Create<Student>()
+            .Where(s => s.Age >= minAge && s.School.Name == schoolName))
+    {
+    }
+}
+```
+
+A `CustomStudentSpecification` can be used directly with `BySpecification()`
+or combined with another specification using `And()` or `Or()`.
+
 ### Entity Framework Core
 
 ```csharp

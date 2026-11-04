@@ -14,5 +14,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - run: python3 scripts/check_documentation_examples.py
       - run: dotnet restore DimonSmart.Specification.sln
       - run: dotnet test DimonSmart.Specification.sln --no-restore --configuration Release
