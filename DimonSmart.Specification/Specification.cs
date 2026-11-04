@@ -16,13 +16,19 @@ public sealed class Configured : SpecificationState { }
 /// Immutable, type-state specification. Where preserves the state; ordering and
 /// pagination change it to Configured.
 /// </summary>
-public sealed class Specification<T, TState>
+public class Specification<T, TState>
     where T : class
     where TState : SpecificationState
 {
     private readonly SpecificationData<T> _data;
 
     internal Specification(SpecificationData<T> data) => _data = data;
+
+    protected Specification(Specification<T, TState> source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        _data = Copy(source._data);
+    }
 
     internal ISpecificationData<T> Data => _data;
 
