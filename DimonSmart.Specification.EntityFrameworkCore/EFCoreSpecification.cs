@@ -64,8 +64,32 @@ public class EFCoreSpecification<T, TState>
     public EFCoreSpecification<T, Configured> IgnoreAutoIncludes() =>
         new(CoreForConfigured(), Options with { IgnoreAutoIncludes = true });
 
+    /// <summary>Disables all global query filters for the final EF Core query, including tenant filters.</summary>
     public EFCoreSpecification<T, Configured> IgnoreQueryFilters() =>
-        new(CoreForConfigured(), Options with { IgnoreQueryFilters = true });
+        new(CoreForConfigured(), Options with { QueryFilters = QueryFilterOptions.All });
+
+    /// <summary>
+    /// Disables the specified named global query filters for the final EF Core query.
+    /// Other filters remain active. This is a query option, not an authorization boundary:
+    /// callers must control which names can be disabled, especially in multi-tenant applications.
+    /// Repeated calls accumulate names; a preceding full IgnoreQueryFilters() always takes precedence.
+    /// </summary>
+    public EFCoreSpecification<T, Configured> IgnoreQueryFilters(
+        string filterName, params string[] additionalFilterNames)
+    {
+        ArgumentNullException.ThrowIfNull(filterName);
+        if (string.IsNullOrWhiteSpace(filterName))
+            throw new ArgumentException("Filter name cannot be empty or whitespace.", nameof(filterName));
+        ArgumentNullException.ThrowIfNull(additionalFilterNames);
+        if (additionalFilterNames.Any(string.IsNullOrWhiteSpace))
+            throw new ArgumentException("Filter names cannot be null, empty or whitespace.", nameof(additionalFilterNames));
+
+        return new(CoreForConfigured(), Options with
+        {
+            QueryFilters = Options.QueryFilters.AddNames(
+                new[] { filterName }.Concat(additionalFilterNames))
+        });
+    }
 
     public EFCoreSpecification<T, Configured> TagWith(string tag)
     {

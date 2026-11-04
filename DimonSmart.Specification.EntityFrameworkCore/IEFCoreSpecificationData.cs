@@ -23,9 +23,16 @@ public interface IEFCoreSpecificationData<T>
     bool IsIgnoreAutoIncludes { get; }
 
     /// <summary>
-    /// Gets a value indicating whether query filters should be ignored when executing the specification.
+    /// Gets a value indicating whether all query filters should be ignored when executing the specification.
     /// </summary>
     bool IsIgnoreQueryFilters { get; }
+
+    /// <summary>
+    /// Gets the named global query filters disabled for the final query.
+    /// Empty when no filters or all filters are disabled.
+    /// The returned collection is immutable and preserves insertion order.
+    /// </summary>
+    IReadOnlyCollection<string> IgnoredQueryFilterNames { get; }
 
     /// <summary>
     /// Gets a value indicating whether the specification should be executed as a split query.
