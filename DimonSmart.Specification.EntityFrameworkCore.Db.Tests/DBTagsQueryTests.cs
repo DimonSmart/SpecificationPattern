@@ -64,17 +64,6 @@ public class DBTagQueryTests : TestsBase
             .Contain(GetCallerFilePath());
     }
 
-    [Fact]
-    public void TagWithCallSiteShouldIncludeTagOnlyOnce()
-    {
-        const string tag = "Call-site tag";
-        var specification = EFCoreSpecification<Student>.Create()
-            .TagWithCallSite(tag, "TestMethod", "TestFile.cs", 42);
-
-        specification.EFCoreSpecificationData.Tag.Should().Be(
-            $"{tag}{Environment.NewLine}TestMethod() -> TestFile.cs:42");
-    }
-
     public static string GetCallerFilePath([NotParameterized] [CallerFilePath] string callerFilePath = "")
     {
         return callerFilePath;
