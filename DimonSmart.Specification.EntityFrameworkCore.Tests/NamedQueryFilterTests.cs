@@ -83,7 +83,7 @@ public class NamedQueryFilterTests
         Assert.Equal("additionalFilterNames", Assert.Throws<ArgumentException>(
             () => spec.IgnoreQueryFilters("A", "B", "")).ParamName);
         Assert.Equal("additionalFilterNames", Assert.Throws<ArgumentException>(
-            () => spec.IgnoreQueryFilters("A", new[] { null! })).ParamName);
+            () => spec.IgnoreQueryFilters("A", new string[] { null! })).ParamName);
         Assert.Equal("additionalFilterNames", Assert.Throws<ArgumentException>(
             () => spec.IgnoreQueryFilters("A", " \t ")).ParamName);
     }
