@@ -184,6 +184,16 @@ public class ProjectionOptionDbTests
             .IgnoreQueryFilters().Select(p => p.Name);
         Assert.Equal(2, db.BySpecification(all).Count());
 
+        var unknown = EFCoreSpecification.Create<ProjectionPerson>()
+            .IgnoreQueryFilters("UnregisteredFilter").Select(p => p.Name);
+        var direct = db.People.IgnoreQueryFilters(new[] { "UnregisteredFilter" })
+            .Select(p => p.Name);
+        var directError = Record.Exception(() => direct.ToArray());
+        var specificationError = Record.Exception(() => db.BySpecification(unknown).ToArray());
+        Assert.Equal(directError?.GetType(), specificationError?.GetType());
+        if (directError is null)
+            Assert.Equal(direct.ToArray(), db.BySpecification(unknown).ToArray());
+
         var entity = EFCoreSpecification.Create<ProjectionPerson>().Select(p => p);
         var autoSql = db.BySpecification(entity).ToQueryString();
         var noAutoSql = db.BySpecification(EFCoreSpecification.Create<ProjectionPerson>()

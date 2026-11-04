@@ -124,6 +124,83 @@ Compatible paths are normalized: duplicate Includes are removed, longer chains c
 
 Only member-access paths and the seven collection operators listed above are recognized. `EF.Property`, shadow navigations, derived-type casts, `Select`, `Distinct` and arbitrary extension methods are unsupported in v1. EF Core validates whether members are mapped navigations and whether filter predicates translate to SQL. Provider restrictions still apply: for example, EF Core 10 with SQLite can reject filtered pagination followed by a child `ThenInclude` if its translation requires SQL `APPLY`. Successful compilation of the example checks the public API, not SQL translation on every provider.
 
+### Named Query Filters (EF Core 10)
+
+EF Core 10 supports multiple global query filters registered with `HasQueryFilter(name, predicate)`. The no-argument `.IgnoreQueryFilters()` disables **all** filters, including tenant isolation. The new `.IgnoreQueryFilters("SoftDeletionFilter")` disables **only** the named filter; e.g. `TenantFilter` remains active. Multiple names can be supplied and are accumulated by repeated calls and `And` / `Or` (left-to-right deduplicated); if either side disables all filters, the combined query disables all. Options apply once to the **entire resulting query**, not individual branches or entity types. Filter names are exact and case-sensitive in specification state; EF Core determines how they are resolved.
+
+The example registers both filters and demonstrates selective and complete disabling, `And`, `Or`, and a projection. It is compiled as [`NamedQueryFiltersExample.cs`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/NamedQueryFiltersExample.cs) and verified against this README in CI.
+
+<!-- compiled-example: NamedQueryFiltersExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
+namespace DocumentationExamples;
+
+public sealed class NamedFilterOrder
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public bool IsDeleted { get; set; }
+    public int TotalInCents { get; set; }
+}
+
+public sealed class NamedFilterOrdersContext(
+    DbContextOptions<NamedFilterOrdersContext> options, int tenantId) : DbContext(options)
+{
+    public int TenantId { get; } = tenantId;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<NamedFilterOrder>()
+            .HasQueryFilter("SoftDeletionFilter", o => !o.IsDeleted)
+            .HasQueryFilter("TenantFilter", o => o.TenantId == TenantId);
+    }
+}
+
+public static class NamedQueryFiltersExample
+{
+    public static IQueryable<NamedFilterOrder> Query(NamedFilterOrdersContext dbContext)
+    {
+        var expensive = EFCoreSpecification.Create<NamedFilterOrder>()
+            .Where(o => o.TotalInCents > 10000);
+        var includeDeleted = EFCoreSpecification.Create<NamedFilterOrder>()
+            .IgnoreQueryFilters("SoftDeletionFilter");
+
+        return dbContext.BySpecification(expensive.And(includeDeleted)
+            .OrderByDesc(o => o.Id).Take(20));
+    }
+
+    public static IQueryable<NamedFilterOrder> QueryEither(NamedFilterOrdersContext dbContext)
+    {
+        var deleted = EFCoreSpecification.Create<NamedFilterOrder>()
+            .Where(o => o.IsDeleted).IgnoreQueryFilters("SoftDeletionFilter");
+        var expensive = EFCoreSpecification.Create<NamedFilterOrder>()
+            .Where(o => o.TotalInCents > 50000).IgnoreQueryFilters("SoftDeletionFilter");
+
+        return dbContext.BySpecification(deleted.Or(expensive));
+    }
+
+    public static IQueryable<int> ProjectIds(NamedFilterOrdersContext dbContext)
+    {
+        var projection = EFCoreSpecification.Create<NamedFilterOrder>()
+            .IgnoreQueryFilters("SoftDeletionFilter")
+            .Select(o => o.Id);
+
+        return dbContext.BySpecification(projection);
+    }
+
+    public static IQueryable<NamedFilterOrder> QueryWithoutAnyFilters(
+        NamedFilterOrdersContext dbContext) =>
+        dbContext.BySpecification(EFCoreSpecification.Create<NamedFilterOrder>()
+            .IgnoreQueryFilters());
+}
+```
+
+`Select()` is terminal: configure query filters and compose specifications **before** projection. Explicit `Include` / `ThenInclude` and `Select` remain mutually incompatible in the current API.
+
+**Security:** Disabling `TenantFilter` can expose data from other tenants. These methods are query configuration, not authorization; only trusted application code should decide which filters may be bypassed. The library does not inspect or validate names against the EF model.
+
 ### Query options and tags
 
 Tracking (default/no-tracking/identity resolution) and splitting (default/single/split) have one internal state each. Within a specification, the last setter wins. Across `And`/`Or`, different explicit settings conflict; default does not override the `DbContext` configuration.

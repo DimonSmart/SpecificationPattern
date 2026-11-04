@@ -10,6 +10,7 @@ examples = {
     "FilteredIncludeExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/FilteredIncludeExample.cs",
     "ProjectionExample": root / "DimonSmart.Specification.Tests/Documentation/ProjectionExample.cs",
     "EFCoreProjectionExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/EFCoreProjectionExample.cs",
+    "NamedQueryFiltersExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/NamedQueryFiltersExample.cs",
 }
 
 for name, source in examples.items():
