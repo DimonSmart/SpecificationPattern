@@ -130,11 +130,81 @@ Tracking (default/no-tracking/identity resolution) and splitting (default/single
 
 `TagWith("A").TagWith("B")` generates separate ordered SQL comments. Duplicate tags remain in immutable specification state (EF Core 10 may deduplicate identical SQL comments), but empty/whitespace-only strings are ignored (the specification still becomes `Configured`). `TagWith(null)` throws. `TagWithCallSite("A")` adds one user tag plus one call-site tag with caller method, file and line; the file path may be absolute and is visible in SQL.
 
+## Projection / Select
+
+Call `Select<TResult>(Expression<Func<TEntity, TResult>>)` after configuring a base LINQ or EF Core specification to construct a typed, terminal projection. `Where`, ordering, `Skip`, and `Take` operate on the original entity before `Queryable.Select`; enumeration and SQL execution remain deferred. There is no restriction on `TResult` (DTOs, anonymous types, scalars, entities and nullable types are supported).
+
+### LINQ projection
+
+This example is compiled as [`ProjectionExample.cs`](DimonSmart.Specification.Tests/Documentation/ProjectionExample.cs) and checked by CI.
+
+<!-- compiled-example: ProjectionExample -->
+```csharp
+using DimonSmart.Specification;
+using DimonSmart.Specification.Tests.Common;
+
+namespace DocumentationExamples;
+
+public sealed record StudentSummary(int Id, string Name);
+
+public static class ProjectionExample
+{
+    public static IQueryable<StudentSummary> Query(IQueryable<Student> students)
+    {
+        var adults = Specification.Create<Student>().Where(s => s.Age >= 18);
+        var page = Specification.Create<Student>()
+            .OrderBy(s => s.Name).Skip(10).Take(20);
+
+        var projection = adults.And(page)
+            .Select(s => new StudentSummary(s.Id, s.Name));
+
+        return students.BySpecification(projection);
+    }
+}
+```
+
+### EF Core DTO projection
+
+This example is compiled as [`EFCoreProjectionExample.cs`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/EFCoreProjectionExample.cs) and checked by CI.
+
+<!-- compiled-example: EFCoreProjectionExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using DimonSmart.Specification.Tests.Common;
+using Microsoft.EntityFrameworkCore;
+
+namespace DocumentationExamples;
+
+public sealed record StudentDto(int Id, string Name, string SchoolName);
+
+public static class EFCoreProjectionExample
+{
+    public static async Task<List<StudentDto>> QueryAsync(DbContext dbContext)
+    {
+        var adults = EFCoreSpecification.Create<Student>().Where(s => s.Age >= 18);
+        var page = EFCoreSpecification.Create<Student>()
+            .OrderBy(s => s.Name).Skip(10).Take(20).AsNoTracking();
+
+        var projection = adults.And(page)
+            .Select(s => new StudentDto(s.Id, s.Name, s.School.Name));
+
+        return await dbContext.BySpecification(projection).ToListAsync();
+    }
+}
+```
+
+Navigation properties such as `s.School.Name` can be projected directly without `Include`. Explicit `Include`, `ThenInclude`, and filtered Include plans **cannot** be combined with `Select` in this version: calling `Select` throws `InvalidOperationException` immediately. `IgnoreAutoIncludes` without an explicit Include is allowed.
+
+A projected specification is **terminal** at the type level: there are no specification builder operations, composition or replacement `Select` after it. Compose with `And` / `Or` and configure all query options *before* calling `Select`. Standard `IQueryable<TResult>` operators remain available on the returned query.
+
+The library passes the selector expression to the LINQ provider: it does not use `Func`, `Expression.Compile()` or intermediate entity materialization. SQL translation, client evaluation of top-level projections, and support for nested collections depend on EF Core and the database provider. Simple DTO projections can fetch only the columns needed by the selector. Tracking follows normal EF Core rules: scalar-only DTOs do not track entities, but DTOs containing entity instances can track those instances unless a no-tracking option was selected. `AsSplitQuery`, `AsSingleQuery`, query filters, auto-include options, and query tags are retained.
+
 ## Supported operations
 
 | Query operation | LINQ | EF Core |
 |---|---|---|
 | `Where`, `And`, `Or` | Yes | Yes |
+| `Select` (terminal projection) | Yes | Yes |
 | `OrderBy`, `OrderByDesc` | Yes | Yes |
 | `Skip`, `Take` | Yes | Yes |
 | `Include`, `ThenInclude` | — | Yes |
