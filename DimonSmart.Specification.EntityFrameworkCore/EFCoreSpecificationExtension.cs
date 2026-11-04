@@ -12,8 +12,27 @@ public static class EFCoreSpecificationExtension
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(specification);
 
-        var options = specification.Options;
-        IQueryable<T> query = context.Set<T>();
+        return Apply(context, specification.Core.Data, specification.Options);
+    }
+
+    public static IQueryable<TResult> BySpecification<TEntity, TResult>(
+        this DbContext context, EFCoreProjectedSpecification<TEntity, TResult> specification)
+        where TEntity : class
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(specification);
+
+        return Apply(context, specification.Projection.SourceData, specification.Options)
+            .Select(specification.Projection.Selector);
+    }
+
+    private static IQueryable<TEntity> Apply<TEntity>(
+        DbContext context,
+        ISpecificationData<TEntity> sourceData,
+        QueryOptions<TEntity> options)
+        where TEntity : class
+    {
+        IQueryable<TEntity> query = context.Set<TEntity>();
 
         foreach (var include in options.Includes)
             query = include.Apply(query);
@@ -40,6 +59,6 @@ public static class EFCoreSpecificationExtension
         foreach (var tag in options.Tags)
             query = query.TagWith(tag);
 
-        return query.BySpecification(specification.Core);
+        return SpecificationExtension.Apply(query, sourceData);
     }
 }

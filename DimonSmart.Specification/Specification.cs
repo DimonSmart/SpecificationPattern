@@ -45,6 +45,13 @@ public class Specification<T, TState>
         SkipQ = source.SkipQ
     };
 
+    /// <summary>Creates a terminal projection without changing this specification.</summary>
+    public ProjectedSpecification<T, TResult> Select<TResult>(Expression<Func<T, TResult>> selector)
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        return new ProjectedSpecification<T, TResult>(_data, selector);
+    }
+
     public Specification<T, TState> Where(Expression<Func<T, bool>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
