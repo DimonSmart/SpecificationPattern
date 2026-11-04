@@ -140,6 +140,233 @@ public class TypedIncludeDbTests
     }
 
     [Fact]
+    public void FilteredPaginationIsPerParentAndPreservesParentsWithNoMatches()
+    {
+        using var direct = SeedManyBlogs();
+        using var wrapped = SeedManyBlogs();
+
+        var expected = direct.Blogs.AsNoTracking()
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A"))
+                .OrderBy(p => p.Name).ThenBy(p => p.Id).Skip(1).Take(2))
+            .ToList();
+
+        var specification = EFCoreSpecification.Create<IncludeBlog>()
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A"))
+                .OrderBy(p => p.Name).ThenBy(p => p.Id).Skip(1).Take(2))
+            .AsNoTracking();
+        var actual = wrapped.BySpecification(specification).ToList();
+
+        AssertSamePosts(expected, actual);
+        Assert.Equal(new[] { "A-L-02", "A-L-03" },
+            Assert.Single(actual, b => b.Name == "Large").Posts.Select(p => p.Name).OrderBy(n => n));
+        Assert.Equal(new[] { "A-S-02" },
+            Assert.Single(actual, b => b.Name == "Small").Posts.Select(p => p.Name));
+        Assert.Empty(Assert.Single(actual, b => b.Name == "Empty").Posts);
+        Assert.Equal(3, actual.Count);
+    }
+
+    [Fact]
+    public void StandaloneSkipAndTakeMatchDirectEfCorePerParent()
+    {
+        using var directSkip = SeedManyBlogs();
+        using var wrappedSkip = SeedManyBlogs();
+        var expectedSkip = directSkip.Blogs.AsNoTracking()
+            .Include(b => b.Posts.OrderBy(p => p.Name).ThenBy(p => p.Id).Skip(2)).ToList();
+        var actualSkip = wrappedSkip.BySpecification(
+            EFCoreSpecification.Create<IncludeBlog>()
+                .Include(b => b.Posts.OrderBy(p => p.Name).ThenBy(p => p.Id).Skip(2))
+                .AsNoTracking()).ToList();
+        AssertSamePosts(expectedSkip, actualSkip);
+        Assert.Equal(6, Assert.Single(actualSkip, b => b.Name == "Large").Posts.Count);
+        Assert.Empty(Assert.Single(actualSkip, b => b.Name == "Small").Posts);
+
+        using var directTake = SeedManyBlogs();
+        using var wrappedTake = SeedManyBlogs();
+        var expectedTake = directTake.Blogs.AsNoTracking()
+            .Include(b => b.Posts.OrderBy(p => p.Name).ThenBy(p => p.Id).Take(2)).ToList();
+        var actualTake = wrappedTake.BySpecification(
+            EFCoreSpecification.Create<IncludeBlog>()
+                .Include(b => b.Posts.OrderBy(p => p.Name).ThenBy(p => p.Id).Take(2))
+                .AsNoTracking()).ToList();
+        AssertSamePosts(expectedTake, actualTake);
+        Assert.All(actualTake, b => Assert.Equal(2, b.Posts.Count));
+    }
+
+    [Fact]
+    public void RootWhereIsIndependentOfFilteredInclude()
+    {
+        using var direct = SeedManyBlogs();
+        using var wrapped = SeedManyBlogs();
+
+        var expected = direct.Blogs.AsNoTracking()
+            .Where(b => b.Name != "Empty")
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A"))).ToList();
+        var actual = wrapped.BySpecification(
+            EFCoreSpecification.Create<IncludeBlog>()
+                .Where(b => b.Name != "Empty")
+                .Include(b => b.Posts.Where(p => p.Name.StartsWith("A")))
+                .AsNoTracking()).ToList();
+
+        AssertSamePosts(expected, actual);
+        Assert.Equal(new[] { "Large", "Small" }, actual.Select(b => b.Name).OrderBy(n => n));
+    }
+
+    [Fact]
+    public void NestedFilteredThenIncludeMatchesDirectEfCore()
+    {
+        using var direct = Seed();
+        using var wrapped = Seed();
+
+        var expected = direct.Blogs.AsNoTracking()
+            .Include(b => b.Posts)
+            .ThenInclude(p => p.Remarks.Where(r => r.Text.StartsWith("Yes")))
+            .ToList();
+        var actual = wrapped.BySpecification(
+            EFCoreSpecification.Create<IncludeBlog>()
+                .Include(b => b.Posts)
+                .ThenInclude(p => p.Remarks.Where(r => r.Text.StartsWith("Yes")))
+                .AsNoTracking()).ToList();
+
+        AssertSamePosts(expected, actual);
+        var expectedPosts = Assert.Single(expected).Posts.OrderBy(p => p.Id).ToList();
+        var actualPosts = Assert.Single(actual).Posts.OrderBy(p => p.Id).ToList();
+        for (var i = 0; i < expectedPosts.Count; i++)
+        {
+            Assert.Equal(expectedPosts[i].Remarks.Select(r => r.Id).OrderBy(id => id),
+                actualPosts[i].Remarks.Select(r => r.Id).OrderBy(id => id));
+            Assert.Single(actualPosts[i].Remarks);
+        }
+    }
+
+    [Fact]
+    public void FilteredParentWithNestedThenIncludeHasProviderParity()
+    {
+        using var direct = Seed();
+        using var wrapped = Seed();
+
+        List<IncludeBlog>? expected = null;
+        var directError = Record.Exception(() => expected = direct.Blogs.AsNoTracking()
+            .Include(b => b.Posts.OrderBy(p => p.Id).Take(2))
+            .ThenInclude(p => p.Remarks).ToList());
+
+        List<IncludeBlog>? actual = null;
+        var wrappedError = Record.Exception(() => actual = wrapped.BySpecification(
+            EFCoreSpecification.Create<IncludeBlog>()
+                .Include(b => b.Posts.OrderBy(p => p.Id).Take(2))
+                .ThenInclude(p => p.Remarks)
+                .AsNoTracking()).ToList());
+
+        if (directError is not null)
+        {
+            // SQLite can reject APPLY-based translation: the wrapped query must fail identically.
+            Assert.Contains("APPLY", directError.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.NotNull(wrappedError);
+            Assert.Equal(directError.GetType(), wrappedError.GetType());
+            Assert.Contains("APPLY", wrappedError.Message, StringComparison.OrdinalIgnoreCase);
+            return;
+        }
+
+        Assert.Null(wrappedError);
+        AssertSamePosts(expected!, actual!);
+        Assert.All(Assert.Single(actual!).Posts, p => Assert.Equal(2, p.Remarks.Count));
+    }
+
+    [Fact]
+    public void SharedFilteredBranchesSurviveAndOrAndFurtherThenInclude()
+    {
+        using var direct = Seed();
+        using var wrappedAnd = Seed();
+        using var wrappedOr = Seed();
+
+        var source = EFCoreSpecification.Create<IncludeBlog>()
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A")));
+        var author = source.ThenInclude(p => p.Author);
+        var publisher = source.ThenInclude(p => p.Publisher);
+        var remarks = source.ThenInclude(p => p.Remarks).ThenInclude(r => r.Reviewer);
+        var and = author.And(publisher).And(remarks).AsNoTracking();
+        var or = author.Or(publisher).Or(remarks).AsNoTracking();
+
+        Assert.Equal(new[] { "Posts.Author", "Posts.Publisher", "Posts.Remarks.Reviewer" },
+            and.EFCoreSpecificationData.Includes);
+        Assert.Equal(and.EFCoreSpecificationData.Includes, or.EFCoreSpecificationData.Includes);
+        Assert.Equal(new[] { "Posts" }, source.EFCoreSpecificationData.Includes);
+        Assert.Equal(new[] { "Posts.Author" }, author.EFCoreSpecificationData.Includes);
+        Assert.Equal(new[] { "Posts.Publisher" }, publisher.EFCoreSpecificationData.Includes);
+
+        var expected = direct.Blogs.AsNoTracking()
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A"))).ThenInclude(p => p.Author)
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A"))).ThenInclude(p => p.Publisher)
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A"))).ThenInclude(p => p.Remarks)
+            .ThenInclude(r => r.Reviewer).ToList();
+        var actualAnd = wrappedAnd.BySpecification(and).ToList();
+        var actualOr = wrappedOr.BySpecification(or).ToList();
+
+        AssertSamePosts(expected, actualAnd);
+        AssertSamePosts(expected, actualOr);
+        foreach (var blog in actualAnd.Concat(actualOr))
+            Assert.All(blog.Posts, p =>
+            {
+                Assert.NotNull(p.Author);
+                Assert.NotNull(p.Publisher);
+                Assert.Equal(2, p.Remarks.Count);
+                Assert.All(p.Remarks, r => Assert.NotNull(r.Reviewer));
+            });
+    }
+
+    [Fact]
+    public void AbsorbedShortIncludeCanBeExtendedWithoutDroppingExistingBranch()
+    {
+        using var direct = Seed();
+        using var wrapped = Seed();
+
+        var longer = EFCoreSpecification.Create<IncludeBlog>()
+            .Include(b => b.Posts).ThenInclude(p => p.Author);
+        var withShortPrefix = longer.Include(b => b.Posts);
+        var withSibling = withShortPrefix.ThenInclude(p => p.Publisher);
+
+        Assert.Equal(new[] { "Posts.Author" }, withShortPrefix.EFCoreSpecificationData.Includes);
+        Assert.Equal(new[] { "Posts.Author", "Posts.Publisher" }, withSibling.EFCoreSpecificationData.Includes);
+        Assert.Equal(new[] { "Posts.Author" }, longer.EFCoreSpecificationData.Includes);
+
+        var expected = direct.Blogs.AsNoTracking()
+            .Include(b => b.Posts).ThenInclude(p => p.Author)
+            .Include(b => b.Posts).ThenInclude(p => p.Publisher).ToList();
+        var actual = wrapped.BySpecification(withSibling.AsNoTracking()).ToList();
+        AssertSamePosts(expected, actual);
+        Assert.All(Assert.Single(actual).Posts, p =>
+        {
+            Assert.NotNull(p.Author);
+            Assert.NotNull(p.Publisher);
+        });
+    }
+
+    [Fact]
+    public void ImmutableSpecificationCanBeReusedAcrossContextsAndSplitQueries()
+    {
+        var specification = EFCoreSpecification.Create<IncludeBlog>()
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A")))
+            .ThenInclude(p => p.Remarks)
+            .AsNoTracking()
+            .AsSplitQuery();
+
+        using var direct = Seed();
+        using var first = Seed();
+        using var second = Seed();
+
+        var expected = direct.Blogs.AsNoTracking().AsSplitQuery()
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A")))
+            .ThenInclude(p => p.Remarks).ToList();
+        var result1 = first.BySpecification(specification).ToList();
+        var result2 = second.BySpecification(specification).ToList();
+
+        AssertSamePosts(expected, result1);
+        AssertSamePosts(expected, result2);
+        Assert.Equal(new[] { "Posts.Remarks" }, specification.EFCoreSpecificationData.Includes);
+        Assert.All(Assert.Single(result1).Posts, p => Assert.Equal(2, p.Remarks.Count));
+        Assert.All(Assert.Single(result2).Posts, p => Assert.Equal(2, p.Remarks.Count));
+    }
+
+    [Fact]
     public void SqlTagsAreSeparateOrderedAndDuplicatesArePreserved()
     {
         using var db = Seed();
@@ -164,6 +391,55 @@ public class TypedIncludeDbTests
         Assert.Equal(1, sql.Split("-- Marker", StringSplitOptions.None).Length - 1);
         Assert.Contains(nameof(CallSiteIsEmittedOnceAlongsideUserTag), sql);
         Assert.Contains(nameof(TypedIncludeDbTests) + ".cs", sql);
+    }
+
+    private static void AssertSamePosts(
+        IEnumerable<IncludeBlog> expected, IEnumerable<IncludeBlog> actual)
+    {
+        var left = expected.OrderBy(b => b.Id).ToArray();
+        var right = actual.OrderBy(b => b.Id).ToArray();
+        Assert.Equal(left.Select(b => b.Id), right.Select(b => b.Id));
+        for (var i = 0; i < left.Length; i++)
+        {
+            Assert.Equal(left[i].Name, right[i].Name);
+            Assert.Equal(left[i].Posts.Select(p => p.Id).OrderBy(id => id),
+                right[i].Posts.Select(p => p.Id).OrderBy(id => id));
+        }
+    }
+
+    private static IncludeTestContext SeedManyBlogs()
+    {
+        var db = new IncludeTestContext();
+        db.Database.OpenConnection();
+        db.Database.EnsureCreated();
+
+        static IncludePost Post(string name) => new()
+        {
+            Name = name,
+            Author = new IncludeAuthor { Name = "Author " + name },
+            Publisher = new IncludePublisher { Name = "Publisher " + name }
+        };
+
+        db.Blogs.AddRange(
+            new IncludeBlog
+            {
+                Name = "Large",
+                Posts = Enumerable.Range(1, 7).Select(i => Post($"A-L-{i:00}"))
+                    .Append(Post("B-L-01")).ToList()
+            },
+            new IncludeBlog
+            {
+                Name = "Small",
+                Posts = [Post("A-S-01"), Post("A-S-02")]
+            },
+            new IncludeBlog
+            {
+                Name = "Empty",
+                Posts = [Post("B-E-01"), Post("B-E-02")]
+            });
+        db.SaveChanges();
+        db.ChangeTracker.Clear();
+        return db;
     }
 
     private static IncludeTestContext Seed()
