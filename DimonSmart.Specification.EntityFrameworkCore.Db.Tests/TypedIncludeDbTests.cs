@@ -212,6 +212,54 @@ public class TypedIncludeDbTests
     }
 
     [Fact]
+    public void SecondaryOrderingWithTiesMatchesDirectEfCoreInBothDirections()
+    {
+        using var directAscending = Seed();
+        using var wrappedAscending = Seed();
+        var expectedAscending = directAscending.Blogs.AsNoTracking()
+            .Include(b => b.Posts.OrderBy(p => p.Name.Length)
+                .ThenByDescending(p => p.Name).Skip(1).Take(2)).ToList();
+        var actualAscending = wrappedAscending.BySpecification(
+            EFCoreSpecification.Create<IncludeBlog>()
+                .Include(b => b.Posts.OrderBy(p => p.Name.Length)
+                    .ThenByDescending(p => p.Name).Skip(1).Take(2))
+                .AsNoTracking()).ToList();
+        AssertSamePosts(expectedAscending, actualAscending);
+        Assert.Equal(new[] { "Banana", "Cherry" },
+            Assert.Single(actualAscending).Posts.Select(p => p.Name).OrderBy(n => n));
+
+        using var directDescending = Seed();
+        using var wrappedDescending = Seed();
+        var expectedDescending = directDescending.Blogs.AsNoTracking()
+            .Include(b => b.Posts.OrderByDescending(p => p.Name.Length)
+                .ThenBy(p => p.Name).Take(2)).ToList();
+        var actualDescending = wrappedDescending.BySpecification(
+            EFCoreSpecification.Create<IncludeBlog>()
+                .Include(b => b.Posts.OrderByDescending(p => p.Name.Length)
+                    .ThenBy(p => p.Name).Take(2))
+                .AsNoTracking()).ToList();
+        AssertSamePosts(expectedDescending, actualDescending);
+        Assert.Equal(new[] { "Apricot", "Avocado" },
+            Assert.Single(actualDescending).Posts.Select(p => p.Name).OrderBy(n => n));
+    }
+
+    [Fact]
+    public void DifferentFiltersConflictOnAncestorEvenWithDifferentChildBranches()
+    {
+        var author = EFCoreSpecification.Create<IncludeBlog>()
+            .Include(b => b.Posts.Take(2)).ThenInclude(p => p.Author);
+        var publisher = EFCoreSpecification.Create<IncludeBlog>()
+            .Include(b => b.Posts.Take(2)).ThenInclude(p => p.Publisher);
+
+        var and = Assert.Throws<InvalidOperationException>(() => author.And(publisher));
+        var or = Assert.Throws<InvalidOperationException>(() => author.Or(publisher));
+        Assert.Contains("Posts", and.Message);
+        Assert.Contains("different filtered includes", and.Message);
+        Assert.Contains("Posts", or.Message);
+        Assert.Contains("different filtered includes", or.Message);
+    }
+
+    [Fact]
     public void NestedFilteredThenIncludeMatchesDirectEfCore()
     {
         using var direct = Seed();
