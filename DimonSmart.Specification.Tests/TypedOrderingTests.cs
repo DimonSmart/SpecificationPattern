@@ -191,4 +191,208 @@ public sealed class TypedOrderingTests
         Assert.Equal("expression", Assert.Throws<ArgumentNullException>(() =>
             Specification.Create<Student>().OrderByDesc<int>(null!)).ParamName);
     }
+    [Fact]
+    public void ExplicitThenByPreservesOriginalTypedSelectorsAndQueryableMethodChain()
+    {
+        Expression<Func<OrderingItem, string>> name = item => item.Name;
+        Expression<Func<OrderingItem, long>> rank = item => item.Rank;
+        Expression<Func<OrderingItem, int?>> optional = item => item.Optional;
+        var spec = Specification.Create<OrderingItem>()
+            .OrderBy(name)
+            .ThenByDesc(rank)
+            .ThenBy(optional);
+
+        var keys = spec.SpecificationData.OrderExpressions;
+        Assert.Equal(new[] { typeof(string), typeof(long), typeof(int?) },
+            keys.Select(x => x.expr.ReturnType));
+        Assert.Equal(new[]
+        {
+            OrderDirectionEnum.Ascending,
+            OrderDirectionEnum.Descending,
+            OrderDirectionEnum.Ascending
+        }, keys.Select(x => x.direction));
+        Assert.Same(name, keys[0].expr);
+        Assert.Same(rank, keys[1].expr);
+        Assert.Same(optional, keys[2].expr);
+        Assert.All(keys, x => Assert.NotEqual(ExpressionType.Convert, x.expr.Body.NodeType));
+
+        var source = new[] { new OrderingItem() }.AsQueryable();
+        var third = Assert.IsType<MethodCallExpression>(source.BySpecification(spec).Expression);
+        AssertCall(third, nameof(Queryable.ThenBy), typeof(int?), optional);
+        var second = Assert.IsType<MethodCallExpression>(third.Arguments[0]);
+        AssertCall(second, nameof(Queryable.ThenByDescending), typeof(long), rank);
+        var first = Assert.IsType<MethodCallExpression>(second.Arguments[0]);
+        AssertCall(first, nameof(Queryable.OrderBy), typeof(string), name);
+        Assert.Same(source.Expression, first.Arguments[0]);
+    }
+
+    [Fact]
+    public void ExplicitThenByDescWorksAfterDescendingPrimaryAndWithThreeLevels()
+    {
+        var rows = new[]
+        {
+            new OrderingItem { Id = 1, Name = "A", Rank = 1 },
+            new OrderingItem { Id = 2, Name = "B", Rank = 1 },
+            new OrderingItem { Id = 3, Name = "B", Rank = 3 },
+            new OrderingItem { Id = 4, Name = "A", Rank = 2 }
+        }.AsQueryable();
+
+        var spec = Specification.Create<OrderingItem>()
+            .OrderByDesc(i => i.Name)
+            .ThenByDesc(i => i.Rank)
+            .ThenBy(i => i.Id);
+
+        Assert.Equal(new[] { 3, 2, 4, 1 },
+            rows.BySpecification(spec).Select(i => i.Id).ToArray());
+        var third = Assert.IsType<MethodCallExpression>(rows.BySpecification(spec).Expression);
+        Assert.Equal(nameof(Queryable.ThenBy), third.Method.Name);
+        var second = Assert.IsType<MethodCallExpression>(third.Arguments[0]);
+        Assert.Equal(nameof(Queryable.ThenByDescending), second.Method.Name);
+        var first = Assert.IsType<MethodCallExpression>(second.Arguments[0]);
+        Assert.Equal(nameof(Queryable.OrderByDescending), first.Method.Name);
+    }
+
+    [Fact]
+    public void ExplicitLegacyAndMixedOrderingHaveIdenticalResults()
+    {
+        var rows = new[]
+        {
+            new OrderingItem { Id = 3, Name = "A", Rank = 5 },
+            new OrderingItem { Id = 1, Name = "B", Rank = 4 },
+            new OrderingItem { Id = 2, Name = "A", Rank = 5 },
+            new OrderingItem { Id = 4, Name = "A", Rank = 3 }
+        }.AsQueryable();
+        var legacy = Specification.Create<OrderingItem>()
+            .OrderBy(i => i.Name).OrderByDesc(i => i.Rank).OrderBy(i => i.Id);
+        var explicitKeys = Specification.Create<OrderingItem>()
+            .OrderBy(i => i.Name).ThenByDesc(i => i.Rank).ThenBy(i => i.Id);
+        var mixed = Specification.Create<OrderingItem>()
+            .OrderBy(i => i.Name).ThenByDesc(i => i.Rank).OrderBy(i => i.Id);
+
+        var expected = rows.BySpecification(legacy).Select(i => i.Id).ToArray();
+        Assert.Equal(new[] { 2, 3, 4, 1 }, expected);
+        Assert.Equal(expected, rows.BySpecification(explicitKeys).Select(i => i.Id).ToArray());
+        Assert.Equal(expected, rows.BySpecification(mixed).Select(i => i.Id).ToArray());
+    }
+
+    [Fact]
+    public void ExplicitSecondaryOrderingKeepsImmutableBranchesAndReadOnlyDiagnostics()
+    {
+        var first = Specification.Create<OrderingItem>().OrderBy(i => i.Name);
+        var snapshot = first.SpecificationData.OrderExpressions;
+        var byId = first.ThenBy(i => i.Id);
+        var byRank = first.ThenByDesc(i => i.Rank);
+
+        Assert.Single(snapshot);
+        Assert.Single(first.SpecificationData.OrderExpressions);
+        Assert.Equal(2, byId.SpecificationData.OrderExpressions.Count);
+        Assert.Equal(2, byRank.SpecificationData.OrderExpressions.Count);
+        Assert.Equal(typeof(int), byId.SpecificationData.OrderExpressions[1].expr.ReturnType);
+        Assert.Equal(typeof(long), byRank.SpecificationData.OrderExpressions[1].expr.ReturnType);
+        var list = Assert.IsAssignableFrom<IList<(OrderDirectionEnum direction, LambdaExpression expr)>>(
+            byId.SpecificationData.OrderExpressions);
+        Assert.Throws<NotSupportedException>(() => list.Clear());
+        var copy = Assert.IsType<SpecificationData<OrderingItem>>(byId.SpecificationData);
+        copy.TakeQ = 0;
+        Assert.Null(byId.SpecificationData.TakeQ);
+    }
+
+    [Fact]
+    public void ThenByRequiresPrimaryOrderingEvenWhenSpecificationIsConfigured()
+    {
+        var missing = Assert.Throws<InvalidOperationException>(() =>
+            Specification.Create<OrderingItem>().ThenBy(i => i.Id));
+        Assert.Contains("existing OrderBy or OrderByDesc", missing.Message);
+
+        var withTake = Assert.Throws<InvalidOperationException>(() =>
+            Specification.Create<OrderingItem>().Take(5).ThenByDesc(i => i.Rank));
+        Assert.Contains("ThenByDesc", withTake.Message);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            Specification.Create<OrderingItem>().Skip(0).ThenBy(i => i.Id));
+    }
+
+    [Fact]
+    public void ThenByRejectsNullSelectorsAndOrderingAfterSeekAfter()
+    {
+        var root = Specification.Create<OrderingItem>();
+        Assert.Equal("expression", Assert.Throws<ArgumentNullException>(() =>
+            root.ThenBy<int>(null!)).ParamName);
+        Assert.Equal("expression", Assert.Throws<ArgumentNullException>(() =>
+            root.OrderBy(i => i.Id).ThenByDesc<long>(null!)).ParamName);
+
+        var first = root.OrderBy(i => i.Id);
+        var seek = first.SeekAfter(2);
+        Assert.Contains("SeekAfter", Assert.Throws<InvalidOperationException>(() =>
+            seek.ThenBy(i => i.Rank)).Message);
+        Assert.Throws<InvalidOperationException>(() => seek.ThenByDesc(i => i.Name));
+        Assert.Single(first.SpecificationData.OrderExpressions);
+        Assert.Single(seek.SpecificationData.OrderExpressions);
+    }
+
+    [Fact]
+    public void ThenByRemainsComposableWithAndOrAndRetainsOrderingConflicts()
+    {
+        var filter = Specification.Create<OrderingItem>().Where(i => i.Id > 0);
+        var ordering = Specification.Create<OrderingItem>()
+            .OrderBy(i => i.Name).ThenBy(i => i.Id);
+        var and = filter.And(ordering).ThenByDesc(i => i.Rank);
+        var or = filter.Or(ordering).ThenByDesc(i => i.Rank);
+
+        Assert.Equal(3, and.SpecificationData.OrderExpressions.Count);
+        Assert.Equal(3, or.SpecificationData.OrderExpressions.Count);
+        Assert.Single(ordering.SpecificationData.OrderExpressions.Skip(1));
+        Assert.Throws<InvalidOperationException>(() =>
+            ordering.And(Specification.Create<OrderingItem>().OrderBy(i => i.Rank)));
+        Assert.Throws<InvalidOperationException>(() =>
+            ordering.Or(Specification.Create<OrderingItem>().ThenBy(i => i.Id)));
+
+        var rows = new[]
+        {
+            new OrderingItem { Id = 2, Name = "A", Rank = 1 },
+            new OrderingItem { Id = 1, Name = "A", Rank = 2 },
+            new OrderingItem { Id = 3, Name = "B", Rank = 3 }
+        }.AsQueryable();
+        Assert.Equal(new[] { 1, 2, 3 }, rows.BySpecification(and).Select(i => i.Id).ToArray());
+        Assert.Equal(new[] { 1, 2, 3 }, rows.BySpecification(or).Select(i => i.Id).ToArray());
+    }
+
+    [Fact]
+    public void ThenByIsAppliedBeforeTakeAndTerminalSelectDespiteCallOrder()
+    {
+        var rows = new[]
+        {
+            new OrderingItem { Id = 1, Name = "B", Rank = 1 },
+            new OrderingItem { Id = 2, Name = "A", Rank = 2 },
+            new OrderingItem { Id = 3, Name = "A", Rank = 3 }
+        }.AsQueryable();
+        var spec = Specification.Create<OrderingItem>()
+            .Where(i => i.Id > 0, true)
+            .OrderBy(i => i.Name)
+            .Take(2)
+            .ThenByDesc(i => i.Rank)
+            .Select(i => i.Id);
+        Assert.Equal(new[] { 3, 2 }, rows.BySpecification(spec).ToArray());
+    }
+
+    [Fact]
+    public void ThenByParticipatesInFullSeekAfterCursor()
+    {
+        var rows = new[]
+        {
+            new OrderingItem { Id = 1, Rank = 3 },
+            new OrderingItem { Id = 2, Rank = 2 },
+            new OrderingItem { Id = 3, Rank = 2 },
+            new OrderingItem { Id = 4, Rank = 1 }
+        }.AsQueryable();
+        var spec = Specification.Create<OrderingItem>()
+            .OrderByDesc(i => i.Rank)
+            .ThenBy(i => i.Id)
+            .SeekAfter((2L, 2))
+            .Take(2);
+
+        Assert.Equal(new[] { 3, 4 }, rows.BySpecification(spec).Select(i => i.Id).ToArray());
+        Assert.Throws<ArgumentException>(() => Specification.Create<OrderingItem>()
+            .OrderByDesc(i => i.Rank).ThenBy(i => i.Id).SeekAfter(2L));
+    }
 }

@@ -30,18 +30,49 @@ var result = students.AsQueryable().BySpecification(combined).ToList();
 
 ### Typed ordering
 
-`OrderBy<TKey>` and `OrderByDesc<TKey>` preserve the original key type and
-expression tree in both packages. Every call **appends** another ordering level:
-the first becomes `Queryable.OrderBy` / `OrderByDescending`, and later calls
-become `ThenBy` / `ThenByDescending` with their own inferred `TKey`.
-These calls do not replace previous sorting levels.
+Both packages support typed `OrderBy<TKey>` / `OrderByDesc<TKey>` for the
+primary key and explicit `ThenBy<TKey>` / `ThenByDesc<TKey>` for subsequent
+keys. All selectors retain their original expression trees and inferred key types
+without library-generated conversions to `object`.
 
+This example is compiled as
+[`TypedOrderingExample.cs`](DimonSmart.Specification.Tests/Documentation/TypedOrderingExample.cs)
+and checked against the README by CI.
+
+<!-- compiled-example: TypedOrderingExample -->
 ```csharp
-var sorted = Specification.Create<Student>()
-    .OrderBy(s => s.Name)         // TKey = string
-    .OrderByDesc(s => s.Age)      // TKey = int
-    .OrderBy(s => (long)s.Id);    // TKey = long
+using DimonSmart.Specification;
+using DimonSmart.Specification.Tests.Common;
+
+namespace DocumentationExamples;
+
+public static class TypedOrderingExample
+{
+    public static IQueryable<Student> Query(IQueryable<Student> students)
+    {
+        var spec = Specification.Create<Student>()
+            .OrderBy(s => s.Name)
+            .ThenByDesc(s => s.Age)
+            .ThenBy(s => s.Id);
+
+        return students.BySpecification(spec);
+    }
+}
 ```
+
+The first key uses LINQ `Queryable.OrderBy` or `OrderByDescending`;
+subsequent keys use `Queryable.ThenBy` or `ThenByDescending`.
+`ThenBy` adds an ascending key and `ThenByDesc` adds a descending key.
+Both require an existing `OrderBy` or `OrderByDesc`: calling either without
+an ordering throws `InvalidOperationException`, even on a specification
+configured by `Take`, `Skip`, or EF Core query options.
+
+For backwards compatibility, repeated `OrderBy` / `OrderByDesc` calls
+still **append** keys, rather than replacing previous ordering. The old
+and new forms can also be mixed, always preserving call order. Once
+`SeekAfter` has been configured, adding any sort key (including `ThenBy`
+or `ThenByDesc`) throws. With keyset pagination, all key values must
+be supplied in order, including keys added through `ThenBy`.
 
 The `SpecificationData.OrderExpressions` diagnostic property exposes a
 **read-only, independent snapshot** of

@@ -68,23 +68,32 @@ public class Specification<T, TState>
         return condition ? Where(expression) : this;
     }
 
-    public Specification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression)
-    {
-        ArgumentNullException.ThrowIfNull(expression);
-        if (_data.Seek is not null)
-            throw new InvalidOperationException("Cannot add ordering after SeekAfter.");
-        var data = Copy(_data);
-        data.OrderClauses.Add(new OrderClause<T, TKey>(expression, OrderDirectionEnum.Ascending));
-        return new Specification<T, Configured>(data);
-    }
+    public Specification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression) =>
+        AppendOrdering(expression, OrderDirectionEnum.Ascending, requireExisting: false);
 
-    public Specification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression)
+    public Specification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
+        AppendOrdering(expression, OrderDirectionEnum.Descending, requireExisting: false);
+
+    /// <summary>Adds a secondary ascending key to an existing ordering.</summary>
+    public Specification<T, Configured> ThenBy<TKey>(Expression<Func<T, TKey>> expression) =>
+        AppendOrdering(expression, OrderDirectionEnum.Ascending, requireExisting: true);
+
+    /// <summary>Adds a secondary descending key to an existing ordering.</summary>
+    public Specification<T, Configured> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
+        AppendOrdering(expression, OrderDirectionEnum.Descending, requireExisting: true);
+
+    private Specification<T, Configured> AppendOrdering<TKey>(
+        Expression<Func<T, TKey>> expression, OrderDirectionEnum direction, bool requireExisting)
     {
         ArgumentNullException.ThrowIfNull(expression);
         if (_data.Seek is not null)
             throw new InvalidOperationException("Cannot add ordering after SeekAfter.");
+        if (requireExisting && _data.OrderClauses.Count == 0)
+            throw new InvalidOperationException(
+                $"{(direction == OrderDirectionEnum.Ascending ? "ThenBy" : "ThenByDesc")} requires an existing OrderBy or OrderByDesc.");
+
         var data = Copy(_data);
-        data.OrderClauses.Add(new OrderClause<T, TKey>(expression, OrderDirectionEnum.Descending));
+        data.OrderClauses.Add(new OrderClause<T, TKey>(expression, direction));
         return new Specification<T, Configured>(data);
     }
 

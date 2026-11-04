@@ -50,6 +50,12 @@ public class EFCoreSpecification<T, TState>
     public EFCoreSpecification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.OrderByDesc(expression), Options);
 
+    public EFCoreSpecification<T, Configured> ThenBy<TKey>(Expression<Func<T, TKey>> expression) =>
+        new(Core.ThenBy(expression), Options);
+
+    public EFCoreSpecification<T, Configured> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
+        new(Core.ThenByDesc(expression), Options);
+
     public EFCoreSpecification<T, Configured> Take(int count) =>
         new(Core.Take(count), Options);
 
