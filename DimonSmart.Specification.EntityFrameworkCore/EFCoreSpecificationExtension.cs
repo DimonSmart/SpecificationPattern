@@ -28,7 +28,7 @@ public static class EFCoreSpecificationExtension
 
     private static IQueryable<TEntity> Apply<TEntity>(
         DbContext context,
-        ISpecificationData<TEntity> sourceData,
+        SpecificationData<TEntity> sourceData,
         QueryOptions<TEntity> options)
         where TEntity : class
     {

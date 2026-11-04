@@ -30,17 +30,16 @@ public class Specification<T, TState>
         _data = Copy(source._data);
     }
 
-    internal ISpecificationData<T> Data => _data;
+    internal SpecificationData<T> Data => _data;
 
     public ISpecificationData<T> SpecificationData => Copy(_data);
 
     public Expression<Func<T, bool>>? GetWhereExpression() => _data.WhereExpression;
 
-    internal static SpecificationData<T> Copy(ISpecificationData<T> source) => new()
+    internal static SpecificationData<T> Copy(SpecificationData<T> source) => new()
     {
         WhereExpression = source.WhereExpression,
-        OrderExpressions = new List<(OrderDirectionEnum direction, Expression<Func<T, object>> expr)>(
-            source.OrderExpressions),
+        OrderClauses = new List<IOrderClause<T>>(source.OrderClauses),
         TakeQ = source.TakeQ,
         SkipQ = source.SkipQ
     };
@@ -61,19 +60,19 @@ public class Specification<T, TState>
         return new Specification<T, TState>(data);
     }
 
-    public Specification<T, Configured> OrderBy(Expression<Func<T, object>> expression)
+    public Specification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
         var data = Copy(_data);
-        data.OrderExpressions.Add((OrderDirectionEnum.Ascending, expression));
+        data.OrderClauses.Add(new OrderClause<T, TKey>(expression, OrderDirectionEnum.Ascending));
         return new Specification<T, Configured>(data);
     }
 
-    public Specification<T, Configured> OrderByDesc(Expression<Func<T, object>> expression)
+    public Specification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
         var data = Copy(_data);
-        data.OrderExpressions.Add((OrderDirectionEnum.Descending, expression));
+        data.OrderClauses.Add(new OrderClause<T, TKey>(expression, OrderDirectionEnum.Descending));
         return new Specification<T, Configured>(data);
     }
 
@@ -102,7 +101,7 @@ public class Specification<T, TState>
         var right = other._data;
         var left = _data;
 
-        if (left.OrderExpressions.Count != 0 && right.OrderExpressions.Count != 0)
+        if (left.OrderClauses.Count != 0 && right.OrderClauses.Count != 0)
             throw new InvalidOperationException("Cannot combine specifications: both define ordering.");
         if (left.SkipQ.HasValue && right.SkipQ.HasValue)
             throw new InvalidOperationException("Cannot combine specifications: both define Skip.");
@@ -118,7 +117,7 @@ public class Specification<T, TState>
                     right.WhereExpression, and ? Expression.AndAlso : Expression.OrElse);
         }
 
-        result.OrderExpressions.AddRange(right.OrderExpressions);
+        result.OrderClauses.AddRange(right.OrderClauses);
         result.SkipQ ??= right.SkipQ;
         result.TakeQ ??= right.TakeQ;
         return new Specification<T, TResult>(result);

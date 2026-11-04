@@ -9,11 +9,11 @@ namespace DimonSmart.Specification;
 public sealed class ProjectedSpecification<TEntity, TResult>
     where TEntity : class
 {
-    internal ISpecificationData<TEntity> SourceData { get; }
+    internal SpecificationData<TEntity> SourceData { get; }
     internal Expression<Func<TEntity, TResult>> Selector { get; }
 
     internal ProjectedSpecification(
-        ISpecificationData<TEntity> sourceData,
+        SpecificationData<TEntity> sourceData,
         Expression<Func<TEntity, TResult>> selector)
     {
         SourceData = Specification<TEntity, Composable>.Copy(sourceData);

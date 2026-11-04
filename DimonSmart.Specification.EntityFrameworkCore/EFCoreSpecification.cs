@@ -37,10 +37,10 @@ public class EFCoreSpecification<T, TState>
     public EFCoreSpecification<T, TState> Where(Expression<Func<T, bool>> predicate) =>
         new(Core.Where(predicate), Options);
 
-    public EFCoreSpecification<T, Configured> OrderBy(Expression<Func<T, object>> expression) =>
+    public EFCoreSpecification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.OrderBy(expression), Options);
 
-    public EFCoreSpecification<T, Configured> OrderByDesc(Expression<Func<T, object>> expression) =>
+    public EFCoreSpecification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.OrderByDesc(expression), Options);
 
     public EFCoreSpecification<T, Configured> Take(int count) =>

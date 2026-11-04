@@ -18,13 +18,13 @@ public interface ISpecificationData<T>
     Expression<Func<T, bool>>? WhereExpression { get; }
 
     /// <summary>
-    /// Gets the list of order expressions and their corresponding directions.
+    /// Gets a read-only snapshot of order selectors and their corresponding directions.
     /// </summary>
     /// <remarks>
     /// Each item in the list consists of an expression to order by and the order direction (ascending or descending).
     /// The order expressions will be applied in the specified order of appearance.
     /// </remarks>
-    List<(OrderDirectionEnum direction, Expression<Func<T, object>> expr)> OrderExpressions { get; }
+    IReadOnlyList<(OrderDirectionEnum direction, LambdaExpression expr)> OrderExpressions { get; }
 
     /// <summary>
     /// Gets the number of elements to take from the query result.

@@ -1,5 +1,3 @@
-﻿using static DimonSmart.Specification.OrderDirectionEnum;
-
 namespace DimonSmart.Specification;
 
 public static class SpecificationExtension
@@ -24,7 +22,7 @@ public static class SpecificationExtension
         return Apply(query, specification.SourceData).Select(specification.Selector);
     }
 
-    internal static IQueryable<T> Apply<T>(IQueryable<T> query, ISpecificationData<T> specData)
+    internal static IQueryable<T> Apply<T>(IQueryable<T> query, SpecificationData<T> specData)
         where T : class
     {
         if (specData.WhereExpression != null)
@@ -32,15 +30,13 @@ public static class SpecificationExtension
             query = query.Where(specData.WhereExpression);
         }
 
-        if (specData.OrderExpressions.Any())
+        var clauses = specData.OrderClauses;
+        if (clauses.Count > 0)
         {
-            var (direction, expr) = specData.OrderExpressions.First();
-            var orderedQuery = direction == Ascending ? query.OrderBy(expr) : query.OrderByDescending(expr);
-            var thenOrderBy = specData.OrderExpressions.Skip(1);
-            query = thenOrderBy.Aggregate(orderedQuery,
-                (current, orderBy) => orderBy.direction == Ascending
-                    ? current.ThenBy(orderBy.expr)
-                    : current.ThenByDescending(orderBy.expr));
+            IOrderedQueryable<T> ordered = clauses[0].ApplyFirst(query);
+            for (var i = 1; i < clauses.Count; i++)
+                ordered = clauses[i].ApplyNext(ordered);
+            query = ordered;
         }
 
         if (specData.SkipQ.HasValue)
