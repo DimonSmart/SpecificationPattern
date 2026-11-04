@@ -108,6 +108,64 @@ public class IncludeTests
     }
 
     [Fact]
+    public void AllSevenFilteredIncludeOperatorsPreserveTypedPaths()
+    {
+        EFCoreSpecification<Student, Composable> ascending =
+            EFCoreSpecification.Create<Student>()
+                .Include(s => s.Books
+                    .Where(b => b.Name.StartsWith("A"))
+                    .OrderBy(b => b.Name)
+                    .ThenByDescending(b => b.Id)
+                    .Skip(1)
+                    .Take(2))
+                .ThenInclude(b => b.Author);
+
+        EFCoreSpecification<Student, Configured> descending =
+            EFCoreSpecification.Create<Student>()
+                .AsNoTracking()
+                .Include(s => s.Books
+                    .OrderByDescending(b => b.Name)
+                    .ThenBy(b => b.Id))
+                .ThenInclude(b => b.Author);
+
+        ascending.EFCoreSpecificationData.Includes.Should().Equal("Books.Author");
+        descending.EFCoreSpecificationData.Includes.Should().Equal("Books.Author");
+        descending.EFCoreSpecificationData.IsAsNoTracking.Should().BeTrue();
+    }
+
+    [Fact]
+    public void UnsupportedCollectionOperatorsAndInvalidPathsFailEarly()
+    {
+        Action distinct = () => EFCoreSpecification.Create<Student>()
+            .Include(s => s.Books.Distinct());
+        Action select = () => EFCoreSpecification.Create<Student>()
+            .Include(s => s.Books.Select(b => b.Name));
+        Action nonMember = () => EFCoreSpecification.Create<Student>()
+            .Include(s => new { s.Books });
+
+        distinct.Should().Throw<NotSupportedException>().WithMessage("*Distinct*");
+        select.Should().Throw<NotSupportedException>().WithMessage("*Select*");
+        nonMember.Should().Throw<NotSupportedException>().WithMessage("*member-access*");
+    }
+
+    [Fact]
+    public void FilteredIncludeBranchingAndCompositionPreserveOriginalState()
+    {
+        var source = EFCoreSpecification.Create<Student>()
+            .Include(s => s.Books.Where(b => b.Name.StartsWith("A")));
+        var author = source.ThenInclude(b => b.Author);
+        var other = source.Specification;
+        var and = author.And(other);
+        var or = author.Or(other);
+
+        source.EFCoreSpecificationData.Includes.Should().Equal("Books");
+        author.EFCoreSpecificationData.Includes.Should().Equal("Books.Author");
+        other.EFCoreSpecificationData.Includes.Should().Equal("Books");
+        and.EFCoreSpecificationData.Includes.Should().Equal("Books.Author");
+        or.EFCoreSpecificationData.Includes.Should().Equal("Books.Author");
+    }
+
+    [Fact]
     public void QueryModesAreLastWinsAndConflictingCompositionThrows()
     {
         var configured = EFCoreSpecification.Create<Student>()
