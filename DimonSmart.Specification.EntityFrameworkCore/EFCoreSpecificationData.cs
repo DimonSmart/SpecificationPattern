@@ -1,35 +1,28 @@
-﻿namespace DimonSmart.Specification.EntityFrameworkCore;
+using System.Collections.Immutable;
 
-public class EFCoreSpecificationData<T> : IEFCoreSpecificationData<T>
+namespace DimonSmart.Specification.EntityFrameworkCore;
+
+/// <summary>Read-only diagnostic snapshot. It is never used to construct an EF query.</summary>
+public sealed class EFCoreSpecificationData<T> : IEFCoreSpecificationData<T> where T : class
 {
-    private readonly List<string> _includeLines = new();
-    public bool IsAsNoTracking { get; set; }
-    public bool IsAsNoTrackingWithIdentityResolution { get; set; }
-    public bool IsIgnoreAutoIncludes { get; set; }
-    public bool IsIgnoreQueryFilters { get; set; }
-    public bool IsAsSingleQuery { get; set; }
-    public bool IsAsSplitQuery { get; set; }
-    public IEnumerable<string> Includes => _includeLines;
-    public string Tag { get; set; } = string.Empty;
+    private readonly QueryOptions<T> _options;
+    private readonly ImmutableArray<string> _paths;
 
-    public void AddInclude(string include)
+    internal EFCoreSpecificationData(QueryOptions<T> options)
     {
-        if (string.IsNullOrWhiteSpace(include))
-        {
-            throw new ArgumentException("Include cannot be null or empty.", nameof(include));
-        }
-
-        var includeWithDot = include + ".";
-        if (_includeLines.Contains(include) || _includeLines.Any(i => i.StartsWith(includeWithDot)))
-        {
-            // Already included or overlapping
-            return;
-        }
-
-        var shorterLines = _includeLines
-            .FindAll(line => includeWithDot.StartsWith(line + "."))
-            .ToList();
-        _includeLines.RemoveAll(line => shorterLines.Contains(line));
-        _includeLines.Add(include);
+        _options = options;
+        _paths = options.Includes
+            .Select(plan => string.Join(".", plan.Segments.Select(segment => segment.Name)))
+            .ToImmutableArray();
     }
+
+    public bool IsAsNoTracking => _options.Tracking == TrackingMode.NoTracking;
+    public bool IsAsNoTrackingWithIdentityResolution => _options.Tracking == TrackingMode.NoTrackingWithIdentityResolution;
+    public bool IsIgnoreAutoIncludes => _options.IgnoreAutoIncludes;
+    public bool IsIgnoreQueryFilters => _options.IgnoreQueryFilters;
+    public bool IsAsSingleQuery => _options.Splitting == QuerySplittingMode.Single;
+    public bool IsAsSplitQuery => _options.Splitting == QuerySplittingMode.Split;
+    public IEnumerable<string> Includes => _paths;
+    public string Tag => string.Join(Environment.NewLine, _options.Tags);
+    public IEnumerable<string> Tags => _options.Tags;
 }

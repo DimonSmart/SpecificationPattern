@@ -1,114 +1,65 @@
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using Microsoft.EntityFrameworkCore;
 
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
-/// <summary>
-/// Immutable EF Core specification with Composable/Configured type-state.
-/// Create with EFCoreSpecification.Create&lt;T&gt;().
-/// </summary>
+/// <summary>Immutable EF Core specification with Composable/Configured type-state.</summary>
 public class EFCoreSpecification<T, TState>
     where T : class
     where TState : SpecificationState
 {
     internal Specification<T, TState> Core { get; }
-    private readonly EFCoreSpecificationData<T> _options;
+    internal QueryOptions<T> Options { get; }
 
-    internal EFCoreSpecification(Specification<T, TState> core, EFCoreSpecificationData<T> options)
+    internal EFCoreSpecification(Specification<T, TState> core, QueryOptions<T> options)
     {
         Core = core;
-        _options = options;
+        Options = options;
     }
 
     public ISpecificationData<T> SpecificationData => Core.SpecificationData;
-    public IEFCoreSpecificationData<T> EFCoreSpecificationData => CopyOptions(_options);
 
-    internal static EFCoreSpecificationData<T> CopyOptions(IEFCoreSpecificationData<T> source)
-    {
-        var result = new EFCoreSpecificationData<T>
-        {
-            IsAsNoTracking = source.IsAsNoTracking,
-            IsAsNoTrackingWithIdentityResolution = source.IsAsNoTrackingWithIdentityResolution,
-            IsIgnoreAutoIncludes = source.IsIgnoreAutoIncludes,
-            IsIgnoreQueryFilters = source.IsIgnoreQueryFilters,
-            IsAsSingleQuery = source.IsAsSingleQuery,
-            IsAsSplitQuery = source.IsAsSplitQuery,
-            Tag = source.Tag
-        };
-        foreach (var path in source.Includes)
-            result.AddInclude(path);
-        return result;
-    }
+    // Expose diagnostics as a snapshot. Query execution uses Options, never this projection.
+    public IEFCoreSpecificationData<T> EFCoreSpecificationData => new EFCoreSpecificationData<T>(Options);
 
     public EFCoreSpecification<T, TState> Where(Expression<Func<T, bool>> predicate) =>
-        new(Core.Where(predicate), CopyOptions(_options));
+        new(Core.Where(predicate), Options);
 
     public EFCoreSpecification<T, Configured> OrderBy(Expression<Func<T, object>> expression) =>
-        new(Core.OrderBy(expression), CopyOptions(_options));
+        new(Core.OrderBy(expression), Options);
 
     public EFCoreSpecification<T, Configured> OrderByDesc(Expression<Func<T, object>> expression) =>
-        new(Core.OrderByDesc(expression), CopyOptions(_options));
+        new(Core.OrderByDesc(expression), Options);
 
     public EFCoreSpecification<T, Configured> Take(int count) =>
-        new(Core.Take(count), CopyOptions(_options));
+        new(Core.Take(count), Options);
 
     public EFCoreSpecification<T, Configured> Skip(int count) =>
-        new(Core.Skip(count), CopyOptions(_options));
+        new(Core.Skip(count), Options);
 
-    public EFCoreSpecification<T, Configured> AsNoTracking()
-    {
-        var options = CopyOptions(_options);
-        options.IsAsNoTracking = true;
-        options.IsAsNoTrackingWithIdentityResolution = false;
-        return new(CoreForConfigured(), options);
-    }
+    public EFCoreSpecification<T, Configured> AsNoTracking() =>
+        new(CoreForConfigured(), Options with { Tracking = TrackingMode.NoTracking });
 
-    public EFCoreSpecification<T, Configured> AsNoTrackingWithIdentityResolution()
-    {
-        var options = CopyOptions(_options);
-        options.IsAsNoTracking = false;
-        options.IsAsNoTrackingWithIdentityResolution = true;
-        return new(CoreForConfigured(), options);
-    }
+    public EFCoreSpecification<T, Configured> AsNoTrackingWithIdentityResolution() =>
+        new(CoreForConfigured(), Options with { Tracking = TrackingMode.NoTrackingWithIdentityResolution });
 
-    public EFCoreSpecification<T, Configured> AsSplitQuery()
-    {
-        var options = CopyOptions(_options);
-        options.IsAsSplitQuery = true;
-        options.IsAsSingleQuery = false;
-        return new(CoreForConfigured(), options);
-    }
+    public EFCoreSpecification<T, Configured> AsSplitQuery() =>
+        new(CoreForConfigured(), Options with { Splitting = QuerySplittingMode.Split });
 
-    public EFCoreSpecification<T, Configured> AsSingleQuery()
-    {
-        var options = CopyOptions(_options);
-        options.IsAsSingleQuery = true;
-        options.IsAsSplitQuery = false;
-        return new(CoreForConfigured(), options);
-    }
+    public EFCoreSpecification<T, Configured> AsSingleQuery() =>
+        new(CoreForConfigured(), Options with { Splitting = QuerySplittingMode.Single });
 
-    public EFCoreSpecification<T, Configured> IgnoreAutoIncludes()
-    {
-        var options = CopyOptions(_options);
-        options.IsIgnoreAutoIncludes = true;
-        return new(CoreForConfigured(), options);
-    }
+    public EFCoreSpecification<T, Configured> IgnoreAutoIncludes() =>
+        new(CoreForConfigured(), Options with { IgnoreAutoIncludes = true });
 
-    public EFCoreSpecification<T, Configured> IgnoreQueryFilters()
-    {
-        var options = CopyOptions(_options);
-        options.IsIgnoreQueryFilters = true;
-        return new(CoreForConfigured(), options);
-    }
+    public EFCoreSpecification<T, Configured> IgnoreQueryFilters() =>
+        new(CoreForConfigured(), Options with { IgnoreQueryFilters = true });
 
     public EFCoreSpecification<T, Configured> TagWith(string tag)
     {
         ArgumentNullException.ThrowIfNull(tag);
-        var options = CopyOptions(_options);
-        options.Tag = string.IsNullOrEmpty(options.Tag)
-            ? tag
-            : options.Tag + Environment.NewLine + tag;
-        return new(CoreForConfigured(), options);
+        return new(CoreForConfigured(), Options.AddTag(tag));
     }
 
     public EFCoreSpecification<T, Configured> TagWithCallSite(
@@ -117,8 +68,9 @@ public class EFCoreSpecification<T, TState>
         [CallerFilePath] string callerFilePath = "",
         [CallerLineNumber] int callerLineNumber = 0)
     {
+        ArgumentNullException.ThrowIfNull(tag);
         var callSite = callerMemberName + "() -> " + callerFilePath + ":" + callerLineNumber;
-        return TagWith(string.IsNullOrWhiteSpace(tag) ? callSite : tag + Environment.NewLine + callSite);
+        return new(CoreForConfigured(), Options.AddTag(tag).AddTag(callSite));
     }
 
     private Specification<T, Configured> CoreForConfigured() =>
@@ -128,16 +80,18 @@ public class EFCoreSpecification<T, TState>
         Expression<Func<T, TProperty>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        var path = IncludePath.GetPropertyName(expression);
-        return AppendInclude<TProperty>(path);
+        var plan = IncludeChain<T, TProperty>.Start(expression);
+        return new(Core, Options.AddInclude(plan, "Include"), plan);
     }
 
-    internal EFCoreIncludeSpecification<T, TProperty, TState> AppendInclude<TProperty>(string path)
-    {
-        var options = CopyOptions(_options);
-        options.AddInclude(path);
-        return new EFCoreIncludeSpecification<T, TProperty, TState>(Core, options, path);
-    }
+    internal IIncludePlan<T> GetActivePlan() =>
+        this is IActiveInclude<T> active
+            ? active.ActivePlan
+            : throw new InvalidOperationException("ThenInclude requires an active Include chain.");
+
+    internal EFCoreIncludeSpecification<T, TProperty, TState> AppendThenInclude<TProperty>(
+        IIncludePlan<T> previous, IIncludePlan<T> next) =>
+        new(Core, Options.ReplaceInclude(previous, next), next);
 
     internal EFCoreSpecification<T, TResult> Combine<TOther, TResult>(
         EFCoreSpecification<T, TOther> other, bool and)
@@ -145,30 +99,10 @@ public class EFCoreSpecification<T, TState>
         where TResult : SpecificationState
     {
         ArgumentNullException.ThrowIfNull(other);
-        var left = _options;
-        var right = other._options;
 
-        if ((left.IsAsNoTracking && right.IsAsNoTrackingWithIdentityResolution) ||
-            (left.IsAsNoTrackingWithIdentityResolution && right.IsAsNoTracking))
-            throw new InvalidOperationException("Cannot combine specifications: conflicting tracking modes.");
-        if ((left.IsAsSplitQuery && right.IsAsSingleQuery) ||
-            (left.IsAsSingleQuery && right.IsAsSplitQuery))
-            throw new InvalidOperationException("Cannot combine specifications: conflicting query splitting modes.");
-
-        // Core.Combine rejects duplicate sorting, Skip and Take before producing a result.
+        // Core.Combine retains all existing root-level sorting and paging conflict rules.
         var core = Core.Combine<TOther, TResult>(other.Core, and);
-        var options = CopyOptions(left);
-        foreach (var include in right.Includes)
-            options.AddInclude(include);
-        options.IsAsNoTracking |= right.IsAsNoTracking;
-        options.IsAsNoTrackingWithIdentityResolution |= right.IsAsNoTrackingWithIdentityResolution;
-        options.IsAsSingleQuery |= right.IsAsSingleQuery;
-        options.IsAsSplitQuery |= right.IsAsSplitQuery;
-        options.IsIgnoreAutoIncludes |= right.IsIgnoreAutoIncludes;
-        options.IsIgnoreQueryFilters |= right.IsIgnoreQueryFilters;
-        if (!string.IsNullOrEmpty(right.Tag))
-            options.Tag = string.IsNullOrEmpty(options.Tag)
-                ? right.Tag : options.Tag + Environment.NewLine + right.Tag;
+        var options = Options.Merge(other.Options, and ? "And" : "Or");
         return new EFCoreSpecification<T, TResult>(core, options);
     }
 }
@@ -176,10 +110,10 @@ public class EFCoreSpecification<T, TState>
 public static class EFCoreSpecification
 {
     public static EFCoreSpecification<T, Composable> Create<T>() where T : class =>
-        new(Specification.Create<T>(), new EFCoreSpecificationData<T>());
+        new(Specification.Create<T>(), new QueryOptions<T>());
 }
 
-/// <summary>A typed include result which is also a specification for further composition.</summary>
+/// <summary>Typed active Include result, still usable as an ordinary specification.</summary>
 public interface IEFCoreIncludeSpecification<T, out TProperty, TState>
     where T : class
     where TState : SpecificationState
@@ -188,14 +122,26 @@ public interface IEFCoreIncludeSpecification<T, out TProperty, TState>
     string IncludePath { get; }
 }
 
+internal interface IActiveInclude<T> where T : class
+{
+    IIncludePlan<T> ActivePlan { get; }
+}
+
 public sealed class EFCoreIncludeSpecification<T, TProperty, TState> :
-    EFCoreSpecification<T, TState>, IEFCoreIncludeSpecification<T, TProperty, TState>
+    EFCoreSpecification<T, TState>, IEFCoreIncludeSpecification<T, TProperty, TState>, IActiveInclude<T>
     where T : class
     where TState : SpecificationState
 {
     internal EFCoreIncludeSpecification(
-        Specification<T, TState> core, EFCoreSpecificationData<T> options, string includePath)
-        : base(core, options) => IncludePath = includePath;
+        Specification<T, TState> core, QueryOptions<T> options, IIncludePlan<T> plan)
+        : base(core, options)
+    {
+        ActivePlan = plan;
+        IncludePath = string.Join(".", plan.Segments.Select(segment => segment.Name));
+    }
+
+    IIncludePlan<T> IActiveInclude<T>.ActivePlan => ActivePlan;
+    internal IIncludePlan<T> ActivePlan { get; }
 
     public EFCoreSpecification<T, TState> Specification => this;
     public string IncludePath { get; }
@@ -207,17 +153,39 @@ public static class EFCoreIncludeExtensions
         this IEFCoreIncludeSpecification<T, IEnumerable<TPrevious>, TState> specification,
         Expression<Func<TPrevious, TProperty>> expression)
         where T : class
-        where TState : SpecificationState =>
-        specification.Specification.AppendInclude<TProperty>(
-            specification.IncludePath + "." + IncludePath.GetPropertyName(expression));
+        where TState : SpecificationState
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(expression);
+
+        var active = specification.Specification.GetActivePlan();
+        if (active is not ITypedIncludePlan<T, IEnumerable<TPrevious>> previous)
+            throw new InvalidOperationException("Active Include is not a compatible collection navigation.");
+
+        var plan = new IncludeChain<T, TProperty>(
+            query => previous.ApplyTyped(query).ThenInclude(expression),
+            active.Segments.Concat(IncludePath.Parse(expression)));
+        return specification.Specification.AppendThenInclude<TProperty>(active, plan);
+    }
 
     public static EFCoreIncludeSpecification<T, TProperty, TState> ThenInclude<T, TPrevious, TProperty, TState>(
         this IEFCoreIncludeSpecification<T, TPrevious, TState> specification,
         Expression<Func<TPrevious, TProperty>> expression)
         where T : class
-        where TState : SpecificationState =>
-        specification.Specification.AppendInclude<TProperty>(
-            specification.IncludePath + "." + IncludePath.GetPropertyName(expression));
+        where TState : SpecificationState
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(expression);
+
+        var active = specification.Specification.GetActivePlan();
+        if (active is not ITypedIncludePlan<T, TPrevious> previous)
+            throw new InvalidOperationException("Active Include is not a compatible reference navigation.");
+
+        var plan = new IncludeChain<T, TProperty>(
+            query => previous.ApplyTyped(query).ThenInclude(expression),
+            active.Segments.Concat(IncludePath.Parse(expression)));
+        return specification.Specification.AppendThenInclude<TProperty>(active, plan);
+    }
 }
 
 public static class EFCoreCompositionExtensions
