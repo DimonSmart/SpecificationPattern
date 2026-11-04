@@ -16,7 +16,7 @@ All verification tests use the existing EF Core test projects and their IncludeB
 | U06 | `FilteredAndUnfilteredIncludeConflictImmediately` | — | Existing strict policy; path and reason checked |
 | U07 | `BranchesFromSameFilteredSourceShareFilterIdentity` | `FilteredIncludeBranchingAndCompositionPreserveOriginalState`; `SharedFilteredBranchesSurviveAndOrAndFurtherThenInclude` | Both composition operators and sibling branches |
 | U08 | `DirectReferenceChainAndPrefixDeduplication`; `IndependentIncludesDeduplicateLongerAndShorterPaths` | `AbsorbedShortIncludeCanBeExtendedWithoutDroppingExistingBranch` | Includes absorbed active-prefix case |
-| U09 | `FilterConflictOnSharedIntermediateSegmentDetected` | — | Early conflict on a shared collection ancestor |
+| U09 | `FilterConflictOnSharedIntermediateSegmentDetected` | `DifferentFiltersConflictOnAncestorEvenWithDifferentChildBranches` | Early conflict on a shared collection ancestor, including distinct siblings |
 | U10 | `BranchesFromSameFilteredSourceShareFilterIdentity` | `FilteredIncludeBranchingAndCompositionPreserveOriginalState`; `SharedFilteredBranchesSurviveAndOrAndFurtherThenInclude` | Source and branches remain unchanged |
 | U11 | `TypedThenIncludeKeepsElementTypeAndState` | `AllSevenFilteredIncludeOperatorsPreserveTypedPaths` | `Composable` vs `Configured`, including `AsNoTracking` |
 
@@ -25,8 +25,8 @@ All verification tests use the existing EF Core test projects and their IncludeB
 | ID | Existing coverage before audit | Added coverage | Notes |
 | --- | --- | --- | --- |
 | I01 | `FilteredIncludeExecutesWhereOrderByThenBySkipTake` | `RootWhereIsIndependentOfFilteredInclude` | Filtered children without dropping roots |
-| I02 | `FilteredIncludeExecutesWhereOrderByThenBySkipTake`; `FilteredIncludeSupportsDescendingAndThenByDescending` | `FilteredPaginationIsPerParentAndPreservesParentsWithNoMatches` | Compare against direct EF Core |
-| I03 | `FilteredIncludeExecutesWhereOrderByThenBySkipTake`; `FilteredIncludeSupportsDescendingAndThenByDescending` | `FilteredPaginationIsPerParentAndPreservesParentsWithNoMatches` | Stable secondary ordering with unique Id |
+| I02 | `FilteredIncludeExecutesWhereOrderByThenBySkipTake`; `FilteredIncludeSupportsDescendingAndThenByDescending` | `FilteredPaginationIsPerParentAndPreservesParentsWithNoMatches`; `SecondaryOrderingWithTiesMatchesDirectEfCoreInBothDirections` | Compare both order directions against direct EF Core |
+| I03 | `FilteredIncludeExecutesWhereOrderByThenBySkipTake`; `FilteredIncludeSupportsDescendingAndThenByDescending` | `SecondaryOrderingWithTiesMatchesDirectEfCoreInBothDirections` | Selection with tied primary keys, secondary ordering in both directions |
 | I04 | `FilteredIncludeExecutesWhereOrderByThenBySkipTake` | `StandaloneSkipAndTakeMatchDirectEfCorePerParent`; `FilteredPaginationIsPerParentAndPreservesParentsWithNoMatches` | Separate Skip / Take and combined operations |
 | I05 | `FilteredIncludeExecutesWhereOrderByThenBySkipTake` | `FilteredPaginationIsPerParentAndPreservesParentsWithNoMatches` | Preserves original filter/order/page chain |
 | I06 | None (one seeded parent) | `FilteredPaginationIsPerParentAndPreservesParentsWithNoMatches` | Large, Small, Empty; check exact child keys per parent |
