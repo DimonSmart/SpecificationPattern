@@ -61,6 +61,13 @@ public class Specification<T, TState>
         return new Specification<T, TState>(data);
     }
 
+    /// <summary>Adds a filter only when <paramref name="condition"/> is true.</summary>
+    public Specification<T, TState> Where(Expression<Func<T, bool>> expression, bool condition)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        return condition ? Where(expression) : this;
+    }
+
     public Specification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);

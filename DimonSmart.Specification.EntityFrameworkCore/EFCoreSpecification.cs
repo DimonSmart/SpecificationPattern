@@ -37,6 +37,13 @@ public class EFCoreSpecification<T, TState>
     public EFCoreSpecification<T, TState> Where(Expression<Func<T, bool>> predicate) =>
         new(Core.Where(predicate), Options);
 
+    /// <summary>Adds a filter only when <paramref name="condition"/> is true.</summary>
+    public EFCoreSpecification<T, TState> Where(Expression<Func<T, bool>> predicate, bool condition)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        return condition ? Where(predicate) : this;
+    }
+
     public EFCoreSpecification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.OrderBy(expression), Options);
 
