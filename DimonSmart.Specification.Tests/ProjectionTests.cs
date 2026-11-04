@@ -97,7 +97,9 @@ public class ProjectionTests : TestsBase
         var names = source.Select(s => s.Name);
         var ages = source.Select(s => s.Age);
 
-        source.SpecificationData.OrderExpressions.Clear();
+        var snapshot = source.SpecificationData.OrderExpressions;
+        var mutable = Assert.IsAssignableFrom<IList<(OrderDirectionEnum direction, LambdaExpression expr)>>(snapshot);
+        Assert.Throws<NotSupportedException>(() => mutable.Clear());
         Assert.Equal(new[] { "Sofia", "Alex", "Alex" }, Students.BySpecification(names).ToArray());
         Assert.Equal(new[] { 20, 22, 30 }, Students.BySpecification(ages).ToArray());
         Assert.Equal(new[] { 20, 22, 30 },

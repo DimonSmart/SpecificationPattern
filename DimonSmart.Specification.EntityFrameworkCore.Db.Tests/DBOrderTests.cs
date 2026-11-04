@@ -56,7 +56,7 @@ public class DBOrderTests : TestsBase
         var ordered = _testDBContext.BySpecification(specification).ToList();
 
         // Assert
-        ordered.Should().BeEquivalentTo(new List<Student> { Alex30, Alex22, Sofia20 });
+        ordered.Should().Equal(Alex30, Alex22, Sofia20);
     }
 
     [Fact]

@@ -28,6 +28,40 @@ Specification<Student, Configured> combined = filter.And(sorting);
 var result = students.AsQueryable().BySpecification(combined).ToList();
 ```
 
+### Typed ordering
+
+`OrderBy<TKey>` and `OrderByDesc<TKey>` preserve the original key type and
+expression tree in both packages. Every call **appends** another ordering level:
+the first becomes `Queryable.OrderBy` / `OrderByDescending`, and later calls
+become `ThenBy` / `ThenByDescending` with their own inferred `TKey`.
+These calls do not replace previous sorting levels.
+
+```csharp
+var sorted = Specification.Create<Student>()
+    .OrderBy(s => s.Name)         // TKey = string
+    .OrderByDesc(s => s.Age)      // TKey = int
+    .OrderBy(s => (long)s.Id);    // TKey = long
+```
+
+The `SpecificationData.OrderExpressions` diagnostic property exposes a
+**read-only, independent snapshot** of
+`IReadOnlyList<(OrderDirectionEnum direction, LambdaExpression expr)>`.
+Items retain their insertion order, direction and original selector;
+`expr.ReturnType` reports the runtime key type (for example `typeof(int)`).
+The diagnostic snapshot cannot alter query execution. The same information
+is available through `EFCoreSpecification.SpecificationData`.
+
+This changes the old non-generic ordering method signatures and the former
+mutable `OrderExpressions` list API. Normal lambda expressions and explicitly
+typed `Expression<Func<Student, int>>` selectors continue to work. A
+user-supplied `Expression<Func<Student, object>>`, or an explicit cast
+`s => (object)s.Age`, still has `TKey = object`; the library does not remove
+that cast or guarantee database translation of user-authored conversions.
+No library-generated boxing conversion is introduced for naturally typed keys.
+
+Immutable branches, ordering conflicts in `And` / `Or`, and the application
+order `Where` → sorting → `Skip` → `Take` → terminal `Select` are unchanged.
+
 ### Custom specifications by inheritance
 
 To define a reusable custom specification, derive from `Specification<T, Composable>`
