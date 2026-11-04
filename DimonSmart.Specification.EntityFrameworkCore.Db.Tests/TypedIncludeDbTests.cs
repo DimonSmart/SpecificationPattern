@@ -181,7 +181,10 @@ public class TypedIncludeDbTests
             ]
         }).ToList();
 
-        db.Blogs.Add(new IncludeBlog { Name = "Library", Posts = posts, MainPost = posts[0] });
+        var blog = new IncludeBlog { Name = "Library", Posts = posts };
+        db.Blogs.Add(blog);
+        db.SaveChanges();
+        blog.MainPost = posts[0];
         db.SaveChanges();
         db.ChangeTracker.Clear();
         return db;
