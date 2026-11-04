@@ -4,13 +4,6 @@ namespace DimonSmart.Specification;
 
 public static class SpecificationExtension
 {
-    public static IQueryable<T> BySpecification<T, TSpecification>(this IQueryable<T> query,
-        TSpecification specification)
-        where TSpecification : IBaseSpecification<T, TSpecification> where T : class
-    {
-        return Apply(query, specification.SpecificationData);
-    }
-
     public static IQueryable<T> BySpecification<T, TState>(this IQueryable<T> query,
         Specification<T, TState> specification)
         where T : class

@@ -20,8 +20,7 @@ public class DBLimitTests : TestsBase
     public void TakeShouldLimitElementsQuantityTest()
     {
         // Arrange
-        var specification = EFCoreSpecification<Student>
-            .Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name)
             .OrderBy(s => s.Age)
             .Take(1);
@@ -37,8 +36,7 @@ public class DBLimitTests : TestsBase
     public void TakeAndSkipShouldWorkLikePagingTest()
     {
         // Arrange
-        var specification = EFCoreSpecification<Student>
-            .Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name)
             .OrderBy(s => s.Age)
             .Take(2)

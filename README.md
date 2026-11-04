@@ -1,295 +1,78 @@
-# Specification Pattern Implementation in C#
-## Overview
+# Specification Pattern for .NET 10
 
-The Specification Pattern is a behavioral design pattern that
-allows you to define reusable and composable query specifications.
-It is commonly used in scenarios where you need to filter,
-order, and include related entities in a query.
-The main idea behind this pattern is to encapsulate the logic of a query
-into separate specification classes, which can then be combined
-and reused to build complex queries.
+An immutable Specification Pattern implementation for LINQ and Entity Framework Core.
 
-In this C# implementation of the Specification Pattern, we have two parts:
+Packages:
+- **DimonSmart.Specification** — filtering, sorting, paging and composition for `IQueryable<T>`, without Entity Framework dependencies.
+- **DimonSmart.Specification.EntityFrameworkCore** — adds `Include`, `ThenInclude` and EF Core query options.
 
-### 1. Classical Specification (Specification class)
+## Composable and Configured
 
-The classical specification provides the core functionality to build query
-specifications. It contains methods to define filtering criteria (Where),
-   sorting (OrderBy, OrderByDesc),
-   and logical operations (And, Or) to combine multiple specifications together.
+The specification's generic state tracks whether it contains query configuration.
 
-#### Usage Example:
+- `Composable` — a specification with only `Where` and, for EF Core, `Include` or `ThenInclude`.
+- `Configured` — a specification after `OrderBy`, `OrderByDesc`, `Skip`, `Take`, tracking modes, split/single-query, tags, or query-filter options.
+
+All builder operations create **new** specifications, leaving the originals unchanged.
+
+### LINQ
 
 ```csharp
-var specification = Specification<Student>
-    .Create()
-    .Where(s => s.Age < 21)
+var filter = Specification.Create<Student>()
+    .Where(s => s.Age >= 18);
+var sorting = Specification.Create<Student>()
     .OrderBy(s => s.Name)
     .OrderByDesc(s => s.Age);
+
+Specification<Student, Configured> combined = filter.And(sorting);
+var result = students.AsQueryable().BySpecification(combined).ToList();
 ```
 
-### 2. Specification for use with EntityFrameworkCore (EFCoreSpecification)
-
-The EntityFrameworkCore support extends the classical specification with
-EF-specific operations, such as Include and ThenInclude,
-to eagerly load related entities in the query.
-
-#### Usage Example:
-
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .Where(s => s.Age < 21)
-    .Include(s => s.School.MainBook.Author);
-```
-
-### Executing Specifications
-
-To execute the specifications, you can use extension methods on
-the DBContext provided.
-
-```csharp
-var under21 = _testDBContext.BySpecification(specification).ToList();
-```
-
-### Custom Specifications
-
-Developers can create their custom specification classes by inheriting
-from the `Specification<TEntity>` class and pass parameters through
-the constructor.
-
-#### Example:
-
-```csharp
-public class CustomStudentSpecification : Specification<Student>
-{
-    public CustomStudentSpecification(int minAge, string schoolName)
-    {
-        Where(s => s.Age >= minAge && s.School.Name == schoolName);
-    }
-}
-```
-
-## Conclusion
-
-The Specification Pattern in C# allows you to create reusable and composable query specifications for different data access scenarios.
-By providing EntityFrameworkCore support,
-you can efficiently use these specifications in Entity Framework queries,
-enhancing query performance and readability.
-
-Remember that you can also create custom specification classes
-by inheriting from the base Specification class,
-making the pattern even more flexible and adaptable to various business
-requirements.
-
-
-## Type-safe composition (Composable / Configured)
-
-The type-state API is available alongside the original mutable API. It creates a fresh
-specification for each operation, so a variable typed as `Composable` never secretly
-acquires sorting or paging through an alias.
+### Entity Framework Core
 
 ```csharp
 var filter = EFCoreSpecification.Create<Student>()
     .Where(s => s.Age >= 18)
-    .Include(s => s.School);
+    .Include(s => s.Books)
+    .ThenInclude(b => b.Author);
 
-var ordered = EFCoreSpecification.Create<Student>()
-    .OrderBy(s => s.Name);
-
-var paged = EFCoreSpecification.Create<Student>()
-    .Take(10);
-
-// Sorting and Take are compatible. Result has type EFCoreSpecification<Student, Configured>.
-var result = filter.And(ordered).And(paged);
-var students = dbContext.BySpecification(result).ToList();
-```
-
-`Where`, `Include`, and `ThenInclude` preserve `Composable`; query options
-(`OrderBy`, `Skip`, `Take`, tracking, split/single-query, tags, and
-ignore-filters) return `Configured`. `And` and `Or` combine `Where`
-expressions and deduplicated `Include` paths from both sides, and merge
-compatible query options. Combining two specifications that both specify
-sorting, both specify `Skip`, or both specify `Take` throws
-`InvalidOperationException`. Conflicting tracking or split/single-query
-modes also throw. Matching modes, idempotent ignore flags, and independent
-options can be combined; tags are appended. Combined options apply to
-the final combined query, not separately to each `Where` branch.
-
-For plain `IQueryable<T>` use `Specification.Create<T>()` and
-`query.BySpecification(result)`. Existing
-`Specification<T>.Create()` and `EFCoreSpecification<T>.Create()`
-continue to provide the original mutable API for compatibility.
-
-## Supported functions
-### `Where(Expression<Func<T, bool>> expr)`
-Specifies a filtering condition for the data query.
-
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .Where(s => s.Age < 21);
-```
-
-### `OrderBy(Expression<Func<T, object>> orderByExpression)`
-Specifies an ascending order for the data query.
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .OrderBy(s => s.Name);
-```
-
-### `OrderByDesc(Expression<Func<T, object>> orderByExpression)`
-Specifies an ascending order for the data query
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .OrderByDesc(s => s.Name);
-```
-
-### `Take(int take)`
-Specifies the number of elements to be skipped from the query.
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .Take(10);
-```
-
-### `Skip(int skip)`
-Specifies the number of elements to be skipped from the query.
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .Skip(20);
-```
-
-### `Include(Expression<Func<T, TProperty>> includeExpression) / ThenInclude`
-Adds an "Include" statement to the query, specifying related entities to be loaded.
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .Include(s => s.Orders)
-        .ThenInclude(order => order.OrderDetails);
-```
-
-### `AsNoTracking()`
-[AsNoTracking](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.astracking)
-specifies that the query should be executed with "NoTracking" behavior.
-
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
+var configured = EFCoreSpecification.Create<Student>()
+    .OrderBy(s => s.Name)
+    .Take(10)
     .AsNoTracking();
+
+var combined = filter.And(configured);
+var result = dbContext.BySpecification(combined).ToList();
 ```
 
-### `AsNoTrackingWithIdentityResolution()`
-[AsNoTrackingWithIdentityResolution](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.asnotrackingwithidentityresolution)
-specifies that the query should be executed with "NoTracking" and identity resolution behavior.
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .AsNoTrackingWithIdentityResolution();
+`Where`, `Include`, and `ThenInclude` preserve `Composable`. Other query options return `Configured`.
+
+`And` / `Or` combine `Where` expressions and retain `Include` paths from **both** specifications (with duplicates removed). Compatible query configurations are merged — for example, sorting from one operand and `Take` from the other.
+
+Conflicts are rejected with `InvalidOperationException`: both operands specifying ordering, both specifying `Skip`, both specifying `Take`, or incompatible tracking/split-query modes. Tags are appended; ignore-filter options are combined.
+
+The merged configuration applies to the **final combined query**, not separately to each branch of `Or`.
+
+## Supported operations
+
+| Query operation | LINQ | EF Core |
+|---|---|---|
+| `Where`, `And`, `Or` | Yes | Yes |
+| `OrderBy`, `OrderByDesc` | Yes | Yes |
+| `Skip`, `Take` | Yes | Yes |
+| `Include`, `ThenInclude` | — | Yes |
+| `AsNoTracking`, `AsNoTrackingWithIdentityResolution` | — | Yes |
+| `AsSplitQuery`, `AsSingleQuery` | — | Yes |
+| `IgnoreAutoIncludes`, `IgnoreQueryFilters` | — | Yes |
+| `TagWith`, `TagWithCallSite` | — | Yes |
+
+Use `Specification.Create<T>()` for LINQ queries, or `EFCoreSpecification.Create<T>()` for EF Core. The former mutable one-parameter specification types have been removed.
+
+## Build and test
+
+Requires .NET 10 SDK.
+
+```bash
+dotnet restore DimonSmart.Specification.sln
+dotnet test DimonSmart.Specification.sln --configuration Release
 ```
-
-### `AsSplitQuery()`
-[AsSplitQuery](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.relationalqueryableextensions.assplitquery)
-specifies that the query should be executed with "SplitQuery" behavior.
-
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .AsSplitQuery();
-```
-
-### `AsSingleQuery()`
-[AsSingleQuery](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.relationalqueryableextensions.assinglequery)
-Specifies that the query should be executed with "SingleQuery" behavior.
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .AsSingleQuery();
-```
-
-### `IgnoreAutoIncludes()`
-[IgnoreAutoIncludes](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.ignoreautoincludes)
-specifies to ignore automatically included related entities in the query.
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .IgnoreAutoIncludes();
-```
-
-### `IgnoreQueryFilters()`
-[IgnoreQueryFilters](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.ignorequeryfilters)
-specifies to ignore query filters defined in the model.
-#### Example:
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .IgnoreQueryFilters();
-```
-
-### `Or(IEFCoreSpecification<T> or)`
-Combines the current specification with another specification using the logical OR operator.
-#### Example:
-```csharp
-var youngStudentsSpec = EFCoreSpecification<Student>
-    .Create()
-    .Where(s => s.Age < 21);
-
-var studentsFromNewYorkSpec = EFCoreSpecification<Student>
-    .Create()
-    .Where(s => s.City == "New York");
-
-var combinedSpecificationWithOr = youngStudentsSpec.Or(studentsFromNewYorkSpec);
-```
-
-### `And(IEFCoreSpecification<T> and)`
-Combines the current specification with another specification using the logical AND operator.
-#### Example:
-```csharp
-var youngStudentsSpec = EFCoreSpecification<Student>
-    .Create()
-    .Where(s => s.Age < 21);
-
-var studentsFromNewYorkSpec = EFCoreSpecification<Student>
-    .Create()
-    .Where(s => s.City == "New York");
-
-var combinedSpecificationWithAnd = youngStudentsSpec.And(studentsFromNewYorkSpec);
-```
-
-### `TagWith(string tag)`
-[TagWith](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.tagwith)
-function adds a comment to the SQL query that is executed.
-This is helpful in case you have many queries and it is hard to correlate the SQL log with the right query
-
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .OrderBy(s => s.Name)
-    .TagWith("My ordered by name query");
-```
-
-### `TagWithCallSite(string tag)`
-[TagWithCallSite](https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.entityframeworkqueryableextensions.tagwithcallsite)
-function not only adds a comment to the SQL query that is executed but also the calling location in a source code.
-
-```csharp
-var specification = EFCoreSpecification<Student>
-    .Create()
-    .OrderBy(s => s.Name)
-    .TagWithCallSite("My ordered by name query");
-```
-

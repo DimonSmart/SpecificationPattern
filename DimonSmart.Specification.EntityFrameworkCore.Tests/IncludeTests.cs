@@ -9,12 +9,11 @@ public class IncludeTests
     public void IncludeTest()
     {
         // Arrange
-        var specification = EFCoreSpecification<Student>
-            .Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age < 21);
 
         // Act
-        specification.Include(s => s.School.MainBook.Author);
+        specification = specification.Include(s => s.School.MainBook.Author);
 
         // Assert
         specification
@@ -27,12 +26,11 @@ public class IncludeTests
     public void IncludeChainTest()
     {
         // Arrange
-        var specification = EFCoreSpecification<Student>
-            .Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age < 21);
 
         // Act
-        specification
+        specification = specification
             .Include(s => s.School)
             .Include(s => s.School.MainBook)
             .Include(s => s.School.MainBook.Author);
@@ -48,12 +46,11 @@ public class IncludeTests
     public void IncludeChainReverseTest()
     {
         // Arrange
-        var specification = EFCoreSpecification<Student>
-            .Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age < 21);
 
         // Act
-        specification
+        specification = specification
             .Include(s => s.School.MainBook.Author)
             .Include(s => s.School.MainBook)
             .Include(s => s.School);
@@ -69,12 +66,11 @@ public class IncludeTests
     public void IncludeWithThenIncludeTest()
     {
         // Arrange
-        var specification = EFCoreSpecification<Student>
-            .Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age < 21);
 
         // Act
-        specification
+        specification = specification
             .Include(s => s.Books)
             .ThenInclude(b => b.Author)
             .ThenInclude(a => a.Name);

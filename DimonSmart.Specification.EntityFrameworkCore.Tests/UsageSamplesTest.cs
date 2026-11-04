@@ -7,7 +7,7 @@ public class UsageSamplesTests
     [Fact]
     public void SequentialWhere()
     {
-        _ = EFCoreSpecification<Student>.Create()
+        _ = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age < 21)
             .Where(s => s.Age > 16);
     }
@@ -15,7 +15,7 @@ public class UsageSamplesTests
     [Fact]
     public void SequentialInclude()
     {
-        _ = EFCoreSpecification<Student>.Create()
+        _ = EFCoreSpecification.Create<Student>()
             .Include(s => s.School)
             .Include(s => s.School.MainBook)
             .Include(s => s.Books)
@@ -29,7 +29,7 @@ public class UsageSamplesTests
     [Fact]
     public void MixedWhereInclude()
     {
-        _ = EFCoreSpecification<Student>.Create()
+        _ = EFCoreSpecification.Create<Student>()
             .Include(s => s.School)
             .Where(s => s.Age < 21)
             .Include(s => s.School.MainBook)

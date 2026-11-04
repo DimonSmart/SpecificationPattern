@@ -21,8 +21,7 @@ public class DBIncludeTests : TestsBase
     public void IncludeTest()
     {
         // Arrange
-        var specification = EFCoreSpecification<Student>
-            .Create()
+        var specification = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age < 21)
             .Include(s => s.School.MainBook.Author);
 
