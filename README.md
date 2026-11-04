@@ -333,6 +333,48 @@ A projected specification is **terminal** at the type level: there are no specif
 
 The library passes the selector expression to the LINQ provider: it does not use `Func`, `Expression.Compile()` or intermediate entity materialization. SQL translation, client evaluation of top-level projections, and support for nested collections depend on EF Core and the database provider. Simple DTO projections can fetch only the columns needed by the selector. Tracking follows normal EF Core rules: scalar-only DTOs do not track entities, but DTOs containing entity instances can track those instances unless a no-tracking option was selected. `AsSplitQuery`, `AsSingleQuery`, query filters, auto-include options, and query tags are retained.
 
+## Keyset pagination (forward only)
+
+`SeekAfter` continues after the supplied values in the ordering defined by `OrderBy` /
+`OrderByDesc`. Use a single value for one ordering key and a tuple for multiple keys.
+Both LINQ and EF Core specifications are supported. The ordering must be **unique**
+(e.g. include the entity Id as the last key), otherwise ties can be skipped.
+
+This example is compiled as
+[`KeysetPaginationExample.cs`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/KeysetPaginationExample.cs)
+and verified against README by CI.
+
+<!-- compiled-example: KeysetPaginationExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using DimonSmart.Specification.Tests.Common;
+using Microsoft.EntityFrameworkCore;
+
+namespace DocumentationExamples;
+
+public static class KeysetPaginationExample
+{
+    public static IQueryable<Student> NextPage(
+        DbContext dbContext, int lastAge, int lastId) =>
+        dbContext.BySpecification(
+            EFCoreSpecification.Create<Student>()
+                .Where(s => s.Age >= 18)
+                .OrderByDesc(s => s.Age)
+                .OrderBy(s => s.Id)
+                .SeekAfter((lastAge, lastId))
+                .Take(20));
+}
+```
+
+The forward boundary is *exclusive*. Ascending and descending directions can be mixed.
+Values must match the key types exactly. Version 1 supports `byte`, `short`,
+`int`, `long`, `decimal`, `DateTime`, and `DateOnly`; string, nullable,
+Guid and other key types are intentionally not supported yet. `SeekAfter`
+cannot be combined with `Skip`, repeated, or followed by additional sorting.
+A cursor participates in `And`/`Or` as a query-level option and applies to
+the entire resulting filter (including `Or`), before ordering, `Take`, and `Select`.
+There is no backward pagination or token serialization in v1.
+
 ## Supported operations
 
 | Query operation | LINQ | EF Core |
@@ -340,6 +382,7 @@ The library passes the selector expression to the LINQ provider: it does not use
 | `Where`, `And`, `Or` | Yes | Yes |
 | `Select` (terminal projection) | Yes | Yes |
 | `OrderBy`, `OrderByDesc` | Yes | Yes |
+| `SeekAfter` (forward keyset pagination) | Yes | Yes |
 | `Skip`, `Take` | Yes | Yes |
 | `Include`, `ThenInclude` | — | Yes |
 | `AsTracking`, `AsNoTracking`, `AsNoTrackingWithIdentityResolution` | — | Yes |
