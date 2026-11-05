@@ -71,16 +71,51 @@ public class Specification<T, TState>
     public Specification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression) =>
         AppendOrdering(expression, OrderDirectionEnum.Ascending, requireExisting: false);
 
+    /// <summary>Adds an ascending key when enabled. A skipped call still returns Configured.</summary>
+    public Specification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression, bool condition)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        return condition ? OrderBy(expression) : AsConfiguredWithoutChanges();
+    }
+
     public Specification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
         AppendOrdering(expression, OrderDirectionEnum.Descending, requireExisting: false);
+
+    /// <summary>Adds a descending key when enabled. A skipped call still returns Configured.</summary>
+    public Specification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        return condition ? OrderByDesc(expression) : AsConfiguredWithoutChanges();
+    }
 
     /// <summary>Adds a secondary ascending key to an existing ordering.</summary>
     public Specification<T, Configured> ThenBy<TKey>(Expression<Func<T, TKey>> expression) =>
         AppendOrdering(expression, OrderDirectionEnum.Ascending, requireExisting: true);
 
+    /// <summary>Skips the key when disabled; otherwise requires an existing ordering.</summary>
+    public Specification<T, Configured> ThenBy<TKey>(Expression<Func<T, TKey>> expression, bool condition)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        return condition ? ThenBy(expression) : AsConfiguredWithoutChanges();
+    }
+
     /// <summary>Adds a secondary descending key to an existing ordering.</summary>
     public Specification<T, Configured> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
         AppendOrdering(expression, OrderDirectionEnum.Descending, requireExisting: true);
+
+    /// <summary>Skips the key when disabled; otherwise requires an existing ordering.</summary>
+    public Specification<T, Configured> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        return condition ? ThenByDesc(expression) : AsConfiguredWithoutChanges();
+    }
+
+    // With Composable input, a new wrapper is required by the Configured return type.
+    // The immutable data can be shared because no query option was applied.
+    private Specification<T, Configured> AsConfiguredWithoutChanges() =>
+        typeof(TState) == typeof(Configured)
+            ? (Specification<T, Configured>)(object)this
+            : new Specification<T, Configured>(_data);
 
     private Specification<T, Configured> AppendOrdering<TKey>(
         Expression<Func<T, TKey>> expression, OrderDirectionEnum direction, bool requireExisting)
@@ -105,6 +140,13 @@ public class Specification<T, TState>
         return new Specification<T, Configured>(data);
     }
 
+    /// <summary>Applies Take only when enabled; negative counts are always rejected.</summary>
+    public Specification<T, Configured> Take(int count, bool condition)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        return condition ? Take(count) : AsConfiguredWithoutChanges();
+    }
+
     public Specification<T, Configured> Skip(int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
@@ -113,6 +155,13 @@ public class Specification<T, TState>
         var data = Copy(_data);
         data.SkipQ = count;
         return new Specification<T, Configured>(data);
+    }
+
+    /// <summary>Applies Skip only when enabled; negative counts are always rejected.</summary>
+    public Specification<T, Configured> Skip(int count, bool condition)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        return condition ? Skip(count) : AsConfiguredWithoutChanges();
     }
 
     /// <summary>

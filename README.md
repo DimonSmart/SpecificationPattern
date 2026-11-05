@@ -144,6 +144,36 @@ No library-generated boxing conversion is introduced for naturally typed keys.
 Immutable branches, ordering conflicts in `And` / `Or`, and the application
 order `Where` → sorting → `Skip` → `Take` → terminal `Select` are unchanged.
 
+### Conditional ordering and pagination
+
+Both packages support a `bool condition` overload for `OrderBy`, `OrderByDesc`,
+`ThenBy`, `ThenByDesc`, `Skip`, and `Take`, matching the existing optional
+`Where(predicate, condition)` pattern. For example:
+
+```csharp
+var spec = EFCoreSpecification.Create<Student>()
+    .Where(s => s.Age >= 20)
+    .OrderBy(s => s.Name, sortByName)
+    .OrderByDesc(s => s.Age, sortByAge)
+    .Skip(skip, skip > 0)
+    .Take(take, take > 0);
+```
+
+A disabled operation adds no sorting or pagination, and never creates a
+composition conflict. Enabled operations behave exactly like the corresponding
+single-argument overloads. `ThenBy` and `ThenByDesc` require an **active**
+primary ordering only when enabled. A disabled ordering or `Skip` can safely
+follow `SeekAfter`; enabling such an operation still throws its usual error.
+Null ordering selectors and negative pagination counts are rejected even when
+their conditions are false.
+
+These operations always return the `Configured` type state, even if disabled.
+When the receiver already has type state `Configured`, a disabled call returns
+the same instance. When the receiver is `Composable`, an immutable
+`Configured` wrapper shares its unchanged query data; the source stays
+unmodified. This is necessary because C# cannot select a generic return type
+based on a runtime `bool`.
+
 ### Custom specifications by inheritance
 
 To define a reusable custom specification, derive from `Specification<T, Composable>`
