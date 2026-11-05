@@ -171,17 +171,22 @@ public class Specification<T>
         ArgumentNullException.ThrowIfNull(other);
         var left = _data;
         var right = other._data;
-        if (left.OrderClauses.Count != 0 && right.OrderClauses.Count != 0)
-            throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define ordering.");
-        if (left.SkipQ.HasValue && right.SkipQ.HasValue)
-            throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define Skip.");
-        if (left.TakeQ.HasValue && right.TakeQ.HasValue)
-            throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define Take.");
         if (left.Seek is not null && right.Seek is not null)
             throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define SeekAfter.");
         if ((left.Seek is not null || right.Seek is not null) &&
             (left.SkipQ.HasValue || right.SkipQ.HasValue))
             throw new InvalidOperationException($"Cannot combine specifications using {operation}: Skip conflicts with SeekAfter.");
+        if (left.OrderClauses.Count != 0 && right.OrderClauses.Count != 0)
+        {
+            var leftKeys = string.Join(", ", left.OrderClauses.Select(c => c.KeySelector.Body + " " + c.Direction));
+            var rightKeys = string.Join(", ", right.OrderClauses.Select(c => c.KeySelector.Body + " " + c.Direction));
+            throw new InvalidOperationException(
+                $"Cannot combine specifications using {operation}: both define ordering. Left: {leftKeys}. Right: {rightKeys}.");
+        }
+        if (left.SkipQ.HasValue && right.SkipQ.HasValue)
+            throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define Skip.");
+        if (left.TakeQ.HasValue && right.TakeQ.HasValue)
+            throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define Take.");
     }
 
     internal Specification<T> Combine(Specification<T> other, bool and)
