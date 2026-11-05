@@ -4,6 +4,17 @@ namespace DimonSmart.Specification.Tests;
 
 public sealed class EnumerableBySpecificationTests : TestsBase
 {
+    private sealed class ProjectionCounter
+    {
+        public int Calls { get; private set; }
+
+        public string MapName(Student student)
+        {
+            Calls++;
+            return student.Name;
+        }
+    }
+
     [Fact]
     public void ListArrayAndIEnumerableAcceptOrdinarySpecificationsDirectly()
     {
@@ -60,7 +71,7 @@ public sealed class EnumerableBySpecificationTests : TestsBase
     public void ProjectedEnumerableOverloadDoesNotRunSelectorBeforeEnumeration()
     {
         var enumerations = 0;
-        var projections = 0;
+        var counter = new ProjectionCounter();
         IEnumerable<Student> GetStudents()
         {
             enumerations++;
@@ -68,23 +79,17 @@ public sealed class EnumerableBySpecificationTests : TestsBase
             yield return Sofia20;
         }
 
-        string MapName(Student student)
-        {
-            projections++;
-            return student.Name;
-        }
-
         var specification = Specification.Create<Student>()
             .Where(s => s.Age >= 20)
-            .Select(s => MapName(s));
+            .Select(s => counter.MapName(s));
 
         var result = GetStudents().BySpecification(specification);
 
         Assert.Equal(0, enumerations);
-        Assert.Equal(0, projections);
+        Assert.Equal(0, counter.Calls);
         Assert.Equal(new[] { "Alex", "Sofia" }, result.ToArray());
         Assert.Equal(1, enumerations);
-        Assert.Equal(2, projections);
+        Assert.Equal(2, counter.Calls);
     }
 
     [Fact]
