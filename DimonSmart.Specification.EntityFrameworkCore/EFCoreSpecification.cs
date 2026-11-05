@@ -4,15 +4,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
-/// <summary>Immutable EF Core specification with Composable/Configured type-state.</summary>
-public class EFCoreSpecification<T, TState>
+/// <summary>Immutable EF Core specification with validated query options.</summary>
+public class EFCoreSpecification<T>
     where T : class
-    where TState : SpecificationState
 {
-    internal Specification<T, TState> Core { get; }
+    internal Specification<T> Core { get; }
     internal QueryOptions<T> Options { get; }
 
-    internal EFCoreSpecification(Specification<T, TState> core, QueryOptions<T> options)
+    internal EFCoreSpecification(Specification<T> core, QueryOptions<T> options)
     {
         Core = core;
         Options = options;
@@ -34,83 +33,80 @@ public class EFCoreSpecification<T, TState>
         return new EFCoreProjectedSpecification<T, TResult>(Core.Select(selector), Options);
     }
 
-    public EFCoreSpecification<T, TState> Where(Expression<Func<T, bool>> predicate) =>
+    public EFCoreSpecification<T> Where(Expression<Func<T, bool>> predicate) =>
         new(Core.Where(predicate), Options);
 
     /// <summary>Adds a filter only when <paramref name="condition"/> is true.</summary>
-    public EFCoreSpecification<T, TState> Where(Expression<Func<T, bool>> predicate, bool condition)
+    public EFCoreSpecification<T> Where(Expression<Func<T, bool>> predicate, bool condition)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         return condition ? Where(predicate) : this;
     }
 
-    public EFCoreSpecification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression) =>
+    public EFCoreSpecification<T> OrderBy<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.OrderBy(expression), Options);
 
-    public EFCoreSpecification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
+    public EFCoreSpecification<T> OrderBy<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
         WithConditionalCore(Core.OrderBy(expression, condition), condition);
 
-    public EFCoreSpecification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
+    public EFCoreSpecification<T> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.OrderByDesc(expression), Options);
 
-    public EFCoreSpecification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
+    public EFCoreSpecification<T> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
         WithConditionalCore(Core.OrderByDesc(expression, condition), condition);
 
-    public EFCoreSpecification<T, Configured> ThenBy<TKey>(Expression<Func<T, TKey>> expression) =>
+    public EFCoreSpecification<T> ThenBy<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.ThenBy(expression), Options);
 
-    public EFCoreSpecification<T, Configured> ThenBy<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
+    public EFCoreSpecification<T> ThenBy<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
         WithConditionalCore(Core.ThenBy(expression, condition), condition);
 
-    public EFCoreSpecification<T, Configured> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
+    public EFCoreSpecification<T> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.ThenByDesc(expression), Options);
 
-    public EFCoreSpecification<T, Configured> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
+    public EFCoreSpecification<T> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
         WithConditionalCore(Core.ThenByDesc(expression, condition), condition);
 
-    public EFCoreSpecification<T, Configured> Take(int count) =>
+    public EFCoreSpecification<T> Take(int count) =>
         new(Core.Take(count), Options);
 
-    public EFCoreSpecification<T, Configured> Take(int count, bool condition) =>
+    public EFCoreSpecification<T> Take(int count, bool condition) =>
         WithConditionalCore(Core.Take(count, condition), condition);
 
-    public EFCoreSpecification<T, Configured> Skip(int count) =>
+    public EFCoreSpecification<T> Skip(int count) =>
         new(Core.Skip(count), Options);
 
-    public EFCoreSpecification<T, Configured> Skip(int count, bool condition) =>
+    public EFCoreSpecification<T> Skip(int count, bool condition) =>
         WithConditionalCore(Core.Skip(count, condition), condition);
 
-    private EFCoreSpecification<T, Configured> WithConditionalCore(
-        Specification<T, Configured> core, bool condition) =>
-        !condition && typeof(TState) == typeof(Configured)
-            ? (EFCoreSpecification<T, Configured>)(object)this
-            : new EFCoreSpecification<T, Configured>(core, Options);
+    private EFCoreSpecification<T> WithConditionalCore(Specification<T> core, bool condition) =>
+        condition ? new(core, Options) : this;
 
-    public EFCoreSpecification<T, Configured> SeekAfter<TCursor>(TCursor cursor) =>
+    public EFCoreSpecification<T> SeekAfter<TCursor>(TCursor cursor) =>
         new(Core.SeekAfter(cursor), Options);
 
     /// <summary>Explicitly enables EF Core change tracking, even when the context defaults to NoTracking.</summary>
-    public EFCoreSpecification<T, Configured> AsTracking() =>
-        new(CoreForConfigured(), Options with { Tracking = TrackingMode.Tracking });
+    public EFCoreSpecification<T> AsTracking() =>
+        new(Core, Options with { Tracking = TrackingMode.Tracking });
 
-    public EFCoreSpecification<T, Configured> AsNoTracking() =>
-        new(CoreForConfigured(), Options with { Tracking = TrackingMode.NoTracking });
+    public EFCoreSpecification<T> AsNoTracking() =>
+        new(Core, Options with { Tracking = TrackingMode.NoTracking });
 
-    public EFCoreSpecification<T, Configured> AsNoTrackingWithIdentityResolution() =>
-        new(CoreForConfigured(), Options with { Tracking = TrackingMode.NoTrackingWithIdentityResolution });
+    public EFCoreSpecification<T> AsNoTrackingWithIdentityResolution() =>
+        new(Core, Options with { Tracking = TrackingMode.NoTrackingWithIdentityResolution });
 
-    public EFCoreSpecification<T, Configured> AsSplitQuery() =>
-        new(CoreForConfigured(), Options with { Splitting = QuerySplittingMode.Split });
+    public EFCoreSpecification<T> AsSplitQuery() =>
+        new(Core, Options with { Splitting = QuerySplittingMode.Split });
 
-    public EFCoreSpecification<T, Configured> AsSingleQuery() =>
-        new(CoreForConfigured(), Options with { Splitting = QuerySplittingMode.Single });
+    public EFCoreSpecification<T> AsSingleQuery() =>
+        new(Core, Options with { Splitting = QuerySplittingMode.Single });
 
-    public EFCoreSpecification<T, Configured> IgnoreAutoIncludes() =>
-        new(CoreForConfigured(), Options with { IgnoreAutoIncludes = true });
+    public EFCoreSpecification<T> IgnoreAutoIncludes() =>
+        new(Core, Options with { IgnoreAutoIncludes = true });
 
     /// <summary>Disables all global query filters for the final EF Core query, including tenant filters.</summary>
-    public EFCoreSpecification<T, Configured> IgnoreQueryFilters() =>
-        new(CoreForConfigured(), Options with { QueryFilters = QueryFilterOptions.All });
+    public EFCoreSpecification<T> IgnoreQueryFilters() =>
+        new(Core, Options with { QueryFilters = QueryFilterOptions.All });
 
     /// <summary>
     /// Disables the specified named global query filters for the final EF Core query.
@@ -118,7 +114,7 @@ public class EFCoreSpecification<T, TState>
     /// callers must control which names can be disabled, especially in multi-tenant applications.
     /// Repeated calls accumulate names; a preceding full IgnoreQueryFilters() always takes precedence.
     /// </summary>
-    public EFCoreSpecification<T, Configured> IgnoreQueryFilters(
+    public EFCoreSpecification<T> IgnoreQueryFilters(
         string filterName, params string[] additionalFilterNames)
     {
         ArgumentNullException.ThrowIfNull(filterName);
@@ -128,20 +124,20 @@ public class EFCoreSpecification<T, TState>
         if (additionalFilterNames.Any(string.IsNullOrWhiteSpace))
             throw new ArgumentException("Filter names cannot be null, empty or whitespace.", nameof(additionalFilterNames));
 
-        return new(CoreForConfigured(), Options with
+        return new(Core, Options with
         {
             QueryFilters = Options.QueryFilters.AddNames(
                 new[] { filterName }.Concat(additionalFilterNames))
         });
     }
 
-    public EFCoreSpecification<T, Configured> TagWith(string tag)
+    public EFCoreSpecification<T> TagWith(string tag)
     {
         ArgumentNullException.ThrowIfNull(tag);
-        return new(CoreForConfigured(), Options.AddTag(tag));
+        return new(Core, Options.AddTag(tag));
     }
 
-    public EFCoreSpecification<T, Configured> TagWithCallSite(
+    public EFCoreSpecification<T> TagWithCallSite(
         string tag = "",
         [CallerMemberName] string callerMemberName = "",
         [CallerFilePath] string callerFilePath = "",
@@ -149,13 +145,11 @@ public class EFCoreSpecification<T, TState>
     {
         ArgumentNullException.ThrowIfNull(tag);
         var callSite = callerMemberName + "() -> " + callerFilePath + ":" + callerLineNumber;
-        return new(CoreForConfigured(), Options.AddTag(tag).AddTag(callSite));
+        return new(Core, Options.AddTag(tag).AddTag(callSite));
     }
 
-    private Specification<T, Configured> CoreForConfigured() =>
-        new(Specification<T, TState>.Copy(Core.Data));
 
-    public EFCoreIncludeSpecification<T, TProperty, TState> Include<TProperty>(
+    public EFCoreIncludeSpecification<T, TProperty> Include<TProperty>(
         Expression<Func<T, TProperty>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
@@ -168,36 +162,41 @@ public class EFCoreSpecification<T, TState>
             ? active.ActivePlan
             : throw new InvalidOperationException("ThenInclude requires an active Include chain.");
 
-    internal EFCoreIncludeSpecification<T, TProperty, TState> AppendThenInclude<TProperty>(
+    internal EFCoreIncludeSpecification<T, TProperty> AppendThenInclude<TProperty>(
         IIncludePlan<T> previous, IIncludePlan<T> next) =>
         new(Core, Options.ReplaceInclude(previous, next), next);
 
-    internal EFCoreSpecification<T, TResult> Combine<TOther, TResult>(
-        EFCoreSpecification<T, TOther> other, bool and)
-        where TOther : SpecificationState
-        where TResult : SpecificationState
+
+    public void EnsureCompatibleWith(EFCoreSpecification<T> other) =>
+        EnsureCompatibleWith(other, "EnsureCompatibleWith");
+
+    private void EnsureCompatibleWith(EFCoreSpecification<T> other, string operation)
     {
         ArgumentNullException.ThrowIfNull(other);
-
-        // Core.Combine retains all existing root-level sorting and paging conflict rules.
-        var core = Core.Combine<TOther, TResult>(other.Core, and);
-        var options = Options.Merge(other.Options, and ? "And" : "Or");
-        return new EFCoreSpecification<T, TResult>(core, options);
+        Core.EnsureCompatibleWith(other.Core, operation);
+        _ = Options.Merge(other.Options, operation);
     }
+
+    internal EFCoreSpecification<T> Combine(EFCoreSpecification<T> other, bool and)
+    {
+        var operation = and ? "And" : "Or";
+        EnsureCompatibleWith(other, operation);
+        return new EFCoreSpecification<T>(Core.Combine(other.Core, and), Options.Merge(other.Options, operation));
+    }
+
 }
 
 public static class EFCoreSpecification
 {
-    public static EFCoreSpecification<T, Composable> Create<T>() where T : class =>
+    public static EFCoreSpecification<T> Create<T>() where T : class =>
         new(Specification.Create<T>(), new QueryOptions<T>());
 }
 
 /// <summary>Typed active Include result, still usable as an ordinary specification.</summary>
-public interface IEFCoreIncludeSpecification<T, out TProperty, TState>
+public interface IEFCoreIncludeSpecification<T, out TProperty>
     where T : class
-    where TState : SpecificationState
 {
-    EFCoreSpecification<T, TState> Specification { get; }
+    EFCoreSpecification<T> Specification { get; }
     string IncludePath { get; }
 }
 
@@ -206,13 +205,12 @@ internal interface IActiveInclude<T> where T : class
     IIncludePlan<T> ActivePlan { get; }
 }
 
-public sealed class EFCoreIncludeSpecification<T, TProperty, TState> :
-    EFCoreSpecification<T, TState>, IEFCoreIncludeSpecification<T, TProperty, TState>, IActiveInclude<T>
+public sealed class EFCoreIncludeSpecification<T, TProperty> :
+    EFCoreSpecification<T>, IEFCoreIncludeSpecification<T, TProperty>, IActiveInclude<T>
     where T : class
-    where TState : SpecificationState
 {
     internal EFCoreIncludeSpecification(
-        Specification<T, TState> core, QueryOptions<T> options, IIncludePlan<T> plan)
+        Specification<T> core, QueryOptions<T> options, IIncludePlan<T> plan)
         : base(core, options)
     {
         ActivePlan = plan;
@@ -222,18 +220,17 @@ public sealed class EFCoreIncludeSpecification<T, TProperty, TState> :
     IIncludePlan<T> IActiveInclude<T>.ActivePlan => ActivePlan;
     internal IIncludePlan<T> ActivePlan { get; }
 
-    public EFCoreSpecification<T, TState> Specification => this;
+    public EFCoreSpecification<T> Specification => this;
     public string IncludePath { get; }
 }
 
 public static class EFCoreIncludeExtensions
 {
-    public static EFCoreIncludeSpecification<T, TProperty, TState> ThenInclude<T, TPrevious, TProperty, TState>(
-        this IEFCoreIncludeSpecification<T, IEnumerable<TPrevious>, TState> specification,
+    public static EFCoreIncludeSpecification<T, TProperty> ThenInclude<T, TPrevious, TProperty>(
+        this IEFCoreIncludeSpecification<T, IEnumerable<TPrevious>> specification,
         Expression<Func<TPrevious, TProperty>> expression)
         where T : class
-        where TState : SpecificationState
-    {
+        {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(expression);
 
@@ -247,12 +244,11 @@ public static class EFCoreIncludeExtensions
         return specification.Specification.AppendThenInclude<TProperty>(active, plan);
     }
 
-    public static EFCoreIncludeSpecification<T, TProperty, TState> ThenInclude<T, TPrevious, TProperty, TState>(
-        this IEFCoreIncludeSpecification<T, TPrevious, TState> specification,
+    public static EFCoreIncludeSpecification<T, TProperty> ThenInclude<T, TPrevious, TProperty>(
+        this IEFCoreIncludeSpecification<T, TPrevious> specification,
         Expression<Func<TPrevious, TProperty>> expression)
         where T : class
-        where TState : SpecificationState
-    {
+        {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(expression);
 
@@ -269,35 +265,9 @@ public static class EFCoreIncludeExtensions
 
 public static class EFCoreCompositionExtensions
 {
-    public static EFCoreSpecification<T, Composable> And<T>(
-        this EFCoreSpecification<T, Composable> left, EFCoreSpecification<T, Composable> right) where T : class =>
-        left.Combine<Composable, Composable>(right, true);
+    public static EFCoreSpecification<T> And<T>(this EFCoreSpecification<T> left, EFCoreSpecification<T> right) where T : class =>
+        left.Combine(right, true);
 
-    public static EFCoreSpecification<T, Configured> And<T>(
-        this EFCoreSpecification<T, Composable> left, EFCoreSpecification<T, Configured> right) where T : class =>
-        left.Combine<Configured, Configured>(right, true);
-
-    public static EFCoreSpecification<T, Configured> And<T>(
-        this EFCoreSpecification<T, Configured> left, EFCoreSpecification<T, Composable> right) where T : class =>
-        left.Combine<Composable, Configured>(right, true);
-
-    public static EFCoreSpecification<T, Configured> And<T>(
-        this EFCoreSpecification<T, Configured> left, EFCoreSpecification<T, Configured> right) where T : class =>
-        left.Combine<Configured, Configured>(right, true);
-
-    public static EFCoreSpecification<T, Composable> Or<T>(
-        this EFCoreSpecification<T, Composable> left, EFCoreSpecification<T, Composable> right) where T : class =>
-        left.Combine<Composable, Composable>(right, false);
-
-    public static EFCoreSpecification<T, Configured> Or<T>(
-        this EFCoreSpecification<T, Composable> left, EFCoreSpecification<T, Configured> right) where T : class =>
-        left.Combine<Configured, Configured>(right, false);
-
-    public static EFCoreSpecification<T, Configured> Or<T>(
-        this EFCoreSpecification<T, Configured> left, EFCoreSpecification<T, Composable> right) where T : class =>
-        left.Combine<Composable, Configured>(right, false);
-
-    public static EFCoreSpecification<T, Configured> Or<T>(
-        this EFCoreSpecification<T, Configured> left, EFCoreSpecification<T, Configured> right) where T : class =>
-        left.Combine<Configured, Configured>(right, false);
+    public static EFCoreSpecification<T> Or<T>(this EFCoreSpecification<T> left, EFCoreSpecification<T> right) where T : class =>
+        left.Combine(right, false);
 }
