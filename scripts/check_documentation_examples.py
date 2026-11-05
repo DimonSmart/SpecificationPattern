@@ -15,6 +15,7 @@ examples = {
     "KeysetPaginationExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/KeysetPaginationExample.cs",
     "ConditionalWhereExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/ConditionalWhereExample.cs",
     "TypedOrderingExample": root / "DimonSmart.Specification.Tests/Documentation/TypedOrderingExample.cs",
+    "EnumerableBySpecificationExample": root / "DimonSmart.Specification.Tests/Documentation/EnumerableBySpecificationExample.cs",
 }
 
 for name, source in examples.items():

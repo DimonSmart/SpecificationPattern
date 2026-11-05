@@ -2,6 +2,29 @@ namespace DimonSmart.Specification;
 
 public static class SpecificationExtension
 {
+    /// <summary>Applies a specification to an in-memory or other IEnumerable source.</summary>
+    public static IEnumerable<T> BySpecification<T, TState>(
+        this IEnumerable<T> source,
+        Specification<T, TState> specification)
+        where T : class
+        where TState : SpecificationState
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(specification);
+        return source.AsQueryable().BySpecification(specification);
+    }
+
+    /// <summary>Applies a projected specification to an IEnumerable source.</summary>
+    public static IEnumerable<TResult> BySpecification<TEntity, TResult>(
+        this IEnumerable<TEntity> source,
+        ProjectedSpecification<TEntity, TResult> specification)
+        where TEntity : class
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(specification);
+        return source.AsQueryable().BySpecification(specification);
+    }
+
     public static IQueryable<T> BySpecification<T, TState>(this IQueryable<T> query,
         Specification<T, TState> specification)
         where T : class

@@ -25,7 +25,58 @@ var sorting = Specification.Create<Student>()
     .OrderByDesc(s => s.Age);
 
 Specification<Student, Configured> combined = filter.And(sorting);
-var result = students.AsQueryable().BySpecification(combined).ToList();
+var result = students.BySpecification(combined).ToList();
+```
+
+### IEnumerable overloads (no AsQueryable required)
+
+Both the ordinary and projected `BySpecification` methods also accept `IEnumerable<T>`
+directly, including `List<T>`, arrays and lazy sequences. The methods call
+`AsQueryable()` internally and reuse the existing LINQ specification evaluator.
+This is syntactic sugar: no new evaluator, eager materialization, or additional
+dependency is introduced.
+
+For `IQueryable<T>` sources (including `DbSet<T>`), the existing, more-specific
+extension overload remains selected and returns `IQueryable<T>`. Sources
+whose compile-time type is `IEnumerable<T>` return `IEnumerable<T>`.
+Normal LINQ-to-Objects semantics apply when the underlying source is in memory;
+database-specific expressions may not be executable in memory.
+
+The following example is compiled as
+[`EnumerableBySpecificationExample.cs`](DimonSmart.Specification.Tests/Documentation/EnumerableBySpecificationExample.cs)
+and checked against README by CI.
+
+<!-- compiled-example: EnumerableBySpecificationExample -->
+```csharp
+using DimonSmart.Specification;
+using DimonSmart.Specification.Tests.Common;
+
+namespace DocumentationExamples;
+
+public sealed record StudentAgeView(int Id, int Age);
+
+public static class EnumerableBySpecificationExample
+{
+    public static IEnumerable<Student> SelectAdults(IEnumerable<Student> students)
+    {
+        var specification = Specification.Create<Student>()
+            .Where(s => s.Age >= 18)
+            .OrderBy(s => s.Age)
+            .Take(10);
+
+        return students.BySpecification(specification);
+    }
+
+    public static IEnumerable<StudentAgeView> SelectAdultAges(IEnumerable<Student> students)
+    {
+        var specification = Specification.Create<Student>()
+            .Where(s => s.Age >= 18)
+            .OrderBy(s => s.Id)
+            .Select(s => new StudentAgeView(s.Id, s.Age));
+
+        return students.BySpecification(specification);
+    }
+}
 ```
 
 ### Typed ordering
