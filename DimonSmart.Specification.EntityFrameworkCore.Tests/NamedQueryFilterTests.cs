@@ -9,9 +9,9 @@ public class NamedQueryFilterTests
     {
         var original = EFCoreSpecification.Create<Student>();
         var originalData = original.EFCoreSpecificationData;
-        EFCoreSpecification<Student, Configured> named =
+        EFCoreSpecification<Student> named =
             original.IgnoreQueryFilters("SoftDeletionFilter", "AuditFilter");
-        EFCoreSpecification<Student, Configured> all = named.IgnoreQueryFilters();
+        EFCoreSpecification<Student> all = named.IgnoreQueryFilters();
 
         Assert.False(originalData.IsIgnoreQueryFilters);
         Assert.Empty(originalData.IgnoredQueryFilterNames);
@@ -29,7 +29,7 @@ public class NamedQueryFilterTests
         var first = EFCoreSpecification.Create<Student>()
             .IgnoreQueryFilters("A", "B", "A");
         var before = first.EFCoreSpecificationData;
-        EFCoreSpecification<Student, Configured> second =
+        EFCoreSpecification<Student> second =
             first.IgnoreQueryFilters("B", "a", " A ", "C", "C");
 
         Assert.Equal(new[] { "A", "B" }, before.IgnoredQueryFilterNames);

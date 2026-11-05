@@ -131,7 +131,7 @@ public sealed class QueryableEFCoreSpecificationDbTests(DatabaseFixture fixture)
         Assert.Equal("query", Assert.Throws<ArgumentNullException>(() =>
             nullQuery.BySpecification(spec)).ParamName);
         Assert.Equal("specification", Assert.Throws<ArgumentNullException>(() =>
-            _db.Students.BySpecification((EFCoreSpecification<Student, Composable>)null!)).ParamName);
+            _db.Students.BySpecification((EFCoreSpecification<Student>)null!)).ParamName);
         Assert.Equal("query", Assert.Throws<ArgumentNullException>(() =>
             nullQuery.BySpecification(projection)).ParamName);
         Assert.Equal("specification", Assert.Throws<ArgumentNullException>(() =>
