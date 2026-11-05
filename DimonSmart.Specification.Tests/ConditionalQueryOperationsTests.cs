@@ -57,7 +57,7 @@ public sealed class ConditionalQueryOperationsTests : TestsBase
             .Take(1, false);
 
         Assert.Same(configured, unchanged);
-        Assert.Equal(new[] { 22, 30 },
+        Assert.Equal(new[] { 20, 22, 30 },
             Students.BySpecification(unchanged).Select(s => s.Age).OrderBy(age => age).ToArray());
         Assert.Empty(root.SpecificationData.OrderExpressions);
     }
