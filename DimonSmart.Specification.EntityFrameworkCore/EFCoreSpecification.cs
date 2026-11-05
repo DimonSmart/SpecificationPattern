@@ -47,20 +47,44 @@ public class EFCoreSpecification<T, TState>
     public EFCoreSpecification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.OrderBy(expression), Options);
 
+    public EFCoreSpecification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
+        WithConditionalCore(Core.OrderBy(expression, condition), condition);
+
     public EFCoreSpecification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.OrderByDesc(expression), Options);
+
+    public EFCoreSpecification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
+        WithConditionalCore(Core.OrderByDesc(expression, condition), condition);
 
     public EFCoreSpecification<T, Configured> ThenBy<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.ThenBy(expression), Options);
 
+    public EFCoreSpecification<T, Configured> ThenBy<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
+        WithConditionalCore(Core.ThenBy(expression, condition), condition);
+
     public EFCoreSpecification<T, Configured> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
         new(Core.ThenByDesc(expression), Options);
+
+    public EFCoreSpecification<T, Configured> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition) =>
+        WithConditionalCore(Core.ThenByDesc(expression, condition), condition);
 
     public EFCoreSpecification<T, Configured> Take(int count) =>
         new(Core.Take(count), Options);
 
+    public EFCoreSpecification<T, Configured> Take(int count, bool condition) =>
+        WithConditionalCore(Core.Take(count, condition), condition);
+
     public EFCoreSpecification<T, Configured> Skip(int count) =>
         new(Core.Skip(count), Options);
+
+    public EFCoreSpecification<T, Configured> Skip(int count, bool condition) =>
+        WithConditionalCore(Core.Skip(count, condition), condition);
+
+    private EFCoreSpecification<T, Configured> WithConditionalCore(
+        Specification<T, Configured> core, bool condition) =>
+        !condition && typeof(TState) == typeof(Configured)
+            ? (EFCoreSpecification<T, Configured>)(object)this
+            : new EFCoreSpecification<T, Configured>(core, Options);
 
     public EFCoreSpecification<T, Configured> SeekAfter<TCursor>(TCursor cursor) =>
         new(Core.SeekAfter(cursor), Options);
