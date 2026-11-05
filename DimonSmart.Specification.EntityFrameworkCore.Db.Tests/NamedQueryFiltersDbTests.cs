@@ -129,6 +129,31 @@ public class NamedQueryFiltersDbTests
     }
 
     [Fact]
+    public void QueryableSyntaxRetainsSourcePredicatesAndNamedFilterSecurity()
+    {
+        using var db = CreateDatabase();
+
+        var includeDeleted = EFCoreSpecification.Create<FilterOrder>()
+            .IgnoreQueryFilters("SoftDeletionFilter")
+            .Include(o => o.Lines)
+            .AsNoTracking();
+        var source = db.Orders.Where(o => o.IsPriority);
+
+        var result = source.BySpecification(includeDeleted).OrderBy(o => o.Id).ToList();
+        Assert.Equal(new[] { 2 }, result.Select(o => o.Id));
+        Assert.All(result, order => Assert.Single(order.Lines));
+
+        var projected = EFCoreSpecification.Create<FilterOrder>()
+            .IgnoreQueryFilters("SoftDeletionFilter")
+            .Select(o => o.Id);
+        Assert.Equal(new[] { 2 }, source.BySpecification(projected).ToArray());
+
+        var ignoreAll = EFCoreSpecification.Create<FilterOrder>().IgnoreQueryFilters();
+        Assert.Equal(new[] { 2, 3 },
+            source.BySpecification(ignoreAll).OrderBy(o => o.Id).Select(o => o.Id).ToArray());
+    }
+
+    [Fact]
     public void UnknownFilterNamesArePassedThroughExactlyAsInEfCore()
     {
         using var db = CreateDatabase();
