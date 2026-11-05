@@ -8,7 +8,7 @@ the original query or creating another evaluator.
 
 ## API contracts
 
-- New `IQueryable<TEntity>.BySpecification(EFCoreSpecification<TEntity,TState>)`
+- New `IQueryable<TEntity>.BySpecification(EFCoreSpecification<TEntity>)`
   returns `IQueryable<TEntity>`.
 - New `IQueryable<TEntity>.BySpecification(EFCoreProjectedSpecification<TEntity,TResult>)`
   returns `IQueryable<TResult>`.

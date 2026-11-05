@@ -6,14 +6,17 @@ Packages:
 - **DimonSmart.Specification** — filtering, sorting, paging and composition for `IQueryable<T>`, without Entity Framework dependencies.
 - **DimonSmart.Specification.EntityFrameworkCore** — adds `Include`, `ThenInclude` and EF Core query options.
 
-## Composable and Configured
+## Immutable specifications and runtime validation
 
-The specification's generic state tracks whether it contains query configuration.
+The public API has a single immutable type, `Specification<T>` (or
+`EFCoreSpecification<T>`). Configuration operations return a new specification,
+so branches can be reused independently. A disabled conditional operation returns
+the original instance.
 
-- `Composable` — a specification with only `Where` and, for EF Core, `Include` or `ThenInclude`.
-- `Configured` — a specification after `OrderBy`, `OrderByDesc`, `Skip`, `Take`, tracking modes, split/single-query, tags, or query-filter options.
-
-All state-changing builder operations create **new** specifications, leaving the originals unchanged. A conditional `Where` with a false condition returns the original instance.
+`And` and `Or` merge compatible filters and configuration, rejecting conflicts
+in ordering, paging, keyset boundaries, Include plans, and EF Core options
+immediately with `InvalidOperationException`. Call
+`left.EnsureCompatibleWith(right)` to check without composing.
 
 ### LINQ
 
@@ -24,9 +27,80 @@ var sorting = Specification.Create<Student>()
     .OrderBy(s => s.Name)
     .OrderByDesc(s => s.Age);
 
-Specification<Student, Configured> combined = filter.And(sorting);
+Specification<Student> combined = filter.And(sorting);
 var result = students.BySpecification(combined).ToList();
 ```
+
+
+### Dynamic configuration with a single variable
+
+You can add filters, sorting, pagination and EF Core settings without changing
+the static type, using a mutable local variable but **immutable specifications**.
+
+The following example is compiled as
+[`DynamicSpecificationExample.cs`](DimonSmart.Specification.Tests/Documentation/DynamicSpecificationExample.cs).
+
+<!-- compiled-example: DynamicSpecificationExample -->
+```csharp
+using DimonSmart.Specification;
+using StudentEntity = DimonSmart.Specification.Tests.Common.Student;
+
+namespace DocumentationExamples;
+
+public static class DynamicSpecificationExample
+{
+    public static IQueryable<StudentEntity> Query(
+        IQueryable<StudentEntity> students, int? minAge, bool sortByName, int pageSize)
+    {
+        var spec = Specification.Create<StudentEntity>();
+        if (minAge.HasValue)
+            spec = spec.Where(s => s.Age >= minAge.Value);
+        if (sortByName)
+            spec = spec.OrderBy(s => s.Name);
+        if (pageSize > 0)
+            spec = spec.Take(pageSize);
+
+        return students.BySpecification(spec);
+    }
+}
+```
+
+EF Core uses the same pattern for `Include`, tracking and other query options.
+This example is compiled as
+[`DynamicEFCoreSpecificationExample.cs`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/DynamicEFCoreSpecificationExample.cs).
+
+<!-- compiled-example: DynamicEFCoreSpecificationExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using DimonSmart.Specification.Tests.Common;
+using Microsoft.EntityFrameworkCore;
+
+namespace DocumentationExamples;
+
+public static class DynamicEFCoreSpecificationExample
+{
+    public static IQueryable<Student> Query(
+        DbContext context, int? minAge, bool includeBooks, bool sortByName,
+        int pageSize, bool noTracking)
+    {
+        var spec = EFCoreSpecification.Create<Student>();
+        if (minAge.HasValue)
+            spec = spec.Where(s => s.Age >= minAge.Value);
+        if (includeBooks)
+            spec = spec.Include(s => s.Books);
+        if (sortByName)
+            spec = spec.OrderBy(s => s.Name);
+        if (pageSize > 0)
+            spec = spec.Take(pageSize);
+        if (noTracking)
+            spec = spec.AsNoTracking();
+
+        return context.BySpecification(spec);
+    }
+}
+```
+
+See [Migration to v2](docs/Migration-to-v2.md) for the breaking API changes.
 
 ### IEnumerable overloads (no AsQueryable required)
 
@@ -167,16 +241,11 @@ follow `SeekAfter`; enabling such an operation still throws its usual error.
 Null ordering selectors and negative pagination counts are rejected even when
 their conditions are false.
 
-These operations always return the `Configured` type state, even if disabled.
-When the receiver already has type state `Configured`, a disabled call returns
-the same instance. When the receiver is `Composable`, an immutable
-`Configured` wrapper shares its unchanged query data; the source stays
-unmodified. This is necessary because C# cannot select a generic return type
-based on a runtime `bool`.
+A disabled operation returns the original instance without changing the static type.
 
 ### Custom specifications by inheritance
 
-To define a reusable custom specification, derive from `Specification<T, Composable>`
+To define a reusable custom specification, derive from `Specification<T>`
 and pass a configured specification to the protected constructor. The API is immutable:
 calling `Where()` without using the returned value does not change the instance.
 
@@ -193,7 +262,7 @@ namespace DocumentationExamples;
 public sealed record School(string Name);
 public sealed record Student(int Age, School School);
 
-public sealed class CustomStudentSpecification : Specification<Student, Composable>
+public sealed class CustomStudentSpecification : Specification<Student>
 {
     public CustomStudentSpecification(int minAge, string schoolName)
         : base(Specification.Create<Student>()
@@ -223,7 +292,7 @@ var combined = filter.And(configured);
 var result = dbContext.BySpecification(combined).ToList();
 ```
 
-`Where`, `Include`, and `ThenInclude` preserve `Composable`. Other query options return `Configured`.
+An `Include` result supports typed `ThenInclude` and remains usable as an ordinary `EFCoreSpecification<T>`.
 
 `And` / `Or` combine `Where` expressions and compatible typed `Include` plans from **both** specifications (with duplicates and covered prefixes removed). Compatible query configurations are merged — for example, sorting from one operand and `Take` from the other.
 
@@ -479,7 +548,7 @@ public static class TrackingExample
 }
 ```
 
-`TagWith("A").TagWith("B")` generates separate ordered SQL comments. Duplicate tags remain in immutable specification state (EF Core 10 may deduplicate identical SQL comments), but empty/whitespace-only strings are ignored (the specification still becomes `Configured`). `TagWith(null)` throws. `TagWithCallSite("A")` adds one user tag plus one call-site tag with caller method, file and line; the file path may be absolute and is visible in SQL.
+`TagWith("A").TagWith("B")` generates separate ordered SQL comments. Duplicate tags remain in immutable specification state (EF Core 10 may deduplicate identical SQL comments), but empty/whitespace-only strings are ignored (the specification remains unchanged if the tag is blank). `TagWith(null)` throws. `TagWithCallSite("A")` adds one user tag plus one call-site tag with caller method, file and line; the file path may be absolute and is visible in SQL.
 
 ## Projection / Select
 
