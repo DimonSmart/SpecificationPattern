@@ -9,7 +9,7 @@ public class TypedSpecificationTests : TestsBase
     [Fact]
     public void ComposableSpecificationsComposeAndRemainComposable()
     {
-        Specification<Student, Composable> result = Specification.Create<Student>()
+        Specification<Student> result = Specification.Create<Student>()
             .Where(s => s.Age > 20)
             .And(Specification.Create<Student>().Where(s => s.Name == "Alex"));
 
@@ -23,7 +23,7 @@ public class TypedSpecificationTests : TestsBase
         var ordering = Specification.Create<Student>().OrderByDesc(s => s.Age);
         var limit = Specification.Create<Student>().Take(2);
 
-        Specification<Student, Configured> result = ordering.And(limit);
+        Specification<Student> result = ordering.And(limit);
 
         Students.BySpecification(result).Select(s => s.Age).ToList()
             .Should().Equal(30, 22);
@@ -54,7 +54,7 @@ public class TypedSpecificationTests : TestsBase
     }
 
     [Fact]
-    public void TransitionToConfiguredDoesNotMutateOriginalComposableSpecification()
+    public void QueryConfigurationDoesNotMutateOriginalSpecification()
     {
         var original = Specification.Create<Student>().Where(s => s.Age > 18);
         var configured = original.OrderBy(s => s.Name).Take(1);

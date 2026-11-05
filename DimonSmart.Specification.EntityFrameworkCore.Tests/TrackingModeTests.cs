@@ -5,10 +5,10 @@ namespace DimonSmart.Specification.EntityFrameworkCore.Tests;
 public class TrackingModeTests
 {
     [Fact]
-    public void AsTrackingIsConfiguredAndDoesNotMutateSource()
+    public void AsTrackingDoesNotMutateSource()
     {
         var original = EFCoreSpecification.Create<Student>().Where(s => s.Age >= 18);
-        EFCoreSpecification<Student, Configured> tracked = original.AsTracking();
+        EFCoreSpecification<Student> tracked = original.AsTracking();
 
         Assert.False(original.EFCoreSpecificationData.IsAsTracking);
         Assert.False(original.EFCoreSpecificationData.IsAsNoTracking);
@@ -91,8 +91,8 @@ public class TrackingModeTests
     }
 
     private static void AssertSameMode(
-        EFCoreSpecification<Student, Configured> expected,
-        EFCoreSpecification<Student, Configured> actual)
+        EFCoreSpecification<Student> expected,
+        EFCoreSpecification<Student> actual)
     {
         var before = expected.EFCoreSpecificationData;
         var after = actual.EFCoreSpecificationData;
