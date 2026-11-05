@@ -84,8 +84,8 @@ public class ConditionalWhereDbTests : TestsBase
             .AsSplitQuery()
             .IgnoreAutoIncludes()
             .TagWith("conditional where");
-        EFCoreSpecification<Student, Configured> skipped = source.Where(s => s.Age < 0, false);
-        EFCoreSpecification<Student, Configured> active = skipped.Where(s => s.Age > 20, true);
+        EFCoreSpecification<Student> skipped = source.Where(s => s.Age < 0, false);
+        EFCoreSpecification<Student> active = skipped.Where(s => s.Age > 20, true);
 
         Assert.Same(source, skipped);
         Assert.True(active.EFCoreSpecificationData.IsAsNoTracking);

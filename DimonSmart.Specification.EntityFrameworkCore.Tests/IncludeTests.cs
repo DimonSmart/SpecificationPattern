@@ -28,12 +28,12 @@ public class IncludeTests
     [Fact]
     public void TypedThenIncludeKeepsElementTypeAndState()
     {
-        EFCoreSpecification<Student, Composable> composable =
+        EFCoreSpecification<Student> composable =
             EFCoreSpecification.Create<Student>()
                 .Include(s => s.Books)
                 .ThenInclude(b => b.Author);
 
-        EFCoreSpecification<Student, Configured> configured =
+        EFCoreSpecification<Student> configured =
             EFCoreSpecification.Create<Student>()
                 .Take(3)
                 .Include(s => s.Books.Where(b => b.Name.StartsWith("A")))
@@ -110,7 +110,7 @@ public class IncludeTests
     [Fact]
     public void AllSevenFilteredIncludeOperatorsPreserveTypedPaths()
     {
-        EFCoreSpecification<Student, Composable> ascending =
+        EFCoreSpecification<Student> ascending =
             EFCoreSpecification.Create<Student>()
                 .Include(s => s.Books
                     .Where(b => b.Name.StartsWith("A"))
@@ -120,7 +120,7 @@ public class IncludeTests
                     .Take(2))
                 .ThenInclude(b => b.Author);
 
-        EFCoreSpecification<Student, Configured> descending =
+        EFCoreSpecification<Student> descending =
             EFCoreSpecification.Create<Student>()
                 .AsNoTracking()
                 .Include(s => s.Books

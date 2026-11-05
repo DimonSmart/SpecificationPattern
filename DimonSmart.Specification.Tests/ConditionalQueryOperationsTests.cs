@@ -37,12 +37,12 @@ public sealed class ConditionalQueryOperationsTests : TestsBase
     }
 
     [Fact]
-    public void DisabledOperationsKeepDataButReturnConfiguredState()
+    public void DisabledOperationsKeepDataAndReturnSameInstance()
     {
         var root = Specification.Create<Student>().Where(s => s.Age >= 20);
-        Specification<Student, Configured> configured = root.OrderBy(s => s.Name, false);
+        Specification<Student> configured = root.OrderBy(s => s.Name, false);
 
-        Assert.NotSame(root, configured);
+        Assert.Same(root, configured);
         Assert.Same(root.GetWhereExpression(), configured.GetWhereExpression());
         Assert.Empty(configured.SpecificationData.OrderExpressions);
         Assert.Null(configured.SpecificationData.SkipQ);

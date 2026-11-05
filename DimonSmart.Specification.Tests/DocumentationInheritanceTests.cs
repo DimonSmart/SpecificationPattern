@@ -24,7 +24,7 @@ public class DocumentationInheritanceTests
     [Fact]
     public void DerivedSpecificationRemainsComposableAndImmutable()
     {
-        Specification<DocumentationExamples.Student, Composable> specification =
+        Specification<DocumentationExamples.Student> specification =
             new CustomStudentSpecification(18, "High School");
 
         var ordered = specification.OrderBy(s => s.Age);

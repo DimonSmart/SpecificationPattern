@@ -16,7 +16,7 @@ public sealed class ProjectedSpecification<TEntity, TResult>
         SpecificationData<TEntity> sourceData,
         Expression<Func<TEntity, TResult>> selector)
     {
-        SourceData = Specification<TEntity, Composable>.Copy(sourceData);
+        SourceData = Specification<TEntity>.Copy(sourceData);
         Selector = selector;
     }
 }

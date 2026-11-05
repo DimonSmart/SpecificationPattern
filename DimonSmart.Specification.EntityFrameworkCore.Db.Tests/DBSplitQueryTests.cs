@@ -6,7 +6,7 @@ namespace DimonSmart.Specification.EntityFrameworkCore.Db.Tests;
 [Collection("Database collection")]
 public class DBSplitQueryTests : TestsBase
 {
-    private readonly EFCoreSpecification<Student, Configured> _splitTestSpecification = EFCoreSpecification.Create<Student>()
+    private readonly EFCoreSpecification<Student> _splitTestSpecification = EFCoreSpecification.Create<Student>()
         .Include(s => s.Books)
         .ThenInclude(b => b.Author)
         .OrderBy(s => s.Name)

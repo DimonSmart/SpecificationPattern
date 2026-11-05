@@ -70,12 +70,12 @@ public sealed class ConditionalQueryOperationsDbTests
     }
 
     [Fact]
-    public void FalseOnComposableStillProducesConfiguredType()
+    public void DisabledConfigurationPreservesSameInstance()
     {
         var composable = EFCoreSpecification.Create<Student>().Where(s => s.Age >= 22);
-        EFCoreSpecification<Student, Configured> configured = composable.OrderBy(s => s.Name, false);
+        EFCoreSpecification<Student> configured = composable.OrderBy(s => s.Name, false);
 
-        Assert.NotSame(composable, configured);
+        Assert.Same(composable, configured);
         Assert.Empty(configured.SpecificationData.OrderExpressions);
         Assert.Same(configured, configured.Skip(10, false));
         Assert.Same(configured, configured.Take(1, false));

@@ -131,7 +131,7 @@ public sealed class EnumerableBySpecificationTests : TestsBase
 
         Assert.Throws<ArgumentNullException>(() => nullSource.BySpecification(specification));
         Assert.Throws<ArgumentNullException>(() => source.BySpecification(
-            (Specification<Student, Composable>)null!));
+            (Specification<Student>)null!));
         Assert.Throws<ArgumentNullException>(() => nullSource.BySpecification(projected));
         Assert.Throws<ArgumentNullException>(() => source.BySpecification(
             (ProjectedSpecification<Student, int>)null!));

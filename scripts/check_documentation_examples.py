@@ -6,6 +6,8 @@ import re
 root = Path(__file__).resolve().parents[1]
 readme = (root / "README.md").read_text(encoding="utf-8")
 examples = {
+    "DynamicSpecificationExample": root / "DimonSmart.Specification.Tests/Documentation/DynamicSpecificationExample.cs",
+    "DynamicEFCoreSpecificationExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/DynamicEFCoreSpecificationExample.cs",
     "CustomStudentSpecification": root / "DimonSmart.Specification.Tests/Documentation/CustomStudentSpecification.cs",
     "FilteredIncludeExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/FilteredIncludeExample.cs",
     "ProjectionExample": root / "DimonSmart.Specification.Tests/Documentation/ProjectionExample.cs",

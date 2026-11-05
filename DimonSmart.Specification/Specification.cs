@@ -2,29 +2,17 @@ using System.Linq.Expressions;
 
 namespace DimonSmart.Specification;
 
-/// <summary>State markers for the type-safe specification API.</summary>
-public abstract class SpecificationState
-{
-    private protected SpecificationState() { }
-}
-
-public sealed class Composable : SpecificationState { }
-
-public sealed class Configured : SpecificationState { }
-
 /// <summary>
-/// Immutable, type-state specification. Where preserves the state; ordering and
-/// pagination change it to Configured.
+/// Immutable specification with runtime-validated composition.
 /// </summary>
-public class Specification<T, TState>
+public class Specification<T>
     where T : class
-    where TState : SpecificationState
 {
     private readonly SpecificationData<T> _data;
 
     internal Specification(SpecificationData<T> data) => _data = data;
 
-    protected Specification(Specification<T, TState> source)
+    protected Specification(Specification<T> source)
     {
         ArgumentNullException.ThrowIfNull(source);
         _data = Copy(source._data);
@@ -52,72 +40,65 @@ public class Specification<T, TState>
         return new ProjectedSpecification<T, TResult>(_data, selector);
     }
 
-    public Specification<T, TState> Where(Expression<Func<T, bool>> expression)
+    public Specification<T> Where(Expression<Func<T, bool>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
         var data = Copy(_data);
         data.WhereExpression = data.WhereExpression is null ? expression :
             ExpressionOperations.CombineExpressions(data.WhereExpression, expression, Expression.AndAlso);
-        return new Specification<T, TState>(data);
+        return new Specification<T>(data);
     }
 
     /// <summary>Adds a filter only when <paramref name="condition"/> is true.</summary>
-    public Specification<T, TState> Where(Expression<Func<T, bool>> expression, bool condition)
+    public Specification<T> Where(Expression<Func<T, bool>> expression, bool condition)
     {
         ArgumentNullException.ThrowIfNull(expression);
         return condition ? Where(expression) : this;
     }
 
-    public Specification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression) =>
+    public Specification<T> OrderBy<TKey>(Expression<Func<T, TKey>> expression) =>
         AppendOrdering(expression, OrderDirectionEnum.Ascending, requireExisting: false);
 
-    /// <summary>Adds an ascending key when enabled. A skipped call still returns Configured.</summary>
-    public Specification<T, Configured> OrderBy<TKey>(Expression<Func<T, TKey>> expression, bool condition)
+    /// <summary>Adds an ascending key when enabled. A skipped call returns the original instance.</summary>
+    public Specification<T> OrderBy<TKey>(Expression<Func<T, TKey>> expression, bool condition)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        return condition ? OrderBy(expression) : AsConfiguredWithoutChanges();
+        return condition ? OrderBy(expression) : this;
     }
 
-    public Specification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
+    public Specification<T> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
         AppendOrdering(expression, OrderDirectionEnum.Descending, requireExisting: false);
 
-    /// <summary>Adds a descending key when enabled. A skipped call still returns Configured.</summary>
-    public Specification<T, Configured> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition)
+    /// <summary>Adds a descending key when enabled. A skipped call returns the original instance.</summary>
+    public Specification<T> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        return condition ? OrderByDesc(expression) : AsConfiguredWithoutChanges();
+        return condition ? OrderByDesc(expression) : this;
     }
 
     /// <summary>Adds a secondary ascending key to an existing ordering.</summary>
-    public Specification<T, Configured> ThenBy<TKey>(Expression<Func<T, TKey>> expression) =>
+    public Specification<T> ThenBy<TKey>(Expression<Func<T, TKey>> expression) =>
         AppendOrdering(expression, OrderDirectionEnum.Ascending, requireExisting: true);
 
     /// <summary>Skips the key when disabled; otherwise requires an existing ordering.</summary>
-    public Specification<T, Configured> ThenBy<TKey>(Expression<Func<T, TKey>> expression, bool condition)
+    public Specification<T> ThenBy<TKey>(Expression<Func<T, TKey>> expression, bool condition)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        return condition ? ThenBy(expression) : AsConfiguredWithoutChanges();
+        return condition ? ThenBy(expression) : this;
     }
 
     /// <summary>Adds a secondary descending key to an existing ordering.</summary>
-    public Specification<T, Configured> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
+    public Specification<T> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
         AppendOrdering(expression, OrderDirectionEnum.Descending, requireExisting: true);
 
     /// <summary>Skips the key when disabled; otherwise requires an existing ordering.</summary>
-    public Specification<T, Configured> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition)
+    public Specification<T> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        return condition ? ThenByDesc(expression) : AsConfiguredWithoutChanges();
+        return condition ? ThenByDesc(expression) : this;
     }
 
-    // With Composable input, a new wrapper is required by the Configured return type.
-    // The immutable data can be shared because no query option was applied.
-    private Specification<T, Configured> AsConfiguredWithoutChanges() =>
-        typeof(TState) == typeof(Configured)
-            ? (Specification<T, Configured>)(object)this
-            : new Specification<T, Configured>(_data);
-
-    private Specification<T, Configured> AppendOrdering<TKey>(
+    private Specification<T> AppendOrdering<TKey>(
         Expression<Func<T, TKey>> expression, OrderDirectionEnum direction, bool requireExisting)
     {
         ArgumentNullException.ThrowIfNull(expression);
@@ -129,46 +110,46 @@ public class Specification<T, TState>
 
         var data = Copy(_data);
         data.OrderClauses.Add(new OrderClause<T, TKey>(expression, direction));
-        return new Specification<T, Configured>(data);
+        return new Specification<T>(data);
     }
 
-    public Specification<T, Configured> Take(int count)
+    public Specification<T> Take(int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         var data = Copy(_data);
         data.TakeQ = count;
-        return new Specification<T, Configured>(data);
+        return new Specification<T>(data);
     }
 
     /// <summary>Applies Take only when enabled; negative counts are always rejected.</summary>
-    public Specification<T, Configured> Take(int count, bool condition)
+    public Specification<T> Take(int count, bool condition)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
-        return condition ? Take(count) : AsConfiguredWithoutChanges();
+        return condition ? Take(count) : this;
     }
 
-    public Specification<T, Configured> Skip(int count)
+    public Specification<T> Skip(int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         if (_data.Seek is not null)
             throw new InvalidOperationException("Skip cannot be combined with SeekAfter.");
         var data = Copy(_data);
         data.SkipQ = count;
-        return new Specification<T, Configured>(data);
+        return new Specification<T>(data);
     }
 
     /// <summary>Applies Skip only when enabled; negative counts are always rejected.</summary>
-    public Specification<T, Configured> Skip(int count, bool condition)
+    public Specification<T> Skip(int count, bool condition)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
-        return condition ? Skip(count) : AsConfiguredWithoutChanges();
+        return condition ? Skip(count) : this;
     }
 
     /// <summary>
     /// Returns rows strictly after the supplied key values in the configured ordering.
     /// For multiple keys, pass a ValueTuple with one element per ordering clause.
     /// </summary>
-    public Specification<T, Configured> SeekAfter<TCursor>(TCursor cursor)
+    public Specification<T> SeekAfter<TCursor>(TCursor cursor)
     {
         ArgumentNullException.ThrowIfNull(cursor);
         if (_data.Seek is not null)
@@ -178,85 +159,67 @@ public class Specification<T, TState>
         var seek = SeekBoundary.Create(cursor, _data.OrderClauses);
         var data = Copy(_data);
         data.Seek = seek;
-        return new Specification<T, Configured>(data);
+        return new Specification<T>(data);
     }
 
-    internal Specification<T, TResult> Combine<TOther, TResult>(
-        Specification<T, TOther> other, bool and)
-        where TOther : SpecificationState
-        where TResult : SpecificationState
+
+    public void EnsureCompatibleWith(Specification<T> other) =>
+        EnsureCompatibleWith(other, "EnsureCompatibleWith");
+
+    internal void EnsureCompatibleWith(Specification<T> other, string operation)
     {
         ArgumentNullException.ThrowIfNull(other);
-        var right = other._data;
         var left = _data;
-
-        if (left.OrderClauses.Count != 0 && right.OrderClauses.Count != 0)
-            throw new InvalidOperationException("Cannot combine specifications: both define ordering.");
-        if (left.SkipQ.HasValue && right.SkipQ.HasValue)
-            throw new InvalidOperationException("Cannot combine specifications: both define Skip.");
-        if (left.TakeQ.HasValue && right.TakeQ.HasValue)
-            throw new InvalidOperationException("Cannot combine specifications: both define Take.");
+        var right = other._data;
         if (left.Seek is not null && right.Seek is not null)
-            throw new InvalidOperationException("Cannot combine specifications: both define SeekAfter.");
+            throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define SeekAfter.");
         if ((left.Seek is not null || right.Seek is not null) &&
             (left.SkipQ.HasValue || right.SkipQ.HasValue))
-            throw new InvalidOperationException("Cannot combine specifications: Skip conflicts with SeekAfter.");
-
-        var result = Copy(left);
-        if (right.WhereExpression is not null)
+            throw new InvalidOperationException($"Cannot combine specifications using {operation}: Skip conflicts with SeekAfter.");
+        if (left.OrderClauses.Count != 0 && right.OrderClauses.Count != 0)
         {
+            var leftKeys = string.Join(", ", left.OrderClauses.Select(c => c.KeySelector.Body + " " + c.Direction));
+            var rightKeys = string.Join(", ", right.OrderClauses.Select(c => c.KeySelector.Body + " " + c.Direction));
+            throw new InvalidOperationException(
+                $"Cannot combine specifications using {operation}: both define ordering. Left: {leftKeys}. Right: {rightKeys}.");
+        }
+        if (left.SkipQ.HasValue && right.SkipQ.HasValue)
+            throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define Skip.");
+        if (left.TakeQ.HasValue && right.TakeQ.HasValue)
+            throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define Take.");
+    }
+
+    internal Specification<T> Combine(Specification<T> other, bool and)
+    {
+        EnsureCompatibleWith(other, and ? "And" : "Or");
+        var right = other._data;
+        var result = Copy(_data);
+        if (right.WhereExpression is not null)
             result.WhereExpression = result.WhereExpression is null
                 ? right.WhereExpression
-                : ExpressionOperations.CombineExpressions(result.WhereExpression,
-                    right.WhereExpression, and ? Expression.AndAlso : Expression.OrElse);
-        }
-
+                : ExpressionOperations.CombineExpressions(result.WhereExpression, right.WhereExpression,
+                    and ? Expression.AndAlso : Expression.OrElse);
         result.OrderClauses.AddRange(right.OrderClauses);
         result.Seek ??= right.Seek;
         result.SkipQ ??= right.SkipQ;
         result.TakeQ ??= right.TakeQ;
-        return new Specification<T, TResult>(result);
+        return new Specification<T>(result);
     }
+
 }
 
 /// <summary>Creates immutable specifications.</summary>
 public static class Specification
 {
-    public static Specification<T, Composable> Create<T>() where T : class =>
+    public static Specification<T> Create<T>() where T : class =>
         new(new SpecificationData<T>());
 }
 
 public static class SpecificationCompositionExtensions
 {
-    public static Specification<T, Composable> And<T>(
-        this Specification<T, Composable> left, Specification<T, Composable> right) where T : class =>
-        left.Combine<Composable, Composable>(right, true);
+    public static Specification<T> And<T>(this Specification<T> left, Specification<T> right) where T : class =>
+        left.Combine(right, true);
 
-    public static Specification<T, Configured> And<T>(
-        this Specification<T, Composable> left, Specification<T, Configured> right) where T : class =>
-        left.Combine<Configured, Configured>(right, true);
-
-    public static Specification<T, Configured> And<T>(
-        this Specification<T, Configured> left, Specification<T, Composable> right) where T : class =>
-        left.Combine<Composable, Configured>(right, true);
-
-    public static Specification<T, Configured> And<T>(
-        this Specification<T, Configured> left, Specification<T, Configured> right) where T : class =>
-        left.Combine<Configured, Configured>(right, true);
-
-    public static Specification<T, Composable> Or<T>(
-        this Specification<T, Composable> left, Specification<T, Composable> right) where T : class =>
-        left.Combine<Composable, Composable>(right, false);
-
-    public static Specification<T, Configured> Or<T>(
-        this Specification<T, Composable> left, Specification<T, Configured> right) where T : class =>
-        left.Combine<Configured, Configured>(right, false);
-
-    public static Specification<T, Configured> Or<T>(
-        this Specification<T, Configured> left, Specification<T, Composable> right) where T : class =>
-        left.Combine<Composable, Configured>(right, false);
-
-    public static Specification<T, Configured> Or<T>(
-        this Specification<T, Configured> left, Specification<T, Configured> right) where T : class =>
-        left.Combine<Configured, Configured>(right, false);
+    public static Specification<T> Or<T>(this Specification<T> left, Specification<T> right) where T : class =>
+        left.Combine(right, false);
 }

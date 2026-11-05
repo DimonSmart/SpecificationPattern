@@ -34,10 +34,10 @@ internal sealed record QueryOptions<TEntity> where TEntity : class
     {
         if (Tracking != TrackingMode.Default && other.Tracking != TrackingMode.Default &&
             Tracking != other.Tracking)
-            throw new InvalidOperationException("Cannot combine specifications: conflicting tracking modes.");
+            throw new InvalidOperationException("Cannot combine specifications using " + operation + ": conflicting tracking modes (" + Tracking + " vs " + other.Tracking + ").");
         if (Splitting != QuerySplittingMode.Default && other.Splitting != QuerySplittingMode.Default &&
             Splitting != other.Splitting)
-            throw new InvalidOperationException("Cannot combine specifications: conflicting query splitting modes.");
+            throw new InvalidOperationException("Cannot combine specifications using " + operation + ": conflicting query splitting modes (" + Splitting + " vs " + other.Splitting + ").");
 
         var plans = Includes;
         foreach (var plan in other.Includes)

@@ -68,16 +68,16 @@ public class ConditionalWhereTests : TestsBase
     }
 
     [Fact]
-    public void BothTypeStatesArePreservedAndConfiguredFalseReturnsSameInstance()
+    public void WherePreservesImmutableBranchesAndFalseReturnsSameInstance()
     {
-        Specification<Student, Composable> composable = Specification.Create<Student>()
+        Specification<Student> composable = Specification.Create<Student>()
             .Where(s => s.Age >= 20, true);
-        Specification<Student, Configured> configured = composable
+        Specification<Student> configured = composable
             .OrderBy(s => s.Age)
             .Where(s => s.Name == "Nobody", false);
 
         Assert.Same(configured, configured.Where(s => s.Age < 30, false));
-        Specification<Student, Configured> filtered = configured.Where(s => s.Age < 30, true);
+        Specification<Student> filtered = configured.Where(s => s.Age < 30, true);
 
         Assert.Equal(new[] { 20, 22, 30 },
             Students.BySpecification(configured).Select(s => s.Age).ToArray());

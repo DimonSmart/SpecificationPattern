@@ -9,10 +9,9 @@ namespace DimonSmart.Specification.EntityFrameworkCore;
 /// </summary>
 public static class EFCoreQueryableSpecificationExtension
 {
-    public static IQueryable<T> BySpecification<T, TState>(
-        this IQueryable<T> query, EFCoreSpecification<T, TState> specification)
+    public static IQueryable<T> BySpecification<T>(
+        this IQueryable<T> query, EFCoreSpecification<T> specification)
         where T : class
-        where TState : SpecificationState
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(specification);
@@ -38,7 +37,7 @@ public static class EFCoreQueryableSpecificationExtension
         if (query.Provider is not IAsyncQueryProvider)
             throw new ArgumentException(
                 "An EF Core IQueryable source is required to apply EFCoreSpecification. " +
-                "Use the base Specification<T, TState> for LINQ-to-Objects sources.", nameof(query));
+                "Use the base Specification<T> for LINQ-to-Objects sources.", nameof(query));
     }
 
     private static IQueryable<TEntity> Apply<TEntity>(

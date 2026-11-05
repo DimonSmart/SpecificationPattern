@@ -24,7 +24,7 @@ public class DBTypedSpecificationTests : TestsBase
             .Where(s => s.Name == "Alex")
             .OrderBy(s => s.Age);
 
-        EFCoreSpecification<Student, Configured> result = first.And(second);
+        EFCoreSpecification<Student> result = first.And(second);
 
         result.EFCoreSpecificationData.Includes.Should()
             .BeEquivalentTo(new[] { "Books.Author", "School" });
@@ -77,7 +77,7 @@ public class DBTypedSpecificationTests : TestsBase
     [Fact]
     public void IncludeDoesNotTurnComposableIntoConfigured()
     {
-        EFCoreSpecification<Student, Composable> source = EFCoreSpecification.Create<Student>()
+        EFCoreSpecification<Student> source = EFCoreSpecification.Create<Student>()
             .Include(s => s.School)
             .Where(s => s.Age > 18);
 
