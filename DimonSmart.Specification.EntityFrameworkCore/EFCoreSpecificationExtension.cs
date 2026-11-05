@@ -4,6 +4,7 @@ namespace DimonSmart.Specification.EntityFrameworkCore;
 
 public static class EFCoreSpecificationExtension
 {
+    /// <summary>Applies an EF Core specification to the context's entity set.</summary>
     public static IQueryable<T> BySpecification<T, TState>(
         this DbContext context, EFCoreSpecification<T, TState> specification)
         where T : class
@@ -12,9 +13,10 @@ public static class EFCoreSpecificationExtension
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(specification);
 
-        return Apply(context, specification.Core.Data, specification.Options);
+        return context.Set<T>().BySpecification(specification);
     }
 
+    /// <summary>Applies an EF Core projected specification to the context's entity set.</summary>
     public static IQueryable<TResult> BySpecification<TEntity, TResult>(
         this DbContext context, EFCoreProjectedSpecification<TEntity, TResult> specification)
         where TEntity : class
@@ -22,48 +24,6 @@ public static class EFCoreSpecificationExtension
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(specification);
 
-        return Apply(context, specification.Projection.SourceData, specification.Options)
-            .Select(specification.Projection.Selector);
-    }
-
-    private static IQueryable<TEntity> Apply<TEntity>(
-        DbContext context,
-        SpecificationData<TEntity> sourceData,
-        QueryOptions<TEntity> options)
-        where TEntity : class
-    {
-        IQueryable<TEntity> query = context.Set<TEntity>();
-
-        foreach (var include in options.Includes)
-            query = include.Apply(query);
-
-        query = options.Tracking switch
-        {
-            TrackingMode.Tracking => query.AsTracking(),
-            TrackingMode.NoTracking => query.AsNoTracking(),
-            TrackingMode.NoTrackingWithIdentityResolution => query.AsNoTrackingWithIdentityResolution(),
-            _ => query
-        };
-
-        if (options.IgnoreAutoIncludes)
-            query = query.IgnoreAutoIncludes();
-        query = options.QueryFilters.Mode switch
-        {
-            QueryFilterMode.All => query.IgnoreQueryFilters(),
-            QueryFilterMode.Named => query.IgnoreQueryFilters(options.QueryFilters.Names),
-            _ => query
-        };
-
-        query = options.Splitting switch
-        {
-            QuerySplittingMode.Single => query.AsSingleQuery(),
-            QuerySplittingMode.Split => query.AsSplitQuery(),
-            _ => query
-        };
-
-        foreach (var tag in options.Tags)
-            query = query.TagWith(tag);
-
-        return SpecificationExtension.Apply(query, sourceData);
+        return context.Set<TEntity>().BySpecification(specification);
     }
 }

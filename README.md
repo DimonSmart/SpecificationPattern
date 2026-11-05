@@ -201,6 +201,72 @@ Conflicts are rejected with `InvalidOperationException`: both operands specifyin
 
 The merged configuration applies to the **final combined query**, not separately to each branch of `Or`.
 
+### Apply EF Core specifications to an existing IQueryable
+
+EF Core specifications now work both with `DbContext.BySpecification(spec)` and
+with `IQueryable<TEntity>.BySpecification(spec)`, including `DbSet<TEntity>`.
+Use the queryable form to preserve filters or other operators already applied
+to the source query. The existing DbContext overload delegates to the same
+implementation using `context.Set<TEntity>()`; neither overload materializes
+the query. Terminal projections are supported by both forms.
+
+The IQueryable overload requires an **EF Core query provider**. Ordinary
+LINQ-to-Objects sources should instead use `Specification.Create<TEntity>()`
+with the base LINQ / IEnumerable `BySpecification` overloads. EF Core-only
+options such as `Include`, tracking, query filters and SQL tags must not
+silently turn into no-ops on in-memory sources. A provider without
+`IAsyncQueryProvider` is rejected immediately.
+
+The following example is compiled as
+[`QueryableEFCoreExample.cs`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/QueryableEFCoreExample.cs)
+and checked against README by CI.
+
+<!-- compiled-example: QueryableEFCoreExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using StudentEntity = DimonSmart.Specification.Tests.Common.Student;
+
+namespace DocumentationExamples;
+
+public static class QueryableEFCoreExample
+{
+    public static IQueryable<StudentEntity> Query(DbContext context, int minimumAge)
+    {
+        var specification = EFCoreSpecification.Create<StudentEntity>()
+            .Where(s => s.Name.StartsWith("A"))
+            .Include(s => s.School)
+            .AsNoTracking()
+            .OrderBy(s => s.Id)
+            .Take(20);
+
+        return context.Set<StudentEntity>()
+            .Where(s => s.Age >= minimumAge)
+            .BySpecification(specification);
+    }
+
+    public static IQueryable<string> Names(DbContext context, int minimumAge)
+    {
+        var specification = EFCoreSpecification.Create<StudentEntity>()
+            .OrderBy(s => s.Id)
+            .AsNoTracking()
+            .Select(s => s.Name);
+
+        return context.Set<StudentEntity>()
+            .Where(s => s.Age >= minimumAge)
+            .BySpecification(specification);
+    }
+}
+```
+
+Existing `Where` filters remain in the query and combine with the specification's
+filters. Ordering, pagination, `SeekAfter`, EF Core Includes, tracking, query
+filter options, split/single-query and tags still operate on the resulting
+`IQueryable`. Query operators **already present** on the input are not
+rewritten or removed: applying an additional `Where` after a prior `Take`
+retains the prior `Take`. Apply specifications before paging on the source
+when you want to page the combined results.
+
 ### Conditional Where
 
 Both packages support `Where(predicate, condition)` for optional filters. A true
