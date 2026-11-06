@@ -19,6 +19,22 @@ public static class EFCoreQueryableSpecificationExtension
         return Apply(query, specification.Core.Data, specification.Options);
     }
 
+    /// <summary>
+    /// Applies only entity-membership criteria: Where and the specification's global query-filter settings.
+    /// Existing source operations are preserved; Includes, ordering, paging, tracking, splitting and tags
+    /// configured by the specification are ignored.
+    /// </summary>
+    public static IQueryable<T> BySpecificationCriteria<T>(
+        this IQueryable<T> query, EFCoreSpecification<T> specification)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(specification);
+        EnsureEfCoreProvider(query);
+        return SpecificationExtension.ApplyCriteria(
+            ApplyQueryFilters(query, specification.Options.QueryFilters), specification.Core.Data);
+    }
+
     /// <summary>Applies the entity query configuration before the terminal projection.</summary>
     public static IQueryable<TResult> BySpecification<TEntity, TResult>(
         this IQueryable<TEntity> query,
@@ -40,6 +56,16 @@ public static class EFCoreQueryableSpecificationExtension
                 "Use the base Specification<T> for LINQ-to-Objects sources.", nameof(query));
     }
 
+    private static IQueryable<TEntity> ApplyQueryFilters<TEntity>(
+        IQueryable<TEntity> query, QueryFilterOptions queryFilters)
+        where TEntity : class =>
+        queryFilters.Mode switch
+        {
+            QueryFilterMode.All => query.IgnoreQueryFilters(),
+            QueryFilterMode.Named => query.IgnoreQueryFilters(queryFilters.Names),
+            _ => query
+        };
+
     private static IQueryable<TEntity> Apply<TEntity>(
         IQueryable<TEntity> query,
         SpecificationData<TEntity> sourceData,
@@ -59,12 +85,7 @@ public static class EFCoreQueryableSpecificationExtension
 
         if (options.IgnoreAutoIncludes)
             query = query.IgnoreAutoIncludes();
-        query = options.QueryFilters.Mode switch
-        {
-            QueryFilterMode.All => query.IgnoreQueryFilters(),
-            QueryFilterMode.Named => query.IgnoreQueryFilters(options.QueryFilters.Names),
-            _ => query
-        };
+        query = ApplyQueryFilters(query, options.QueryFilters);
 
         query = options.Splitting switch
         {
