@@ -3,14 +3,14 @@
 ## Goal
 Provide forward-only keyset pagination over existing immutable LINQ and EF Core specifications.
 The implementation reuses typed `OrderClause<TEntity, TKey>` expressions, performs no materialization,
-and preserves `Composable`/`Configured` and `And`/`Or` semantics.
+and preserves immutable canonical `And`/`Or` semantics. The v3 pipeline\nrequires consecutive `OrderBy`/`ThenBy` calls and disallows `Take` before `SeekAfter`.
 
 ## Public API
 ```csharp
 var page = EFCoreSpecification.Create<Order>()
     .Where(x => x.IsActive)
     .OrderByDesc(x => x.CreatedAt)
-    .OrderBy(x => x.Id)
+    .ThenBy(x => x.Id)
     .SeekAfter((lastCreatedAt, lastId))
     .Take(20);
 ```
@@ -31,7 +31,7 @@ var page = EFCoreSpecification.Create<Order>()
 - No `Skip` with `SeekAfter`, in either call order or across composition.
 - No additional ordering or second `SeekAfter` after a cursor is configured.
 - Two independently configured cursors cannot be combined.
-- Ordinary `Where`, `Take`, and terminal `Select` remain compatible.
+- `Take` after `SeekAfter` and continuable `Select` remain compatible.
   `And`/`Or` merge normal filters; a single cursor filters the **entire**
   resulting expression, not one branch of `Or`.
 - Keyset filtering precedes sorting, `Take`, and projection when applying a specification.

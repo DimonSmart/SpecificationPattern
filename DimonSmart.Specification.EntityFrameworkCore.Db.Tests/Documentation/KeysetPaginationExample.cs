@@ -12,7 +12,7 @@ public static class KeysetPaginationExample
             EFCoreSpecification.Create<Student>()
                 .Where(s => s.Age >= 18)
                 .OrderByDesc(s => s.Age)
-                .OrderBy(s => s.Id)
+                .ThenBy(s => s.Id)
                 .SeekAfter((lastAge, lastId))
                 .Take(20));
 }

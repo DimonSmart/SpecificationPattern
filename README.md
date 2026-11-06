@@ -3,7 +3,7 @@
 An immutable Specification Pattern implementation for LINQ and Entity Framework Core.
 
 Packages:
-- **DimonSmart.Specification** — filtering, sorting, paging and composition for `IQueryable<T>`, without Entity Framework dependencies.
+- **DimonSmart.Specification** — an ordered, immutable LINQ pipeline over `IQueryable<T>` and `IEnumerable<T>`, with typed `Select` / `SelectMany` and canonical composition.
 - **DimonSmart.Specification.EntityFrameworkCore** — adds `Include`, `ThenInclude` and EF Core query options.
 
 ## Immutable specifications and runtime validation
@@ -33,7 +33,7 @@ var filter = Specification.Create<Student>()
     .Where(s => s.Age >= 18);
 var sorting = Specification.Create<Student>()
     .OrderBy(s => s.Name)
-    .OrderByDesc(s => s.Age);
+    .ThenByDesc(s => s.Age);
 
 Specification<Student> combined = filter.And(sorting);
 var result = students.BySpecification(combined).ToList();
@@ -108,7 +108,7 @@ public static class DynamicEFCoreSpecificationExample
 }
 ```
 
-See [Migration to v2](docs/Migration-to-v2.md) for the breaking API changes.
+See [Migration to v3](docs/Migration-to-v3.md) for changes to LINQ operator ordering, composition, keyset pagination and diagnostics. The [v2 guide](docs/Migration-to-v2.md) remains available.
 
 ### IEnumerable overloads (no AsQueryable required)
 
@@ -200,12 +200,13 @@ Both require an existing `OrderBy` or `OrderByDesc`: calling either without
 an ordering throws `InvalidOperationException`, even on a specification
 configured by `Take`, `Skip`, or EF Core query options.
 
-For backwards compatibility, repeated `OrderBy` / `OrderByDesc` calls
-still **append** keys, rather than replacing previous ordering. The old
-and new forms can also be mixed, always preserving call order. Once
-`SeekAfter` has been configured, adding any sort key (including `ThenBy`
-or `ThenByDesc`) throws. With keyset pagination, all key values must
-be supplied in order, including keys added through `ThenBy`.
+Each `OrderBy` / `OrderByDesc` starts a new sorting block, just like standard
+LINQ. Add secondary keys with `ThenBy` / `ThenByDesc`. These methods require
+a **directly preceding active ordering block**: `OrderBy(...).Where(...).ThenBy(...)`
+and `OrderBy(...).Take(...).ThenBy(...)` fail immediately. A disabled
+conditional operation does not interrupt a block. After `SeekAfter`, adding
+any sorting key in the same stage is forbidden. Keyset cursors must provide
+values for all keys in the current block.
 
 The `SpecificationData.OrderExpressions` diagnostic property exposes a
 **read-only, independent snapshot** of
@@ -223,8 +224,10 @@ user-supplied `Expression<Func<Student, object>>`, or an explicit cast
 that cast or guarantee database translation of user-authored conversions.
 No library-generated boxing conversion is introduced for naturally typed keys.
 
-Immutable branches, ordering conflicts in `And` / `Or`, and the application
-order `Where` → sorting → `Skip` → `Take` → terminal `Select` are unchanged.
+Immutable branches and runtime configuration conflict checks remain. Unlike v2,
+the evaluation order of `Where`, sorting, `Skip`, `Take`, `Select` and
+`SelectMany` is exactly the order in which they are configured. For example,
+`Take(10).Where(predicate)` filters only those ten input elements.
 
 ### Conditional ordering and pagination
 
@@ -234,11 +237,12 @@ Both packages support a `bool condition` overload for `OrderBy`, `OrderByDesc`,
 
 ```csharp
 var spec = EFCoreSpecification.Create<Student>()
-    .Where(s => s.Age >= 20)
-    .OrderBy(s => s.Name, sortByName)
-    .OrderByDesc(s => s.Age, sortByAge)
-    .Skip(skip, skip > 0)
-    .Take(take, take > 0);
+    .Where(s => s.Age >= 20);
+if (sortByName)
+    spec = spec.OrderBy(s => s.Name);
+if (sortByAge)
+    spec = sortByName ? spec.ThenByDesc(s => s.Age) : spec.OrderByDesc(s => s.Age);
+spec = spec.Skip(skip, skip > 0).Take(take, take > 0);
 ```
 
 A disabled operation adds no sorting or pagination, and never creates a
@@ -315,7 +319,7 @@ with `IQueryable<TEntity>.BySpecification(spec)`, including `DbSet<TEntity>`.
 Use the queryable form to preserve filters or other operators already applied
 to the source query. The existing DbContext overload delegates to the same
 implementation using `context.Set<TEntity>()`; neither overload materializes
-the query. Terminal projections are supported by both forms.
+the query. Continuable projections and subsequent LINQ operators are supported by both forms.
 
 The IQueryable overload requires an **EF Core query provider**. Ordinary
 LINQ-to-Objects sources should instead use `Specification.Create<TEntity>()`
@@ -525,7 +529,7 @@ public static class NamedQueryFiltersExample
 }
 ```
 
-`Select()` is terminal: configure query filters and compose specifications **before** projection. Explicit `Include` / `ThenInclude` and `Select` remain mutually incompatible in the current API.
+Configure EF Core query options and compose source specifications **before** projection. Later LINQ operations remain available on projected stages. Explicit `Include` / `ThenInclude` and `Select` remain mutually incompatible in the current API.
 
 **Security:** Disabling `TenantFilter` can expose data from other tenants. These methods are query configuration, not authorization; only trusted application code should decide which filters may be bypassed. The library does not inspect or validate names against the EF model.
 
@@ -604,7 +608,7 @@ public static class CriteriaOnlyEvaluationExample
 `total` counts all students matching the `Where` criteria, while `students`
 contains the requested page. Both calls reuse the same immutable specification.
 
-Criteria-only ignores **only the specification's** sorting (`OrderBy`/`ThenBy`),
+Criteria-only removes **only the specification's** sorting (`OrderBy`/`ThenBy`),
 paging (`Skip`/`Take`), cursor boundary (`SeekAfter`), and EF Core
 `Include`/`ThenInclude`, tracking, splitting, automatic-include override and
 query tags. The cursor's internally generated `Where` is not a criterion.
@@ -616,11 +620,19 @@ specified are disabled. This follows the membership semantics of EF Core.
 pre-existing `Where`, `OrderBy`, `Take`, or `Include` calls. Criteria-only
 does not strip or rewrite the original `IQueryable` expression. It does not
 bypass compatibility validation when specifications are composed with `And`
-or `Or`.
+or `Or`. For a projected pipeline, `Select`, both forms of `SelectMany`,
+and every `Where` are preserved, even if they originally followed pagination.
+Counting therefore counts elements of the final projected type, not necessarily
+the original entities.
 
-## Projection / Select
+## Projection / SelectMany / Select
 
-Call `Select<TResult>(Expression<Func<TEntity, TResult>>)` after configuring a base LINQ or EF Core specification to construct a typed, terminal projection. `Where`, ordering, `Skip`, and `Take` operate on the original entity before `Queryable.Select`; enumeration and SQL execution remain deferred. There is no restriction on `TResult` (DTOs, anonymous types, scalars, entities and nullable types are supported).
+Both `Select` and `SelectMany` start new typed stages; additional `Where`,
+`OrderBy`, `ThenBy`, `Skip`, `Take`, `SeekAfter`, `Select`, and `SelectMany`
+operations can follow on the current element type. There is no restriction on
+the projected type (DTOs, anonymous types, scalars, entities, and nullable types
+are supported). The pipeline remains deferred, using ordinary `Queryable`
+expression trees without materialization.
 
 ### LINQ projection
 
@@ -681,9 +693,13 @@ public static class EFCoreProjectionExample
 }
 ```
 
-Navigation properties such as `s.School.Name` can be projected directly without `Include`. Explicit `Include`, `ThenInclude`, and filtered Include plans **cannot** be combined with `Select` in this version: calling `Select` throws `InvalidOperationException` immediately. `IgnoreAutoIncludes` without an explicit Include is allowed.
+Navigation properties such as `s.School.Name` can be projected directly without `Include`. Explicit `Include`, `ThenInclude`, and filtered Include plans **cannot** be combined with `Select` or `SelectMany`; both reject them immediately. `IgnoreAutoIncludes` without an explicit Include is allowed.
 
-A projected specification is **terminal** at the type level: there are no specification builder operations, composition or replacement `Select` after it. Compose with `And` / `Or` and configure all query options *before* calling `Select`. Standard `IQueryable<TResult>` operators remain available on the returned query.
+A projected specification is **continuable**. Compose with `And` / `Or` and
+configure EF Core options before projection: arbitrary `And` / `Or` composition
+between projected specifications is intentionally unsupported. A new `Select`
+or `SelectMany` opens a fresh ordering/keyset stage, even when its CLR type
+equals the previous stage.
 
 The library passes the selector expression to the LINQ provider: it does not use `Func`, `Expression.Compile()` or intermediate entity materialization. SQL translation, client evaluation of top-level projections, and support for nested collections depend on EF Core and the database provider. Simple DTO projections can fetch only the columns needed by the selector. Tracking follows normal EF Core rules: scalar-only DTOs do not track entities, but DTOs containing entity instances can track those instances unless a no-tracking option was selected. `AsSplitQuery`, `AsSingleQuery`, query filters, auto-include options, and query tags are retained.
 
@@ -714,7 +730,7 @@ public static class KeysetPaginationExample
             EFCoreSpecification.Create<Student>()
                 .Where(s => s.Age >= 18)
                 .OrderByDesc(s => s.Age)
-                .OrderBy(s => s.Id)
+                .ThenBy(s => s.Id)
                 .SeekAfter((lastAge, lastId))
                 .Take(20));
 }
@@ -726,16 +742,38 @@ Values must match the key types exactly. Version 1 supports `byte`, `short`,
 Guid and other key types are intentionally not supported yet. `SeekAfter`
 cannot be combined with `Skip`, repeated, or followed by additional sorting.
 A cursor participates in `And`/`Or` as a query-level option and applies to
-the entire resulting filter (including `Or`), before ordering, `Take`, and `Select`.
+the entire resulting filter (including `Or`) before the current ordering block.
+It cannot be preceded by `Take` in the same stage, or mixed with `Skip`
+in that stage. A new projected stage can have its own independent cursor.
 There is no backward pagination or token serialization in v1.
+
+### Typed SelectMany example
+
+```csharp
+var spec = EFCoreSpecification.Create<Student>()
+    .Where(s => s.Age >= 18)
+    .SelectMany(s => s.Books)
+    .Where(book => book.Name.StartsWith("A"))
+    .OrderBy(book => book.Name)
+    .Take(10);
+
+IQueryable<Book> books = dbContext.Set<Student>().BySpecification(spec);
+int total = await dbContext.BySpecificationCriteria(spec).CountAsync();
+```
+
+`SelectMany(collectionSelector, resultSelector)` is also supported. The
+`PipelineSteps` snapshot exposes the ordered operations, stage IDs, element
+types and original expression trees. Older `SpecificationData` fields remain
+available only for pipelines representable by the v2 canonical normal form.
+Nonrepresentable legacy access throws `NotSupportedException`.
 
 ## Supported operations
 
 | Query operation | LINQ | EF Core |
 |---|---|---|
 | `Where`, `And`, `Or` | Yes | Yes |
-| `Select` (terminal projection) | Yes | Yes |
-| `OrderBy`, `OrderByDesc` | Yes | Yes |
+| `Select`, `SelectMany` (continuable stages) | Yes | Yes |
+| `OrderBy`, `OrderByDesc`, `ThenBy`, `ThenByDesc` | Yes | Yes |
 | `SeekAfter` (forward keyset pagination) | Yes | Yes |
 | `Skip`, `Take` | Yes | Yes |
 | `Include`, `ThenInclude` | — | Yes |

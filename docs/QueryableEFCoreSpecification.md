@@ -20,7 +20,7 @@ the original query or creating another evaluator.
 - Input must have an EF Core-compatible asynchronous query provider; reject
   ordinary `EnumerableQuery` instead of silently ignoring EF-specific options.
 - Preserve null-argument checks, immutability, deferred SQL execution,
-  composable/configured state, and existing Include/Select conflict validation.
+  canonical composition, and Include/Select/SelectMany conflict validation.
 - Do not introduce repository abstractions or new runtime versions.
 
 ## Acceptance
