@@ -43,6 +43,33 @@ internal sealed class RootPipeline<TSource> : QueryPipeline<TSource, TSource> wh
     internal override void Describe(List<QueryPipelineStep> steps) { }
 }
 
+/// <summary>Appends a reusable projected pipeline without materialization or expression compilation.</summary>
+internal sealed class ChainedPipeline<TSource, TCurrent> : QueryPipeline<TSource, TCurrent>
+    where TSource : class
+{
+    private readonly QueryPipeline<TSource, TSource> _source;
+    private readonly QueryPipeline<TSource, TCurrent> _projection;
+
+    internal ChainedPipeline(
+        QueryPipeline<TSource, TSource> source, QueryPipeline<TSource, TCurrent> projection)
+        : base(projection.Stage with { Id = source.Stage.Id + projection.Stage.Id + 1 })
+    {
+        _source = source;
+        _projection = projection;
+    }
+
+    internal override IQueryable<TCurrent> Apply(IQueryable<TSource> query, bool criteriaOnly) =>
+        _projection.Apply(_source.Apply(query, criteriaOnly), criteriaOnly);
+
+    internal override void Describe(List<QueryPipelineStep> steps)
+    {
+        _source.Describe(steps);
+        var stageOffset = _source.Stage.Id + 1;
+        foreach (var step in _projection.Snapshot())
+            steps.Add(step with { Index = steps.Count, StageId = step.StageId + stageOffset });
+    }
+}
+
 /// <summary>Each node statically connects the input and output element types. Prefixes are shared.</summary>
 internal sealed class AppendPipeline<TSource, TBefore, TCurrent> : QueryPipeline<TSource, TCurrent>
     where TSource : class

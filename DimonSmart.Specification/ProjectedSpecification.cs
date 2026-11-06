@@ -3,12 +3,24 @@ using System.Linq.Expressions;
 namespace DimonSmart.Specification;
 
 /// <summary>Immutable, continuable typed stage of a LINQ specification.</summary>
-public sealed class ProjectedSpecification<TSource, TCurrent> where TSource : class
+public sealed class ProjectedSpecification<TSource, TCurrent> : ISpecification<TSource, TCurrent> where TSource : class
 {
     internal QueryPipeline<TSource, TCurrent> Pipeline { get; }
     internal ProjectedSpecification(QueryPipeline<TSource, TCurrent> pipeline) => Pipeline = pipeline;
 
     public IReadOnlyList<QueryPipelineStep> PipelineSteps => Pipeline.Snapshot();
+
+    IQueryable<TCurrent> ISpecification<TSource, TCurrent>.ApplyTo(IQueryable<TSource> query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return Pipeline.Apply(query, false);
+    }
+
+    IQueryable<TCurrent> ISpecification<TSource, TCurrent>.ApplyCriteriaTo(IQueryable<TSource> query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return Pipeline.Apply(query, true);
+    }
 
     public ProjectedSpecification<TSource, TCurrent> Where(Expression<Func<TCurrent, bool>> expression) =>
         new(PipelineOperations.Where(Pipeline, expression));

@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 namespace DimonSmart.Specification;
 
 /// <summary>Immutable specification over a query's original entity stage.</summary>
-public class Specification<T> where T : class
+public class Specification<T> : ISpecification<T> where T : class
 {
     private readonly QueryPipeline<T, T> _pipeline;
     private readonly ImmutableArray<SourceOperation<T>> _operations;
@@ -39,6 +39,18 @@ public class Specification<T> where T : class
     public IReadOnlyList<QueryPipelineStep> PipelineSteps => _pipeline.Snapshot();
 
     public Expression<Func<T, bool>>? GetWhereExpression() => Data.WhereExpression;
+
+    IQueryable<T> ISpecification<T, T>.ApplyTo(IQueryable<T> query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return _pipeline.Apply(query, false);
+    }
+
+    IQueryable<T> ISpecification<T, T>.ApplyCriteriaTo(IQueryable<T> query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return _pipeline.Apply(query, true);
+    }
 
     private Specification<T> Append(QueryPipeline<T, T> next, SourceOperation<T> op) =>
         new(next, _operations.Add(op));
@@ -147,6 +159,14 @@ public class Specification<T> where T : class
         Expression<Func<T, IEnumerable<TCollection>>> collectionSelector,
         Expression<Func<T, TCollection, TResult>> resultSelector) =>
         new(PipelineOperations.SelectMany(_pipeline, collectionSelector, resultSelector));
+
+    /// <summary>Appends the reusable projected pipeline after this specification's operations.</summary>
+    public ProjectedSpecification<T, TResult> WithProjectionOf<TResult>(
+        ProjectedSpecification<T, TResult> projection)
+    {
+        ArgumentNullException.ThrowIfNull(projection);
+        return new(new ChainedPipeline<T, TResult>(_pipeline, projection.Pipeline));
+    }
 
     public void EnsureCompatibleWith(Specification<T> other) =>
         _ = AnalyzeCombination(other, "EnsureCompatibleWith");
