@@ -1,55 +1,44 @@
+using System.Collections.Immutable;
 using System.Linq.Expressions;
 
 namespace DimonSmart.Specification;
 
-/// <summary>
-/// Immutable specification with runtime-validated composition.
-/// </summary>
-public class Specification<T>
-    where T : class
+/// <summary>Immutable specification over a query's original entity stage.</summary>
+public class Specification<T> where T : class
 {
-    private readonly SpecificationData<T> _data;
+    private readonly QueryPipeline<T, T> _pipeline;
+    private readonly ImmutableArray<SourceOperation<T>> _operations;
 
-    internal Specification(SpecificationData<T> data) => _data = data;
+    internal Specification(QueryPipeline<T, T> pipeline, ImmutableArray<SourceOperation<T>> operations)
+    {
+        _pipeline = pipeline;
+        _operations = operations;
+    }
 
     protected Specification(Specification<T> source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        _data = Copy(source._data);
+        _pipeline = source._pipeline;
+        _operations = source._operations;
     }
 
-    internal SpecificationData<T> Data => _data;
+    internal QueryPipeline<T, T> Pipeline => _pipeline;
+    internal SpecificationData<T> Data => SourceOperations<T>.Analyze(_operations, "legacy diagnostic").ToData();
+    public ISpecificationData<T> SpecificationData => Data;
+    public IReadOnlyList<QueryPipelineStep> PipelineSteps => _pipeline.Snapshot();
 
-    public ISpecificationData<T> SpecificationData => Copy(_data);
+    public Expression<Func<T, bool>>? GetWhereExpression() => Data.WhereExpression;
 
-    public Expression<Func<T, bool>>? GetWhereExpression() => _data.WhereExpression;
-
-    internal static SpecificationData<T> Copy(SpecificationData<T> source) => new()
-    {
-        WhereExpression = source.WhereExpression,
-        OrderClauses = new List<IOrderClause<T>>(source.OrderClauses),
-        Seek = source.Seek,
-        TakeQ = source.TakeQ,
-        SkipQ = source.SkipQ
-    };
-
-    /// <summary>Creates a terminal projection without changing this specification.</summary>
-    public ProjectedSpecification<T, TResult> Select<TResult>(Expression<Func<T, TResult>> selector)
-    {
-        ArgumentNullException.ThrowIfNull(selector);
-        return new ProjectedSpecification<T, TResult>(_data, selector);
-    }
+    private Specification<T> Append(QueryPipeline<T, T> next, SourceOperation<T> op) =>
+        new(next, _operations.Add(op));
 
     public Specification<T> Where(Expression<Func<T, bool>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        var data = Copy(_data);
-        data.WhereExpression = data.WhereExpression is null ? expression :
-            ExpressionOperations.CombineExpressions(data.WhereExpression, expression, Expression.AndAlso);
-        return new Specification<T>(data);
+        return Append(PipelineOperations.Where(_pipeline, expression),
+            new SourceOperation<T>("Where", Predicate: expression));
     }
 
-    /// <summary>Adds a filter only when <paramref name="condition"/> is true.</summary>
     public Specification<T> Where(Expression<Func<T, bool>> expression, bool condition)
     {
         ArgumentNullException.ThrowIfNull(expression);
@@ -57,9 +46,8 @@ public class Specification<T>
     }
 
     public Specification<T> OrderBy<TKey>(Expression<Func<T, TKey>> expression) =>
-        AppendOrdering(expression, OrderDirectionEnum.Ascending, requireExisting: false);
+        AddOrdering(expression, OrderDirectionEnum.Ascending, false);
 
-    /// <summary>Adds an ascending key when enabled. A skipped call returns the original instance.</summary>
     public Specification<T> OrderBy<TKey>(Expression<Func<T, TKey>> expression, bool condition)
     {
         ArgumentNullException.ThrowIfNull(expression);
@@ -67,163 +55,237 @@ public class Specification<T>
     }
 
     public Specification<T> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
-        AppendOrdering(expression, OrderDirectionEnum.Descending, requireExisting: false);
+        AddOrdering(expression, OrderDirectionEnum.Descending, false);
 
-    /// <summary>Adds a descending key when enabled. A skipped call returns the original instance.</summary>
     public Specification<T> OrderByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition)
     {
         ArgumentNullException.ThrowIfNull(expression);
         return condition ? OrderByDesc(expression) : this;
     }
 
-    /// <summary>Adds a secondary ascending key to an existing ordering.</summary>
     public Specification<T> ThenBy<TKey>(Expression<Func<T, TKey>> expression) =>
-        AppendOrdering(expression, OrderDirectionEnum.Ascending, requireExisting: true);
+        AddOrdering(expression, OrderDirectionEnum.Ascending, true);
 
-    /// <summary>Skips the key when disabled; otherwise requires an existing ordering.</summary>
     public Specification<T> ThenBy<TKey>(Expression<Func<T, TKey>> expression, bool condition)
     {
         ArgumentNullException.ThrowIfNull(expression);
         return condition ? ThenBy(expression) : this;
     }
 
-    /// <summary>Adds a secondary descending key to an existing ordering.</summary>
     public Specification<T> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression) =>
-        AppendOrdering(expression, OrderDirectionEnum.Descending, requireExisting: true);
+        AddOrdering(expression, OrderDirectionEnum.Descending, true);
 
-    /// <summary>Skips the key when disabled; otherwise requires an existing ordering.</summary>
     public Specification<T> ThenByDesc<TKey>(Expression<Func<T, TKey>> expression, bool condition)
     {
         ArgumentNullException.ThrowIfNull(expression);
         return condition ? ThenByDesc(expression) : this;
     }
 
-    private Specification<T> AppendOrdering<TKey>(
-        Expression<Func<T, TKey>> expression, OrderDirectionEnum direction, bool requireExisting)
+    private Specification<T> AddOrdering<TKey>(
+        Expression<Func<T, TKey>> expression, OrderDirectionEnum direction, bool subsequent)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        if (_data.Seek is not null)
-            throw new InvalidOperationException("Cannot add ordering after SeekAfter.");
-        if (requireExisting && _data.OrderClauses.Count == 0)
-            throw new InvalidOperationException(
-                $"{(direction == OrderDirectionEnum.Ascending ? "ThenBy" : "ThenByDesc")} requires an existing OrderBy or OrderByDesc.");
-
-        var data = Copy(_data);
-        data.OrderClauses.Add(new OrderClause<T, TKey>(expression, direction));
-        return new Specification<T>(data);
-    }
-
-    public Specification<T> Take(int count)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(count);
-        var data = Copy(_data);
-        data.TakeQ = count;
-        return new Specification<T>(data);
-    }
-
-    /// <summary>Applies Take only when enabled; negative counts are always rejected.</summary>
-    public Specification<T> Take(int count, bool condition)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(count);
-        return condition ? Take(count) : this;
+        var next = subsequent
+            ? PipelineOperations.ThenBy(_pipeline, expression, direction)
+            : PipelineOperations.OrderBy(_pipeline, expression, direction);
+        return Append(next, new SourceOperation<T>(subsequent ? "ThenBy" : "OrderBy",
+            Order: new OrderClause<T, TKey>(expression, direction)));
     }
 
     public Specification<T> Skip(int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
-        if (_data.Seek is not null)
-            throw new InvalidOperationException("Skip cannot be combined with SeekAfter.");
-        var data = Copy(_data);
-        data.SkipQ = count;
-        return new Specification<T>(data);
+        return Append(PipelineOperations.Skip(_pipeline, count),
+            new SourceOperation<T>("Skip", Count: count));
     }
 
-    /// <summary>Applies Skip only when enabled; negative counts are always rejected.</summary>
     public Specification<T> Skip(int count, bool condition)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         return condition ? Skip(count) : this;
     }
 
-    /// <summary>
-    /// Returns rows strictly after the supplied key values in the configured ordering.
-    /// For multiple keys, pass a ValueTuple with one element per ordering clause.
-    /// </summary>
-    public Specification<T> SeekAfter<TCursor>(TCursor cursor)
+    public Specification<T> Take(int count)
     {
-        ArgumentNullException.ThrowIfNull(cursor);
-        if (_data.Seek is not null)
-            throw new InvalidOperationException("SeekAfter is already configured.");
-        if (_data.SkipQ.HasValue)
-            throw new InvalidOperationException("SeekAfter cannot be combined with Skip.");
-        var seek = SeekBoundary.Create(cursor, _data.OrderClauses);
-        var data = Copy(_data);
-        data.Seek = seek;
-        return new Specification<T>(data);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        return Append(PipelineOperations.Take(_pipeline, count),
+            new SourceOperation<T>("Take", Count: count));
     }
 
+    public Specification<T> Take(int count, bool condition)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        return condition ? Take(count) : this;
+    }
+
+    public Specification<T> SeekAfter<TCursor>(TCursor cursor)
+    {
+        var next = PipelineOperations.SeekAfter(_pipeline, cursor);
+        var boundary = ((OrderedPipeline<T, T>)next).Boundary!;
+        return Append(next, new SourceOperation<T>("SeekAfter", Boundary: boundary));
+    }
+
+    public ProjectedSpecification<T, TResult> Select<TResult>(Expression<Func<T, TResult>> selector) =>
+        new(PipelineOperations.Select(_pipeline, selector));
+
+    public ProjectedSpecification<T, TCollection> SelectMany<TCollection>(
+        Expression<Func<T, IEnumerable<TCollection>>> collectionSelector) =>
+        new(PipelineOperations.SelectMany(_pipeline, collectionSelector));
+
+    public ProjectedSpecification<T, TResult> SelectMany<TCollection, TResult>(
+        Expression<Func<T, IEnumerable<TCollection>>> collectionSelector,
+        Expression<Func<T, TCollection, TResult>> resultSelector) =>
+        new(PipelineOperations.SelectMany(_pipeline, collectionSelector, resultSelector));
 
     public void EnsureCompatibleWith(Specification<T> other) =>
-        EnsureCompatibleWith(other, "EnsureCompatibleWith");
+        _ = AnalyzeCombination(other, "EnsureCompatibleWith");
 
-    internal void EnsureCompatibleWith(Specification<T> other, string operation)
+    internal void EnsureCompatibleWith(Specification<T> other, string operation) =>
+        _ = AnalyzeCombination(other, operation);
+
+    private (SourceConfiguration<T> Left, SourceConfiguration<T> Right) AnalyzeCombination(
+        Specification<T> other, string operation)
     {
         ArgumentNullException.ThrowIfNull(other);
-        var left = _data;
-        var right = other._data;
-        if (left.Seek is not null && right.Seek is not null)
-            throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define SeekAfter.");
-        if ((left.Seek is not null || right.Seek is not null) &&
-            (left.SkipQ.HasValue || right.SkipQ.HasValue))
-            throw new InvalidOperationException($"Cannot combine specifications using {operation}: Skip conflicts with SeekAfter.");
-        if (left.OrderClauses.Count != 0 && right.OrderClauses.Count != 0)
-        {
-            var leftKeys = string.Join(", ", left.OrderClauses.Select(c => c.KeySelector.Body + " " + c.Direction));
-            var rightKeys = string.Join(", ", right.OrderClauses.Select(c => c.KeySelector.Body + " " + c.Direction));
-            throw new InvalidOperationException(
-                $"Cannot combine specifications using {operation}: both define ordering. Left: {leftKeys}. Right: {rightKeys}.");
-        }
-        if (left.SkipQ.HasValue && right.SkipQ.HasValue)
-            throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define Skip.");
-        if (left.TakeQ.HasValue && right.TakeQ.HasValue)
-            throw new InvalidOperationException($"Cannot combine specifications using {operation}: both define Take.");
+        var left = SourceOperations<T>.Analyze(_operations, operation);
+        var right = SourceOperations<T>.Analyze(other._operations, operation);
+        if (left.Boundary is not null && right.Boundary is not null)
+            throw new InvalidOperationException($"Cannot combine using {operation}: both define SeekAfter.");
+        if ((left.Boundary is not null || right.Boundary is not null) &&
+            (left.Skip.HasValue || right.Skip.HasValue))
+            throw new InvalidOperationException($"Cannot combine using {operation}: Skip conflicts with SeekAfter.");
+        if (left.Orders.Count != 0 && right.Orders.Count != 0)
+            throw new InvalidOperationException($"Cannot combine using {operation}: conflicting ordering.");
+        if (left.Skip.HasValue && right.Skip.HasValue)
+            throw new InvalidOperationException($"Cannot combine using {operation}: competing Skip.");
+        if (left.Take.HasValue && right.Take.HasValue)
+            throw new InvalidOperationException($"Cannot combine using {operation}: competing Take.");
+        return (left, right);
     }
 
     internal Specification<T> Combine(Specification<T> other, bool and)
     {
-        EnsureCompatibleWith(other, and ? "And" : "Or");
-        var right = other._data;
-        var result = Copy(_data);
+        var (left, right) = AnalyzeCombination(other, and ? "And" : "Or");
+        Expression<Func<T, bool>>? predicate;
         if (and)
-        {
-            if (right.WhereExpression is not null)
-                result.WhereExpression = result.WhereExpression is null
-                    ? right.WhereExpression
-                    : ExpressionOperations.CombineExpressions(
-                        result.WhereExpression, right.WhereExpression, Expression.AndAlso);
-        }
+            predicate = left.Predicate is null ? right.Predicate : right.Predicate is null
+                ? left.Predicate
+                : ExpressionOperations.CombineExpressions(left.Predicate, right.Predicate, Expression.AndAlso);
         else
-        {
-            // A missing Where represents true, so p OR true must match every entity.
-            result.WhereExpression = result.WhereExpression is null || right.WhereExpression is null
-                ? null
-                : ExpressionOperations.CombineExpressions(
-                    result.WhereExpression, right.WhereExpression, Expression.OrElse);
-        }
-        result.OrderClauses.AddRange(right.OrderClauses);
-        result.Seek ??= right.Seek;
-        result.SkipQ ??= right.SkipQ;
-        result.TakeQ ??= right.TakeQ;
-        return new Specification<T>(result);
-    }
+            predicate = left.Predicate is null || right.Predicate is null ? null
+                : ExpressionOperations.CombineExpressions(left.Predicate, right.Predicate, Expression.OrElse);
 
+        var combined = Specification.Create<T>();
+        if (predicate is not null)
+            combined = combined.Where(predicate);
+
+        var orders = left.Orders.Count != 0 ? left.Orders : right.Orders;
+        var boundary = left.Boundary ?? right.Boundary;
+        if (orders.Count != 0)
+        {
+            QueryPipeline<T, T> next = new OrderedPipeline<T, T>(
+                combined._pipeline, orders.ToImmutableArray(), boundary,
+                boundary is null ? null : combined._pipeline.Stage with { HasSeek = true });
+            var history = combined._operations;
+            for (var i = 0; i < orders.Count; i++)
+                history = history.Add(new SourceOperation<T>(i == 0 ? "OrderBy" : "ThenBy", Order: orders[i]));
+            if (boundary is not null)
+                history = history.Add(new SourceOperation<T>("SeekAfter", Boundary: boundary));
+            combined = new Specification<T>(next, history);
+        }
+
+        var skip = left.Skip ?? right.Skip;
+        var take = left.Take ?? right.Take;
+        if (skip.HasValue) combined = combined.Skip(skip.Value);
+        if (take.HasValue) combined = combined.Take(take.Value);
+        return combined;
+    }
 }
 
-/// <summary>Creates immutable specifications.</summary>
+internal sealed record SourceOperation<T>(
+    string Kind,
+    Expression<Func<T, bool>>? Predicate = null,
+    IOrderClause<T>? Order = null,
+    int? Count = null,
+    SeekBoundary? Boundary = null);
+
+internal sealed class SourceConfiguration<T>
+{
+    internal Expression<Func<T, bool>>? Predicate { get; set; }
+    internal List<IOrderClause<T>> Orders { get; } = new();
+    internal SeekBoundary? Boundary { get; set; }
+    internal int? Skip { get; set; }
+    internal int? Take { get; set; }
+
+    internal SpecificationData<T> ToData() => new()
+    {
+        WhereExpression = Predicate,
+        OrderClauses = new List<IOrderClause<T>>(Orders),
+        Seek = Boundary,
+        SkipQ = Skip,
+        TakeQ = Take
+    };
+}
+
+/// <summary>Only the canonical source-stage configuration can be merged or exposed as legacy diagnostics.</summary>
+internal static class SourceOperations<T>
+{
+    internal static SourceConfiguration<T> Analyze(
+        ImmutableArray<SourceOperation<T>> history, string operation)
+    {
+        var result = new SourceConfiguration<T>();
+        // 0: predicates, 1: ordering, 2: seek, 3: skip, 4: take
+        var phase = 0;
+        foreach (var item in history)
+        {
+            switch (item.Kind)
+            {
+                case "Where":
+                    if (phase != 0)
+                        throw new InvalidOperationException($"Cannot use {operation}: late Where after query configuration.");
+                    result.Predicate = result.Predicate is null ? item.Predicate :
+                        ExpressionOperations.CombineExpressions(
+                            result.Predicate, item.Predicate!, Expression.AndAlso);
+                    break;
+                case "OrderBy":
+                    if (phase != 0)
+                        throw new InvalidOperationException($"Cannot use {operation}: conflicting ordering blocks.");
+                    phase = 1;
+                    result.Orders.Add(item.Order!);
+                    break;
+                case "ThenBy":
+                    if (phase != 1)
+                        throw new InvalidOperationException($"Cannot use {operation}: disjoint ThenBy.");
+                    result.Orders.Add(item.Order!);
+                    break;
+                case "SeekAfter":
+                    if (phase != 1 || result.Boundary is not null)
+                        throw new InvalidOperationException($"Cannot use {operation}: conflicting SeekAfter.");
+                    phase = 2;
+                    result.Boundary = item.Boundary;
+                    break;
+                case "Skip":
+                    if (phase > 3 || result.Skip.HasValue || result.Boundary is not null)
+                        throw new InvalidOperationException($"Cannot use {operation}: competing Skip or SeekAfter.");
+                    phase = 3;
+                    result.Skip = item.Count;
+                    break;
+                case "Take":
+                    if (phase > 4 || result.Take.HasValue)
+                        throw new InvalidOperationException($"Cannot use {operation}: competing Take.");
+                    phase = 4;
+                    result.Take = item.Count;
+                    break;
+            }
+        }
+        return result;
+    }
+}
+
 public static class Specification
 {
     public static Specification<T> Create<T>() where T : class =>
-        new(new SpecificationData<T>());
+        new(new RootPipeline<T>(), ImmutableArray<SourceOperation<T>>.Empty);
 }
 
 public static class SpecificationCompositionExtensions
