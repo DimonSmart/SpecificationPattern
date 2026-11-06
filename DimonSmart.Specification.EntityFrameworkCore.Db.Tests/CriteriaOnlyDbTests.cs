@@ -103,7 +103,7 @@ public sealed class CriteriaOnlyDbTests(DatabaseFixture fixture)
         Assert.Equal(2, db.Orders.BySpecificationCriteria(onlySoftDeletion).Count());
         Assert.Equal(2, db.Orders.BySpecificationCriteria(onlyTenant).Count());
         Assert.Equal(4, db.Orders.BySpecificationCriteria(all).Count());
-        Assert.Equal(2, db.Orders.BySpecificationCriteria(
+        Assert.Equal(4, db.Orders.BySpecificationCriteria(
             specification.IgnoreQueryFilters("SoftDeletionFilter", "TenantFilter")).Count());
     }
 
