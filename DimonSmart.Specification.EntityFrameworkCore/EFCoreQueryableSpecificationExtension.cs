@@ -3,49 +3,47 @@ using Microsoft.EntityFrameworkCore.Query;
 
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
-/// <summary>
-/// Applies EF Core specifications to an existing EF Core IQueryable without
-/// replacing its query root or discarding earlier query operators.
-/// </summary>
+/// <summary>Executes EF Core pipelines against an existing query root without materializing results.</summary>
 public static class EFCoreQueryableSpecificationExtension
 {
     public static IQueryable<T> BySpecification<T>(
-        this IQueryable<T> query, EFCoreSpecification<T> specification)
-        where T : class
+        this IQueryable<T> query, EFCoreSpecification<T> specification) where T : class
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(specification);
         EnsureEfCoreProvider(query);
-        return Apply(query, specification.Core.Data, specification.Options);
+        return Apply(query, specification.Core.Pipeline, specification.Options);
     }
 
-    /// <summary>
-    /// Applies only entity-membership criteria: Where and the specification's global query-filter settings.
-    /// Existing source operations are preserved; Includes, ordering, paging, tracking, splitting and tags
-    /// configured by the specification are ignored.
-    /// </summary>
     public static IQueryable<T> BySpecificationCriteria<T>(
-        this IQueryable<T> query, EFCoreSpecification<T> specification)
-        where T : class
+        this IQueryable<T> query, EFCoreSpecification<T> specification) where T : class
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(specification);
         EnsureEfCoreProvider(query);
-        return SpecificationExtension.ApplyCriteria(
-            ApplyQueryFilters(query, specification.Options.QueryFilters), specification.Core.Data);
+        return specification.Core.Pipeline.Apply(
+            ApplyQueryFilters(query, specification.Options.QueryFilters), true);
     }
 
-    /// <summary>Applies the entity query configuration before the terminal projection.</summary>
-    public static IQueryable<TResult> BySpecification<TEntity, TResult>(
-        this IQueryable<TEntity> query,
-        EFCoreProjectedSpecification<TEntity, TResult> specification)
-        where TEntity : class
+    public static IQueryable<TCurrent> BySpecification<TSource, TCurrent>(
+        this IQueryable<TSource> query, EFCoreProjectedSpecification<TSource, TCurrent> specification)
+        where TSource : class
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(specification);
         EnsureEfCoreProvider(query);
-        return Apply(query, specification.Projection.SourceData, specification.Options)
-            .Select(specification.Projection.Selector);
+        return Apply(query, specification.Projection.Pipeline, specification.Options);
+    }
+
+    public static IQueryable<TCurrent> BySpecificationCriteria<TSource, TCurrent>(
+        this IQueryable<TSource> query, EFCoreProjectedSpecification<TSource, TCurrent> specification)
+        where TSource : class
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(specification);
+        EnsureEfCoreProvider(query);
+        return specification.Projection.Pipeline.Apply(
+            ApplyQueryFilters(query, specification.Options.QueryFilters), true);
     }
 
     private static void EnsureEfCoreProvider<T>(IQueryable<T> query)
@@ -57,8 +55,7 @@ public static class EFCoreQueryableSpecificationExtension
     }
 
     private static IQueryable<TEntity> ApplyQueryFilters<TEntity>(
-        IQueryable<TEntity> query, QueryFilterOptions queryFilters)
-        where TEntity : class =>
+        IQueryable<TEntity> query, QueryFilterOptions queryFilters) where TEntity : class =>
         queryFilters.Mode switch
         {
             QueryFilterMode.All => query.IgnoreQueryFilters(),
@@ -66,11 +63,10 @@ public static class EFCoreQueryableSpecificationExtension
             _ => query
         };
 
-    private static IQueryable<TEntity> Apply<TEntity>(
-        IQueryable<TEntity> query,
-        SpecificationData<TEntity> sourceData,
-        QueryOptions<TEntity> options)
-        where TEntity : class
+    private static IQueryable<TCurrent> Apply<TSource, TCurrent>(
+        IQueryable<TSource> query,
+        QueryPipeline<TSource, TCurrent> pipeline,
+        QueryOptions<TSource> options) where TSource : class
     {
         foreach (var include in options.Includes)
             query = include.Apply(query);
@@ -97,6 +93,6 @@ public static class EFCoreQueryableSpecificationExtension
         foreach (var tag in options.Tags)
             query = query.TagWith(tag);
 
-        return SpecificationExtension.Apply(query, sourceData);
+        return pipeline.Apply(query, false);
     }
 }
