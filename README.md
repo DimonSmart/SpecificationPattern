@@ -6,6 +6,73 @@ Packages:
 - **DimonSmart.Specification** — an ordered, immutable LINQ pipeline over `IQueryable<T>` and `IEnumerable<T>`, with typed `Select` / `SelectMany` and canonical composition.
 - **DimonSmart.Specification.EntityFrameworkCore** — adds `Include`, `ThenInclude` and EF Core query options.
 
+
+## Reusable interfaces and projections
+
+`ISpecification<T>` and `ISpecification<TSource, TResult>` provide immutable,
+read-only execution contracts for generic consumers. EF Core equivalents
+`IEFCoreSpecification<T>` and `IEFCoreSpecification<TSource, TResult>`
+also expose EF option diagnostics. Their `ApplyTo` and `ApplyCriteriaTo`
+methods accept an existing `IQueryable` without materializing results.
+`BySpecification` and `BySpecificationCriteria` accept the interfaces
+on `IQueryable`, and EF-specific interfaces on `DbContext`.
+
+```csharp
+ISpecification<Student> adults = Specification.Create<Student>()
+    .Where(s => s.Age >= 18);
+var matching = students.BySpecification(adults);
+```
+
+`WithProjectionOf` on a normal specification accepts a previously
+constructed `ProjectedSpecification<TSource, TResult>`, and the EF Core
+variant accepts an `EFCoreProjectedSpecification<TSource, TResult>`.
+It creates a new specification by **appending the entire supplied projected
+pipeline** after the source pipeline, without materialization. This includes
+any filters and pagination within the supplied projected specification;
+it is intentionally more than just copying a final selector. All operations
+retain their LINQ v3 order. For reuse of only a mapping, define the
+projection with `Select` or `SelectMany` but no additional query operations.
+
+```csharp
+var names = EFCoreSpecification.Create<Student>()
+    .Select(s => s.Name);
+
+var adults = EFCoreSpecification.Create<Student>()
+    .Where(s => s.Age >= 18);
+
+var adultNames = adults.WithProjectionOf(names);
+var result = dbContext.BySpecification(adultNames);
+```
+
+The original filter and projection remain unchanged. `PipelineSteps`
+shows the combined operations. The EF Core overload merges root options
+and rejects conflicting modes and explicit `Include` plans. It does not
+silently ignore explicit loading while projecting.
+
+## Conditional EF Core query options and Includes
+
+`Include(expression, condition)` and `ThenInclude(expression, condition)`
+conditionally add navigation paths. A disabled `Include` starts an inactive
+typed chain, so following `ThenInclude` calls do not add navigation paths.
+Disabling a `ThenInclude` preserves previously added paths but stops that
+particular continuation. Independent Include paths are unaffected.
+
+```csharp
+var spec = EFCoreSpecification.Create<Student>()
+    .Include(s => s.Books, includeBooks)
+    .ThenInclude(b => b.Author)
+    .AsNoTracking(noTracking)
+    .AsSplitQuery(splitQuery)
+    .TagWith("Student query", debugSql);
+```
+
+The options `AsTracking`, `AsNoTracking`,
+`AsNoTrackingWithIdentityResolution`, `AsSingleQuery`, `AsSplitQuery`,
+`IgnoreAutoIncludes`, `IgnoreQueryFilters` (all filters), and `TagWith`
+now have conditional overloads. Disabled options return the original
+instance; enabled options behave like their unconditional counterparts.
+Even disabled operations validate non-null selectors and tags.
+
 ## Immutable specifications and runtime validation
 
 The public API has a single immutable type, `Specification<T>` (or

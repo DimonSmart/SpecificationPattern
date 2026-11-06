@@ -50,6 +50,21 @@ public sealed class ReusableProjectionAndContractTests : TestsBase
     }
 
     [Fact]
+    public void ReusedSelectManyRunsAsAComposedQuery()
+    {
+        var root = Specification.Create<Student>().Where(s => s.Age >= 20);
+        var projection = Specification.Create<Student>().SelectMany(s => s.Books)
+            .Where(book => book.Name.StartsWith("A"));
+        var composed = root.WithProjectionOf(projection);
+
+        var expected = Students.Where(s => s.Age >= 20).SelectMany(s => s.Books)
+            .Where(book => book.Name.StartsWith("A")).Select(book => book.Id).ToArray();
+        Assert.Equal(expected, Students.BySpecification(composed).Select(book => book.Id));
+        Assert.Equal(new[] { "Where", "SelectMany", "Where" },
+            composed.PipelineSteps.Select(step => step.Operation));
+    }
+
+    [Fact]
     public void InterfaceDispatchAndProjectionValidateNulls()
     {
         var spec = Specification.Create<Student>();

@@ -46,6 +46,19 @@ public sealed class ReusableProjectionAndConditionalEfDbTests(DatabaseFixture fi
     }
 
     [Fact]
+    public void ConditionalReferenceThenIncludeRetainsParentButStopsChild()
+    {
+        var root = EFCoreSpecification.Create<Student>();
+        var disabled = root.Include(s => s.School, false).ThenInclude(s => s.Name, true);
+        Assert.Empty(disabled.EFCoreSpecificationData.Includes);
+
+        var parentOnly = root.Include(s => s.School, true).ThenInclude(s => s.Name, false);
+        Assert.Equal(new[] { "School" }, parentOnly.EFCoreSpecificationData.Includes);
+        Assert.Equal(_db.BySpecification(root.Include(s => s.School)).ToQueryString(),
+            _db.BySpecification(parentOnly).ToQueryString());
+    }
+
+    [Fact]
     public void DisabledEfOptionsKeepSameInstanceAndEnabledOnesMatchDirectMethods()
     {
         var root = EFCoreSpecification.Create<Student>();
