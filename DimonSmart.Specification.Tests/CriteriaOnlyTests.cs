@@ -46,7 +46,7 @@ public sealed class CriteriaOnlyTests : TestsBase
             .Take(0);
 
         var query = Students.BySpecificationCriteria(specification);
-        Assert.Equal(nameof(Queryable.Where), Assert.IsType<MethodCallExpression>(query.Expression).Method.Name);
+        Assert.Equal(nameof(Queryable.Where), Assert.IsAssignableFrom<MethodCallExpression>(query.Expression).Method.Name);
         Assert.DoesNotContain("OrderBy", query.Expression.ToString());
         Assert.DoesNotContain("Skip", query.Expression.ToString());
         Assert.DoesNotContain("Take", query.Expression.ToString());
