@@ -194,11 +194,22 @@ public class Specification<T>
         EnsureCompatibleWith(other, and ? "And" : "Or");
         var right = other._data;
         var result = Copy(_data);
-        if (right.WhereExpression is not null)
-            result.WhereExpression = result.WhereExpression is null
-                ? right.WhereExpression
-                : ExpressionOperations.CombineExpressions(result.WhereExpression, right.WhereExpression,
-                    and ? Expression.AndAlso : Expression.OrElse);
+        if (and)
+        {
+            if (right.WhereExpression is not null)
+                result.WhereExpression = result.WhereExpression is null
+                    ? right.WhereExpression
+                    : ExpressionOperations.CombineExpressions(
+                        result.WhereExpression, right.WhereExpression, Expression.AndAlso);
+        }
+        else
+        {
+            // A missing Where represents true, so p OR true must match every entity.
+            result.WhereExpression = result.WhereExpression is null || right.WhereExpression is null
+                ? null
+                : ExpressionOperations.CombineExpressions(
+                    result.WhereExpression, right.WhereExpression, Expression.OrElse);
+        }
         result.OrderClauses.AddRange(right.OrderClauses);
         result.Seek ??= right.Seek;
         result.SkipQ ??= right.SkipQ;

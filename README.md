@@ -18,6 +18,14 @@ in ordering, paging, keyset boundaries, Include plans, and EF Core options
 immediately with `InvalidOperationException`. Call
 `left.EnsureCompatibleWith(right)` to check without composing.
 
+A specification without a `Where` clause represents an unrestricted predicate
+(`true`). It is neutral for `And`, but absorbing for `Or`: `filter.Or(unfiltered)`
+and `unfiltered.Or(filter)` both match all entities. Other compatible query
+settings (ordering, paging, and EF Core options) are still merged; incompatible
+settings still throw. To build an `Or` expression incrementally, start from the
+first actual predicate, or from an explicit `Where(x => false)` seed, rather
+than from `Specification.Create<T>()`.
+
 ### LINQ
 
 ```csharp
