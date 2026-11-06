@@ -20,7 +20,7 @@ public sealed class SeekAfterDbTests
         var spec = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age >= 18)
             .OrderByDesc(s => s.Age)
-            .OrderBy(s => s.Id)
+            .ThenBy(s => s.Id)
             .SeekAfter((anchor.Age, anchor.Id))
             .Take(20)
             .Select(s => s.Id);
@@ -73,8 +73,8 @@ public sealed class SeekAfterDbTests
 
         var ordered = EFCoreSpecification.Create<Row>()
             .OrderByDesc(r => r.CreatedAt)
-            .OrderBy(r => r.Rank)
-            .OrderBy(r => r.Id)
+            .ThenBy(r => r.Rank)
+            .ThenBy(r => r.Id)
             .AsNoTracking();
 
         var first = db.BySpecification(ordered.Take(2)).ToList();

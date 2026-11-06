@@ -21,14 +21,14 @@ public sealed class ConditionalQueryOperationsDbTests
 
         var conditional = root
             .OrderBy(s => s.Name, true)
-            .OrderByDesc(s => s.Age, true)
+            .ThenByDesc(s => s.Age, true)
             .ThenBy(s => s.Id, true)
             .ThenByDesc(s => s.Id, true)
             .Skip(1, true)
             .Take(1, true);
         var ordinary = root
             .OrderBy(s => s.Name)
-            .OrderByDesc(s => s.Age)
+            .ThenByDesc(s => s.Age)
             .ThenBy(s => s.Id)
             .ThenByDesc(s => s.Id)
             .Skip(1)
@@ -53,7 +53,7 @@ public sealed class ConditionalQueryOperationsDbTests
             .TagWith("disabled operations");
         var disabled = root
             .OrderBy(s => s.Name, false)
-            .OrderByDesc(s => s.Age, false)
+            .ThenByDesc(s => s.Age, false)
             .ThenBy(s => s.Id, false)
             .ThenByDesc(s => s.Id, false)
             .Skip(100, false)

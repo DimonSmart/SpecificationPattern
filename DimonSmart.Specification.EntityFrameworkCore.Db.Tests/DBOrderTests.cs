@@ -50,7 +50,7 @@ public class DBOrderTests : TestsBase
         // Arrange
         var specification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name)
-            .OrderByDesc(s => s.Age);
+            .ThenByDesc(s => s.Age);
 
         // Act
         var ordered = _testDBContext.BySpecification(specification).ToList();
@@ -64,8 +64,8 @@ public class DBOrderTests : TestsBase
     {
         var specification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.School.Name)
-            .OrderBy(s => s.Name)
-            .OrderBy(s => s.Age);
+            .ThenBy(s => s.Name)
+            .ThenBy(s => s.Age);
 
         var orderedAges = _testDBContext.BySpecification(specification)
             .Select(s => s.Age)

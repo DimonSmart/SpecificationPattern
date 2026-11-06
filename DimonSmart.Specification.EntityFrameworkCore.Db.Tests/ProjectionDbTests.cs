@@ -56,7 +56,7 @@ public class ProjectionDbTests
         var specification = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age > 18)
             .OrderBy(s => s.Name)
-            .OrderByDesc(s => s.Age)
+            .ThenByDesc(s => s.Age)
             .Skip(1).Take(1)
             .Select(s => s.Age);
 

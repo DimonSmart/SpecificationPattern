@@ -22,7 +22,7 @@ public class DBLimitTests : TestsBase
         // Arrange
         var specification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name)
-            .OrderBy(s => s.Age)
+            .ThenBy(s => s.Age)
             .Take(1);
 
         // Act
@@ -38,7 +38,7 @@ public class DBLimitTests : TestsBase
         // Arrange
         var specification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name)
-            .OrderBy(s => s.Age)
+            .ThenBy(s => s.Age)
             .Take(2)
             .Skip(1);
 

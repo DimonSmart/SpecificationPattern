@@ -18,8 +18,8 @@ public sealed class TypedOrderingDbTests
             .Include(s => s.School)
             .Where(s => s.Age >= 20)
             .OrderBy(s => s.School.Name)
-            .OrderByDesc(s => s.Age)
-            .OrderBy(s => s.Name)
+            .ThenByDesc(s => s.Age)
+            .ThenBy(s => s.Name)
             .AsNoTracking()
             .AsSingleQuery();
 
@@ -44,8 +44,8 @@ public sealed class TypedOrderingDbTests
         var spec = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age >= 20)
             .OrderBy(s => s.Name)
-            .OrderByDesc(s => s.Age)
-            .OrderBy(s => (long)s.Id)
+            .ThenByDesc(s => s.Age)
+            .ThenBy(s => (long)s.Id)
             .Skip(1)
             .Take(1)
             .Select(s => s.Age);
@@ -56,7 +56,7 @@ public sealed class TypedOrderingDbTests
         Assert.Equal(new[] { 22 }, query.ToArray());
 
         var ordering = EFCoreSpecification.Create<Student>()
-            .OrderBy(s => s.Name).OrderByDesc(s => s.Age).OrderBy(s => (long)s.Id);
+            .OrderBy(s => s.Name).ThenByDesc(s => s.Age).ThenBy(s => (long)s.Id);
         Assert.Equal(new[] { typeof(string), typeof(int), typeof(long) },
             ordering.SpecificationData.OrderExpressions.Select(e => e.expr.ReturnType));
         Assert.Equal(new[] { 30, 22, 20 },
