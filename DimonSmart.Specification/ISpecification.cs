@@ -12,4 +12,4 @@ public interface ISpecification<TSource, TResult> where TSource : class
 }
 
 /// <summary>Specification whose result element type is the source entity type.</summary>
-public interface ISpecification<T> : ISpecification<T, T> where T : class;
+public interface ISpecification<T> : ISpecification<T, T> where T : class { }

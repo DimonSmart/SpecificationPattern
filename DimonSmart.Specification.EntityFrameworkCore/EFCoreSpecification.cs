@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
 /// <summary>Immutable EF Core specification with validated query options.</summary>
-public class EFCoreSpecification<T>
+public class EFCoreSpecification<T> : IEFCoreSpecification<T>
     where T : class
 {
     internal Specification<T> Core { get; }
@@ -27,6 +27,12 @@ public class EFCoreSpecification<T>
 
     public ISpecificationData<T> SpecificationData => Core.SpecificationData;
     public IReadOnlyList<QueryPipelineStep> PipelineSteps => Core.PipelineSteps;
+
+    IQueryable<T> ISpecification<T, T>.ApplyTo(IQueryable<T> query) =>
+        query.BySpecification(this);
+
+    IQueryable<T> ISpecification<T, T>.ApplyCriteriaTo(IQueryable<T> query) =>
+        query.BySpecificationCriteria(this);
 
     // Expose diagnostics as a snapshot. Query execution uses Options, never this projection.
     public IEFCoreSpecificationData<T> EFCoreSpecificationData => new EFCoreSpecificationData<T>(Options);
@@ -58,6 +64,18 @@ public class EFCoreSpecification<T>
         ArgumentNullException.ThrowIfNull(resultSelector);
         EnsureNoIncludeForProjection("SelectMany");
         return new(Core.SelectMany(collectionSelector, resultSelector), Options);
+    }
+
+    /// <summary>Appends an existing typed projection and merges its root EF options.</summary>
+    public EFCoreProjectedSpecification<T, TResult> WithProjectionOf<TResult>(
+        EFCoreProjectedSpecification<T, TResult> projection)
+    {
+        ArgumentNullException.ThrowIfNull(projection);
+        if (!Options.Includes.IsEmpty || !projection.Options.Includes.IsEmpty)
+            throw new InvalidOperationException(
+                "WithProjectionOf cannot be combined with explicit Include/ThenInclude plans.");
+        return new(Core.WithProjectionOf(projection.Projection),
+            Options.Merge(projection.Options, "WithProjectionOf"));
     }
 
     private void EnsureNoIncludeForProjection(string operation)
@@ -124,24 +142,45 @@ public class EFCoreSpecification<T>
     public EFCoreSpecification<T> AsTracking() =>
         new(Core, Options with { Tracking = TrackingMode.Tracking });
 
+    public EFCoreSpecification<T> AsTracking(bool condition) =>
+        condition ? AsTracking() : this;
+
     public EFCoreSpecification<T> AsNoTracking() =>
         new(Core, Options with { Tracking = TrackingMode.NoTracking });
+
+    public EFCoreSpecification<T> AsNoTracking(bool condition) =>
+        condition ? AsNoTracking() : this;
 
     public EFCoreSpecification<T> AsNoTrackingWithIdentityResolution() =>
         new(Core, Options with { Tracking = TrackingMode.NoTrackingWithIdentityResolution });
 
+    public EFCoreSpecification<T> AsNoTrackingWithIdentityResolution(bool condition) =>
+        condition ? AsNoTrackingWithIdentityResolution() : this;
+
     public EFCoreSpecification<T> AsSplitQuery() =>
         new(Core, Options with { Splitting = QuerySplittingMode.Split });
+
+    public EFCoreSpecification<T> AsSplitQuery(bool condition) =>
+        condition ? AsSplitQuery() : this;
 
     public EFCoreSpecification<T> AsSingleQuery() =>
         new(Core, Options with { Splitting = QuerySplittingMode.Single });
 
+    public EFCoreSpecification<T> AsSingleQuery(bool condition) =>
+        condition ? AsSingleQuery() : this;
+
     public EFCoreSpecification<T> IgnoreAutoIncludes() =>
         new(Core, Options with { IgnoreAutoIncludes = true });
+
+    public EFCoreSpecification<T> IgnoreAutoIncludes(bool condition) =>
+        condition ? IgnoreAutoIncludes() : this;
 
     /// <summary>Disables all global query filters for the final EF Core query, including tenant filters.</summary>
     public EFCoreSpecification<T> IgnoreQueryFilters() =>
         new(Core, Options with { QueryFilters = QueryFilterOptions.All });
+
+    public EFCoreSpecification<T> IgnoreQueryFilters(bool condition) =>
+        condition ? IgnoreQueryFilters() : this;
 
     /// <summary>
     /// Disables the specified named global query filters for the final EF Core query.
@@ -172,6 +211,12 @@ public class EFCoreSpecification<T>
         return new(Core, Options.AddTag(tag));
     }
 
+    public EFCoreSpecification<T> TagWith(string tag, bool condition)
+    {
+        ArgumentNullException.ThrowIfNull(tag);
+        return condition ? TagWith(tag) : this;
+    }
+
     public EFCoreSpecification<T> TagWithCallSite(
         string tag = "",
         [CallerMemberName] string callerMemberName = "",
@@ -185,14 +230,20 @@ public class EFCoreSpecification<T>
 
 
     public EFCoreIncludeSpecification<T, TProperty> Include<TProperty>(
-        Expression<Func<T, TProperty>> expression)
+        Expression<Func<T, TProperty>> expression) => Include(expression, true);
+
+    /// <summary>Conditionally starts a typed Include chain; a disabled chain ignores all ThenInclude steps.</summary>
+    public EFCoreIncludeSpecification<T, TProperty> Include<TProperty>(
+        Expression<Func<T, TProperty>> expression, bool condition)
     {
         ArgumentNullException.ThrowIfNull(expression);
+        if (!condition)
+            return new(Core, Options, null);
         var plan = IncludeChain<T, TProperty>.Start(expression);
         return new(Core, Options.AddInclude(plan, "Include"), plan);
     }
 
-    internal IIncludePlan<T> GetActivePlan() =>
+    internal IIncludePlan<T>? GetActivePlan() =>
         this is IActiveInclude<T> active
             ? active.ActivePlan
             : throw new InvalidOperationException("ThenInclude requires an active Include chain.");
@@ -237,7 +288,7 @@ public interface IEFCoreIncludeSpecification<T, out TProperty>
 
 internal interface IActiveInclude<T> where T : class
 {
-    IIncludePlan<T> ActivePlan { get; }
+    IIncludePlan<T>? ActivePlan { get; }
 }
 
 public sealed class EFCoreIncludeSpecification<T, TProperty> :
@@ -245,15 +296,16 @@ public sealed class EFCoreIncludeSpecification<T, TProperty> :
     where T : class
 {
     internal EFCoreIncludeSpecification(
-        Specification<T> core, QueryOptions<T> options, IIncludePlan<T> plan)
+        Specification<T> core, QueryOptions<T> options, IIncludePlan<T>? plan)
         : base(core, options)
     {
         ActivePlan = plan;
-        IncludePath = string.Join(".", plan.Segments.Select(segment => segment.Name));
+        IncludePath = plan is null ? string.Empty :
+            string.Join(".", plan.Segments.Select(segment => segment.Name));
     }
 
-    IIncludePlan<T> IActiveInclude<T>.ActivePlan => ActivePlan;
-    internal IIncludePlan<T> ActivePlan { get; }
+    IIncludePlan<T>? IActiveInclude<T>.ActivePlan => ActivePlan;
+    internal IIncludePlan<T>? ActivePlan { get; }
 
     public EFCoreSpecification<T> Specification => this;
     public string IncludePath { get; }
@@ -264,37 +316,55 @@ public static class EFCoreIncludeExtensions
     public static EFCoreIncludeSpecification<T, TProperty> ThenInclude<T, TPrevious, TProperty>(
         this IEFCoreIncludeSpecification<T, IEnumerable<TPrevious>> specification,
         Expression<Func<TPrevious, TProperty>> expression)
+        where T : class => ThenInclude(specification, expression, true);
+
+    public static EFCoreIncludeSpecification<T, TProperty> ThenInclude<T, TPrevious, TProperty>(
+        this IEFCoreIncludeSpecification<T, IEnumerable<TPrevious>> specification,
+        Expression<Func<TPrevious, TProperty>> expression, bool condition)
         where T : class
-        {
+    {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(expression);
-
-        var active = specification.Specification.GetActivePlan();
+        var source = specification.Specification;
+        if (!condition)
+            return new(source.Core, source.Options, null);
+        var active = source.GetActivePlan();
+        if (active is null)
+            return new(source.Core, source.Options, null);
         if (active is not ITypedIncludePlan<T, IEnumerable<TPrevious>> previous)
             throw new InvalidOperationException("Active Include is not a compatible collection navigation.");
 
         var plan = new IncludeChain<T, TProperty>(
             query => previous.ApplyTyped(query).ThenInclude(expression),
             active.Segments.Concat(IncludePath.Parse(expression)));
-        return specification.Specification.AppendThenInclude<TProperty>(active, plan);
+        return source.AppendThenInclude<TProperty>(active, plan);
     }
 
     public static EFCoreIncludeSpecification<T, TProperty> ThenInclude<T, TPrevious, TProperty>(
         this IEFCoreIncludeSpecification<T, TPrevious> specification,
         Expression<Func<TPrevious, TProperty>> expression)
+        where T : class => ThenInclude(specification, expression, true);
+
+    public static EFCoreIncludeSpecification<T, TProperty> ThenInclude<T, TPrevious, TProperty>(
+        this IEFCoreIncludeSpecification<T, TPrevious> specification,
+        Expression<Func<TPrevious, TProperty>> expression, bool condition)
         where T : class
-        {
+    {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(expression);
-
-        var active = specification.Specification.GetActivePlan();
+        var source = specification.Specification;
+        if (!condition)
+            return new(source.Core, source.Options, null);
+        var active = source.GetActivePlan();
+        if (active is null)
+            return new(source.Core, source.Options, null);
         if (active is not ITypedIncludePlan<T, TPrevious> previous)
             throw new InvalidOperationException("Active Include is not a compatible reference navigation.");
 
         var plan = new IncludeChain<T, TProperty>(
             query => previous.ApplyTyped(query).ThenInclude(expression),
             active.Segments.Concat(IncludePath.Parse(expression)));
-        return specification.Specification.AppendThenInclude<TProperty>(active, plan);
+        return source.AppendThenInclude<TProperty>(active, plan);
     }
 }
 

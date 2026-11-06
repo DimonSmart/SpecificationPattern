@@ -46,6 +46,41 @@ public static class EFCoreQueryableSpecificationExtension
             ApplyQueryFilters(query, specification.Options.QueryFilters), true);
     }
 
+
+    public static IQueryable<T> BySpecification<T>(
+        this IQueryable<T> query, IEFCoreSpecification<T> specification) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(specification);
+        return specification.ApplyTo(query);
+    }
+
+    public static IQueryable<T> BySpecificationCriteria<T>(
+        this IQueryable<T> query, IEFCoreSpecification<T> specification) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(specification);
+        return specification.ApplyCriteriaTo(query);
+    }
+
+    public static IQueryable<TResult> BySpecification<TSource, TResult>(
+        this IQueryable<TSource> query, IEFCoreSpecification<TSource, TResult> specification)
+        where TSource : class
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(specification);
+        return specification.ApplyTo(query);
+    }
+
+    public static IQueryable<TResult> BySpecificationCriteria<TSource, TResult>(
+        this IQueryable<TSource> query, IEFCoreSpecification<TSource, TResult> specification)
+        where TSource : class
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(specification);
+        return specification.ApplyCriteriaTo(query);
+    }
+
     private static void EnsureEfCoreProvider<T>(IQueryable<T> query)
     {
         if (query.Provider is not IAsyncQueryProvider)

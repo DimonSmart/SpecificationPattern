@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 namespace DimonSmart.Specification.EntityFrameworkCore;
 
 /// <summary>A continuable projected specification retaining immutable root EF Core options.</summary>
-public sealed class EFCoreProjectedSpecification<TSource, TCurrent> where TSource : class
+public sealed class EFCoreProjectedSpecification<TSource, TCurrent> : IEFCoreSpecification<TSource, TCurrent> where TSource : class
 {
     internal ProjectedSpecification<TSource, TCurrent> Projection { get; }
     internal QueryOptions<TSource> Options { get; }
@@ -16,6 +16,13 @@ public sealed class EFCoreProjectedSpecification<TSource, TCurrent> where TSourc
     }
 
     public IReadOnlyList<QueryPipelineStep> PipelineSteps => Projection.PipelineSteps;
+    public IEFCoreSpecificationData<TSource> EFCoreSpecificationData => new EFCoreSpecificationData<TSource>(Options);
+
+    IQueryable<TCurrent> ISpecification<TSource, TCurrent>.ApplyTo(IQueryable<TSource> query) =>
+        query.BySpecification(this);
+
+    IQueryable<TCurrent> ISpecification<TSource, TCurrent>.ApplyCriteriaTo(IQueryable<TSource> query) =>
+        query.BySpecificationCriteria(this);
 
     private EFCoreProjectedSpecification<TSource, TCurrent> With(
         ProjectedSpecification<TSource, TCurrent> next) => new(next, Options);

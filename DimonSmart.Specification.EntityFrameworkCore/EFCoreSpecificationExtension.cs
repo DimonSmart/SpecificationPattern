@@ -47,4 +47,39 @@ public static class EFCoreSpecificationExtension
         ArgumentNullException.ThrowIfNull(specification);
         return context.Set<TSource>().BySpecificationCriteria(specification);
     }
+
+    public static IQueryable<T> BySpecification<T>(
+        this DbContext context, IEFCoreSpecification<T> specification) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(specification);
+        return specification.ApplyTo(context.Set<T>());
+    }
+
+    public static IQueryable<T> BySpecificationCriteria<T>(
+        this DbContext context, IEFCoreSpecification<T> specification) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(specification);
+        return specification.ApplyCriteriaTo(context.Set<T>());
+    }
+
+    public static IQueryable<TResult> BySpecification<TSource, TResult>(
+        this DbContext context, IEFCoreSpecification<TSource, TResult> specification)
+        where TSource : class
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(specification);
+        return specification.ApplyTo(context.Set<TSource>());
+    }
+
+    public static IQueryable<TResult> BySpecificationCriteria<TSource, TResult>(
+        this DbContext context, IEFCoreSpecification<TSource, TResult> specification)
+        where TSource : class
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(specification);
+        return specification.ApplyCriteriaTo(context.Set<TSource>());
+    }
+
 }
