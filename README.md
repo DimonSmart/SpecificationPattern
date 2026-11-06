@@ -550,6 +550,66 @@ public static class TrackingExample
 
 `TagWith("A").TagWith("B")` generates separate ordered SQL comments. Duplicate tags remain in immutable specification state (EF Core 10 may deduplicate identical SQL comments), but empty/whitespace-only strings are ignored (the specification remains unchanged if the tag is blank). `TagWith(null)` throws. `TagWithCallSite("A")` adds one user tag plus one call-site tag with caller method, file and line; the file path may be absolute and is visible in SQL.
 
+## Criteria-only evaluation
+
+Use `BySpecificationCriteria(specification)` to reuse an immutable specification
+when counting or checking all matching entities rather than a single page.
+It is available for LINQ `IQueryable<T>` and `IEnumerable<T>`, as well as EF Core
+`IQueryable<T>` and `DbContext`. Execution remains deferred.
+
+The following example is compiled as
+[`CriteriaOnlyEvaluationExample.cs`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/CriteriaOnlyEvaluationExample.cs)
+and checked against README by CI.
+
+<!-- compiled-example: CriteriaOnlyEvaluationExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using DimonSmart.Specification.Tests.Common;
+using Microsoft.EntityFrameworkCore;
+
+namespace DocumentationExamples;
+
+public static class CriteriaOnlyEvaluationExample
+{
+    public static async Task<(int Total, List<Student> Page)> QueryAsync(
+        DbContext db, CancellationToken cancellationToken = default)
+    {
+        var specification = EFCoreSpecification.Create<Student>()
+            .Where(s => s.Age >= 18)
+            .OrderBy(s => s.Name)
+            .Skip(20)
+            .Take(20);
+
+        var total = await db.Set<Student>()
+            .BySpecificationCriteria(specification)
+            .CountAsync(cancellationToken);
+
+        var students = await db.Set<Student>()
+            .BySpecification(specification)
+            .ToListAsync(cancellationToken);
+
+        return (total, students);
+    }
+}
+```
+
+`total` counts all students matching the `Where` criteria, while `students`
+contains the requested page. Both calls reuse the same immutable specification.
+
+Criteria-only ignores **only the specification's** sorting (`OrderBy`/`ThenBy`),
+paging (`Skip`/`Take`), cursor boundary (`SeekAfter`), and EF Core
+`Include`/`ThenInclude`, tracking, splitting, automatic-include override and
+query tags. The cursor's internally generated `Where` is not a criterion.
+EF Core global query filters still apply unless disabled with
+`IgnoreQueryFilters()` or the named-filter overload; only the named filters
+specified are disabled. This follows the membership semantics of EF Core.
+
+**Existing operations on the incoming source are preserved**, including
+pre-existing `Where`, `OrderBy`, `Take`, or `Include` calls. Criteria-only
+does not strip or rewrite the original `IQueryable` expression. It does not
+bypass compatibility validation when specifications are composed with `And`
+or `Or`.
+
 ## Projection / Select
 
 Call `Select<TResult>(Expression<Func<TEntity, TResult>>)` after configuring a base LINQ or EF Core specification to construct a typed, terminal projection. `Where`, ordering, `Skip`, and `Take` operate on the original entity before `Queryable.Select`; enumeration and SQL execution remain deferred. There is no restriction on `TResult` (DTOs, anonymous types, scalars, entities and nullable types are supported).
