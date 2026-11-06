@@ -17,6 +17,14 @@ public class EFCoreSpecification<T>
         Options = options;
     }
 
+    /// <summary>Initializes a named specification from an existing immutable EF Core specification.</summary>
+    protected EFCoreSpecification(EFCoreSpecification<T> source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        Core = source.Core;
+        Options = source.Options;
+    }
+
     public ISpecificationData<T> SpecificationData => Core.SpecificationData;
     public IReadOnlyList<QueryPipelineStep> PipelineSteps => Core.PipelineSteps;
 

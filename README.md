@@ -289,6 +289,38 @@ or combined with another specification using `And()` or `Or()`.
 
 ### Entity Framework Core
 
+Named EF Core specifications can derive from `EFCoreSpecification<T>` by passing
+an already configured immutable specification to the protected constructor.
+The constructor preserves both LINQ operations and EF Core query options.
+
+The following example is compiled as
+[`CustomEFCoreStudentSpecification.cs`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/CustomEFCoreStudentSpecification.cs)
+and checked against README by CI.
+
+<!-- compiled-example: CustomEFCoreStudentSpecification -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using DimonSmart.Specification.Tests.Common;
+
+namespace DocumentationExamples;
+
+public sealed class AdultStudentsSpec : EFCoreSpecification<Student>
+{
+    public AdultStudentsSpec(int minAge)
+        : base(EFCoreSpecification.Create<Student>()
+            .Where(s => s.Age >= minAge)
+            .Include(s => s.Books)
+            .AsNoTracking())
+    {
+    }
+}
+```
+
+Fluent operations on a derived specification return `EFCoreSpecification<T>`
+and never mutate the original named instance. Composition and conflict validation
+work the same way as for factory-created specifications.
+
+
 ```csharp
 var filter = EFCoreSpecification.Create<Student>()
     .Where(s => s.Age >= 18)
