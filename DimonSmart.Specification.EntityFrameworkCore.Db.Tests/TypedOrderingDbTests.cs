@@ -123,9 +123,12 @@ public sealed class TypedOrderingDbTests
     {
         var spec = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name)
-            .Take(1)
             .ThenByDesc(s => s.Age)
+            .Take(1)
             .Select(s => new { s.Name, s.Age });
+
+        Assert.Throws<InvalidOperationException>(() =>
+            EFCoreSpecification.Create<Student>().OrderBy(s => s.Name).Take(1).ThenByDesc(s => s.Age));
 
         var query = _db.BySpecification(spec);
         var sql = query.ToQueryString();

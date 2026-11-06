@@ -369,10 +369,12 @@ public sealed class TypedOrderingTests
         var spec = Specification.Create<OrderingItem>()
             .Where(i => i.Id > 0, true)
             .OrderBy(i => i.Name)
-            .Take(2)
             .ThenByDesc(i => i.Rank)
+            .Take(2)
             .Select(i => i.Id);
         Assert.Equal(new[] { 3, 2 }, rows.BySpecification(spec).ToArray());
+        Assert.Throws<InvalidOperationException>(() =>
+            Specification.Create<OrderingItem>().OrderBy(i => i.Name).Take(2).ThenByDesc(i => i.Rank));
     }
 
     [Fact]

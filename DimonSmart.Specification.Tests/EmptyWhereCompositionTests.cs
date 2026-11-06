@@ -62,7 +62,8 @@ public sealed class EmptyWhereCompositionTests : TestsBase
         Assert.Equal(new[] { 20, 22 }, Students.BySpecification(combined).Select(s => s.Age).ToArray());
 
         var narrowed = combined.Where(s => s.Age >= 22);
-        Assert.Equal(new[] { 22, 30 }, Students.BySpecification(narrowed).Select(s => s.Age).ToArray());
+        Assert.Equal(new[] { 22 }, Students.BySpecification(narrowed).Select(s => s.Age).ToArray());
+        Assert.Throws<NotSupportedException>(() => narrowed.GetWhereExpression());
         Assert.Null(combined.GetWhereExpression());
         Assert.NotNull(filtered.GetWhereExpression());
     }

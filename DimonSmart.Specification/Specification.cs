@@ -23,7 +23,18 @@ public class Specification<T> where T : class
     }
 
     internal QueryPipeline<T, T> Pipeline => _pipeline;
-    internal SpecificationData<T> Data => SourceOperations<T>.Analyze(_operations, "legacy diagnostic").ToData();
+    internal SpecificationData<T> Data
+    {
+        get
+        {
+            try { return SourceOperations<T>.Analyze(_operations, "legacy diagnostic").ToData(); }
+            catch (InvalidOperationException error)
+            {
+                throw new NotSupportedException(
+                    "This LINQ pipeline cannot be represented by legacy SpecificationData; inspect PipelineSteps instead.", error);
+            }
+        }
+    }
     public ISpecificationData<T> SpecificationData => Data;
     public IReadOnlyList<QueryPipelineStep> PipelineSteps => _pipeline.Snapshot();
 

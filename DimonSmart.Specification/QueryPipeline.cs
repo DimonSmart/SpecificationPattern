@@ -181,7 +181,7 @@ internal static class PipelineOperations
     {
         ArgumentNullException.ThrowIfNull(expression);
         if (pipeline is not OrderedPipeline<TSource, TCurrent> ordered)
-            throw new InvalidOperationException("ThenBy requires an immediately preceding OrderBy or ThenBy.");
+            throw new InvalidOperationException("ThenBy requires an existing OrderBy or OrderByDesc immediately preceding it (or ThenBy).");
         return ordered.AddKey(expression, direction);
     }
 

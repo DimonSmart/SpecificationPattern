@@ -47,6 +47,6 @@ public class DBLimitTests : TestsBase
 
         // Assert
         limited.Should()
-            .BeEquivalentTo(new List<Student> { Alex30, Sofia20 }, options => options.Excluding(e => e.Books));
+            .BeEquivalentTo(new List<Student> { Alex30 }, options => options.Excluding(e => e.Books));
     }
 }

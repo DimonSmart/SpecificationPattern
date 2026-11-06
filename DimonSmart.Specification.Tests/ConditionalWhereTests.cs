@@ -93,7 +93,7 @@ public class ConditionalWhereTests : TestsBase
         var older = Specification.Create<Student>().Where(s => s.Age > 22);
 
         Assert.Null(absent.GetWhereExpression());
-        Assert.Equal(new[] { 22, 30 },
+        Assert.Equal(new[] { 20, 22, 30 },
             Students.BySpecification(absent.Or(alex)).Select(s => s.Age).OrderBy(a => a).ToArray());
         Assert.Equal(new[] { 22, 30 },
             Students.BySpecification(absent.And(alex)).Select(s => s.Age).OrderBy(a => a).ToArray());
