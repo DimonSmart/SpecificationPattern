@@ -18,6 +18,7 @@ examples = {
     "ConditionalWhereExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/ConditionalWhereExample.cs",
     "TypedOrderingExample": root / "DimonSmart.Specification.Tests/Documentation/TypedOrderingExample.cs",
     "EnumerableBySpecificationExample": root / "DimonSmart.Specification.Tests/Documentation/EnumerableBySpecificationExample.cs",
+    "CriteriaOnlyEvaluationExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/CriteriaOnlyEvaluationExample.cs",
     "QueryableEFCoreExample": root / "DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/QueryableEFCoreExample.cs",
 }
 
