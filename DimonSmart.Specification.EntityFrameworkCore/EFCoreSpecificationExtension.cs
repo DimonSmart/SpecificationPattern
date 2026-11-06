@@ -38,4 +38,13 @@ public static class EFCoreSpecificationExtension
 
         return context.Set<TEntity>().BySpecification(specification);
     }
+    /// <summary>Applies only criteria and type-changing projections, without specification paging.</summary>
+    public static IQueryable<TCurrent> BySpecificationCriteria<TSource, TCurrent>(
+        this DbContext context, EFCoreProjectedSpecification<TSource, TCurrent> specification)
+        where TSource : class
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(specification);
+        return context.Set<TSource>().BySpecificationCriteria(specification);
+    }
 }
