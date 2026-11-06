@@ -18,6 +18,7 @@ public class EFCoreSpecification<T>
     }
 
     public ISpecificationData<T> SpecificationData => Core.SpecificationData;
+    public IReadOnlyList<QueryPipelineStep> PipelineSteps => Core.PipelineSteps;
 
     // Expose diagnostics as a snapshot. Query execution uses Options, never this projection.
     public IEFCoreSpecificationData<T> EFCoreSpecificationData => new EFCoreSpecificationData<T>(Options);
@@ -31,6 +32,32 @@ public class EFCoreSpecification<T>
                 "Select cannot be combined with explicit Include/ThenInclude plans. Project navigations directly in the selector.");
 
         return new EFCoreProjectedSpecification<T, TResult>(Core.Select(selector), Options);
+    }
+
+    public EFCoreProjectedSpecification<T, TCollection> SelectMany<TCollection>(
+        Expression<Func<T, IEnumerable<TCollection>>> collectionSelector)
+    {
+        ArgumentNullException.ThrowIfNull(collectionSelector);
+        EnsureNoIncludeForProjection("SelectMany");
+        return new(Core.SelectMany(collectionSelector), Options);
+    }
+
+    public EFCoreProjectedSpecification<T, TResult> SelectMany<TCollection, TResult>(
+        Expression<Func<T, IEnumerable<TCollection>>> collectionSelector,
+        Expression<Func<T, TCollection, TResult>> resultSelector)
+    {
+        ArgumentNullException.ThrowIfNull(collectionSelector);
+        ArgumentNullException.ThrowIfNull(resultSelector);
+        EnsureNoIncludeForProjection("SelectMany");
+        return new(Core.SelectMany(collectionSelector, resultSelector), Options);
+    }
+
+    private void EnsureNoIncludeForProjection(string operation)
+    {
+        if (!Options.Includes.IsEmpty)
+            throw new InvalidOperationException(
+                operation + " cannot be combined with explicit Include/ThenInclude plans. " +
+                "Project navigations directly in the selector.");
     }
 
     public EFCoreSpecification<T> Where(Expression<Func<T, bool>> predicate) =>
