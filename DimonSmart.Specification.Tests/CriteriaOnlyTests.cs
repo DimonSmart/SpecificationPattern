@@ -65,7 +65,7 @@ public sealed class CriteriaOnlyTests : TestsBase
         var composite = Specification.Create<Student>()
             .Where(s => s.Age >= 20)
             .OrderBy(s => s.Age)
-            .OrderBy(s => s.Id)
+            .ThenBy(s => s.Id)
             .SeekAfter((22, 0));
 
         Assert.Equal(3, Students.BySpecificationCriteria(single).Count());

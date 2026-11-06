@@ -47,8 +47,8 @@ public sealed class SeekAfterTests
     {
         var spec = Specification.Create<Item>()
             .OrderByDesc(x => x.CreatedAt)
-            .OrderBy(x => x.Rank)
-            .OrderBy(x => x.Id)
+            .ThenBy(x => x.Rank)
+            .ThenBy(x => x.Id)
             .SeekAfter((D3, 1, 3))
             .Take(3);
 
@@ -61,8 +61,8 @@ public sealed class SeekAfterTests
     {
         var ordering = Specification.Create<Item>()
             .OrderByDesc(x => x.CreatedAt)
-            .OrderBy(x => x.Rank)
-            .OrderBy(x => x.Id);
+            .ThenBy(x => x.Rank)
+            .ThenBy(x => x.Id);
 
         var ids = new List<int>();
         Item? last = null;
@@ -138,7 +138,7 @@ public sealed class SeekAfterTests
     public void RejectsMissingOrderingIncorrectCursorShapeAndUnsupportedKeyTypes()
     {
         Assert.Throws<InvalidOperationException>(() => Specification.Create<Item>().SeekAfter(1));
-        var ordering = Specification.Create<Item>().OrderBy(x => x.Id).OrderBy(x => x.Rank);
+        var ordering = Specification.Create<Item>().OrderBy(x => x.Id).ThenBy(x => x.Rank);
         Assert.Throws<ArgumentException>(() => ordering.SeekAfter(1));
         Assert.Throws<ArgumentException>(() => ordering.SeekAfter((1L, 2)));
         Assert.Throws<ArgumentException>(() =>

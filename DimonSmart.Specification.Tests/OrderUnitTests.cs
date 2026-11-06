@@ -40,7 +40,7 @@ public class OrderUnitTests : TestsBase
         // Arrange
         var specification = Specification.Create<Student>()
             .OrderBy(s => s.Name)
-            .OrderByDesc(s => s.Age);
+            .ThenByDesc(s => s.Age);
 
         // Act
         var ordered = Students.BySpecification(specification).ToList();
@@ -63,8 +63,8 @@ public class OrderUnitTests : TestsBase
 
         var specification = Specification.Create<Student>()
             .OrderBy(s => s.Age)
-            .OrderBy(s => s.Name)
-            .OrderByDesc(s => s.Id);
+            .ThenBy(s => s.Name)
+            .ThenByDesc(s => s.Id);
 
         var orderedIds = students.BySpecification(specification)
             .Select(s => s.Id)

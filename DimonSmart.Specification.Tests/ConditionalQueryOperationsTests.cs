@@ -11,14 +11,14 @@ public sealed class ConditionalQueryOperationsTests : TestsBase
         var root = Specification.Create<Student>().Where(s => s.Age >= 20);
         var conditional = root
             .OrderBy(s => s.Name, true)
-            .OrderByDesc(s => s.Age, true)
+            .ThenByDesc(s => s.Age, true)
             .ThenBy(s => s.Id, true)
             .ThenByDesc(s => s.Id, true)
             .Skip(1, true)
             .Take(1, true);
         var ordinary = root
             .OrderBy(s => s.Name)
-            .OrderByDesc(s => s.Age)
+            .ThenByDesc(s => s.Age)
             .ThenBy(s => s.Id)
             .ThenByDesc(s => s.Id)
             .Skip(1)
@@ -50,7 +50,7 @@ public sealed class ConditionalQueryOperationsTests : TestsBase
 
         var unchanged = configured
             .OrderBy(s => s.Age, false)
-            .OrderByDesc(s => s.Age, false)
+            .ThenByDesc(s => s.Age, false)
             .ThenBy(s => s.Id, false)
             .ThenByDesc(s => s.Id, false)
             .Skip(10, false)
@@ -71,11 +71,11 @@ public sealed class ConditionalQueryOperationsTests : TestsBase
 
         var spec = Specification.Create<Student>()
             .OrderBy(name, false)
-            .OrderByDesc(age, true)
+            .ThenByDesc(age, true)
             .ThenBy(name, false)
             .ThenByDesc(id, true)
             .ThenBy(age, false)
-            .OrderBy(name, true);
+            .ThenBy(name, true);
 
         var keys = spec.SpecificationData.OrderExpressions;
         Assert.Equal(3, keys.Count);
@@ -134,7 +134,7 @@ public sealed class ConditionalQueryOperationsTests : TestsBase
         var seek = Specification.Create<Student>().OrderBy(s => s.Age).SeekAfter(20);
         var unchanged = seek
             .OrderBy(s => s.Name, false)
-            .OrderByDesc(s => s.Id, false)
+            .ThenByDesc(s => s.Id, false)
             .ThenBy(s => s.Id, false)
             .ThenByDesc(s => s.Id, false)
             .Skip(1, false)

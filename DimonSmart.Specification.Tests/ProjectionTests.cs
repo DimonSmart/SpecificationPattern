@@ -49,7 +49,7 @@ public class ProjectionTests : TestsBase
         var specification = Specification.Create<Student>()
             .Where(s => s.Age > 18)
             .OrderBy(s => s.Name)
-            .OrderByDesc(s => s.Age)
+            .ThenByDesc(s => s.Age)
             .Skip(1)
             .Take(1)
             .Select(s => new StudentSummary(s.Age, s.Name));

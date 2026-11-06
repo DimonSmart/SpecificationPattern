@@ -59,8 +59,8 @@ public sealed class TypedOrderingTests
     {
         var spec = Specification.Create<OrderingItem>()
             .OrderBy(i => i.Name)
-            .OrderByDesc(i => i.Id)
-            .OrderBy(i => i.Rank);
+            .ThenByDesc(i => i.Id)
+            .ThenBy(i => i.Rank);
         var diagnostics = spec.SpecificationData.OrderExpressions;
 
         Assert.Equal(new[] { typeof(string), typeof(int), typeof(long) },
@@ -107,9 +107,9 @@ public sealed class TypedOrderingTests
 
         var spec = Specification.Create<OrderingItem>()
             .OrderBy(i => i.Name)
-            .OrderByDesc(i => i.Rank)
-            .OrderBy(i => i.Optional)
-            .OrderBy(i => i.Id);
+            .ThenByDesc(i => i.Rank)
+            .ThenBy(i => i.Optional)
+            .ThenBy(i => i.Id);
 
         Assert.Equal(new[] { 4, 3, 2, 1, 5 },
             items.BySpecification(spec).Select(i => i.Id).ToArray());
@@ -161,7 +161,7 @@ public sealed class TypedOrderingTests
     public void IndependentBranchesAndCompositionPreserveAllKeyTypes()
     {
         var root = Specification.Create<OrderingItem>().Where(i => i.Id > 0);
-        var byName = root.OrderBy(i => i.Name).OrderByDesc(i => i.Rank);
+        var byName = root.OrderBy(i => i.Name).ThenByDesc(i => i.Rank);
         var byAge = root.OrderBy(i => i.Id);
         var combined = root.And(byName);
 
@@ -263,11 +263,11 @@ public sealed class TypedOrderingTests
             new OrderingItem { Id = 4, Name = "A", Rank = 3 }
         }.AsQueryable();
         var legacy = Specification.Create<OrderingItem>()
-            .OrderBy(i => i.Name).OrderByDesc(i => i.Rank).OrderBy(i => i.Id);
+            .OrderBy(i => i.Name).ThenByDesc(i => i.Rank).ThenBy(i => i.Id);
         var explicitKeys = Specification.Create<OrderingItem>()
             .OrderBy(i => i.Name).ThenByDesc(i => i.Rank).ThenBy(i => i.Id);
         var mixed = Specification.Create<OrderingItem>()
-            .OrderBy(i => i.Name).ThenByDesc(i => i.Rank).OrderBy(i => i.Id);
+            .OrderBy(i => i.Name).ThenByDesc(i => i.Rank).ThenBy(i => i.Id);
 
         var expected = rows.BySpecification(legacy).Select(i => i.Id).ToArray();
         Assert.Equal(new[] { 2, 3, 4, 1 }, expected);
