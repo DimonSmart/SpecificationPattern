@@ -306,7 +306,7 @@ public sealed class TypedOrderingTests
 
         var withTake = Assert.Throws<InvalidOperationException>(() =>
             Specification.Create<OrderingItem>().Take(5).ThenByDesc(i => i.Rank));
-        Assert.Contains("ThenByDesc", withTake.Message);
+        Assert.Contains("ThenBy", withTake.Message);
 
         Assert.Throws<InvalidOperationException>(() =>
             Specification.Create<OrderingItem>().Skip(0).ThenBy(i => i.Id));

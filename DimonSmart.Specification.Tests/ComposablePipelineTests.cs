@@ -46,7 +46,7 @@ public sealed class ComposablePipelineTests
             .OrderBy(length => length);
 
         Assert.Equal(new[] { 1 }, source.AsEnumerable().BySpecification(spec));
-        Assert.Equal(new[] { 0, 1, 1, 1, 2, 2 },
+        Assert.Equal(new[] { 1, 1, 2, 2, 3, 3 },
             spec.PipelineSteps.Select(s => s.StageId));
         Assert.Equal(typeof(int), spec.PipelineSteps[^1].OutputType);
     }

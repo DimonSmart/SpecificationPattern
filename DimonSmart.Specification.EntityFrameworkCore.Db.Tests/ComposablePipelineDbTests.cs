@@ -25,7 +25,8 @@ public sealed class ComposablePipelineDbTests(DatabaseFixture fixture)
         Assert.Contains("ORDER BY", sql, StringComparison.OrdinalIgnoreCase);
         var actual = await query.ToArrayAsync();
 
-        var expected = fixture.Students.AsQueryable()
+        var expectedSource = await _db.Students.Include(s => s.Books).AsNoTracking().ToListAsync();
+        var expected = expectedSource.AsQueryable()
             .Where(s => s.Age >= 20)
             .SelectMany(s => s.Books, (s, b) => new { Student = s.Name, Book = b.Name })
             .Where(x => x.Book.StartsWith("A"))

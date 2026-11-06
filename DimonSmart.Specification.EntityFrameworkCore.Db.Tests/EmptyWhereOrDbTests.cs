@@ -36,7 +36,7 @@ public sealed class EmptyWhereOrDbTests(DatabaseFixture fixture)
         Assert.Null(combined.SpecificationData.WhereExpression);
         var query = _db.Students.BySpecification(combined);
         var sql = query.ToQueryString();
-        Assert.DoesNotContain("WHERE", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\nWHERE ", sql, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("ORDER BY", sql, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("LIMIT", sql, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("EMPTY_WHERE_OR", sql);

@@ -71,7 +71,7 @@ public sealed class ConditionalQueryOperationsTests : TestsBase
 
         var spec = Specification.Create<Student>()
             .OrderBy(name, false)
-            .ThenByDesc(age, true)
+            .OrderByDesc(age, true)
             .ThenBy(name, false)
             .ThenByDesc(id, true)
             .ThenBy(age, false)

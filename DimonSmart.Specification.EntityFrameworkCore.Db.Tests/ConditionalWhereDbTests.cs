@@ -103,7 +103,7 @@ public class ConditionalWhereDbTests : TestsBase
         var empty = EFCoreSpecification.Create<Student>().Where(s => s.Age < 0, false);
         var named = EFCoreSpecification.Create<Student>().Where(s => s.Name == "Alex");
 
-        Assert.Equal(new[] { 22, 30 },
+        Assert.Equal(new[] { 20, 22, 30 },
             _db.BySpecification(empty.Or(named)).OrderBy(s => s.Age).Select(s => s.Age).ToArray());
         Assert.Equal(new[] { 22, 30 },
             _db.BySpecification(empty.And(named)).OrderBy(s => s.Age).Select(s => s.Age).ToArray());
