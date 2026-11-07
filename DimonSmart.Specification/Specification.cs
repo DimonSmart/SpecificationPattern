@@ -40,6 +40,16 @@ public class Specification<T> : ISpecification<T> where T : class
 
     public Expression<Func<T, bool>>? GetWhereExpression() => Data.WhereExpression;
 
+    /// <summary>
+    /// Checks only filtering criteria against one entity. Ordering, paging and seek boundaries
+    /// are ignored, matching BySpecificationCriteria. The predicate must support LINQ-to-Objects.
+    /// </summary>
+    public bool IsSatisfiedBy(T candidate)
+    {
+        ArgumentNullException.ThrowIfNull(candidate);
+        return _pipeline.Apply(new[] { candidate }.AsQueryable(), true).Any();
+    }
+
     IQueryable<T> ISpecification<T, T>.ApplyTo(IQueryable<T> query)
     {
         ArgumentNullException.ThrowIfNull(query);

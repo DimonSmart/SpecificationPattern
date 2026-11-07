@@ -7,6 +7,25 @@ Packages:
 - **DimonSmart.Specification.EntityFrameworkCore** — adds `Include`, `ThenInclude` and EF Core query options.
 
 
+## Checking an entity with IsSatisfiedBy
+
+`IsSatisfiedBy(candidate)` is available on `Specification<T>`,
+`EFCoreSpecification<T>` and their `ISpecification<T>` contract.
+It evaluates only the specification's filtering criteria against one entity,
+using the same ordered criteria-only pipeline as `BySpecificationCriteria`.
+Sorting, `Skip`, `Take` and `SeekAfter` do not affect the answer.
+An unrestricted specification matches every non-null entity.
+
+```csharp
+var adults = Specification.Create<Student>().Where(s => s.Age >= 18);
+bool isAdult = adults.IsSatisfiedBy(student);
+```
+
+The evaluation uses LINQ-to-Objects. For EF Core specifications, EF-only
+settings (including database global query filters) are not applied, and
+provider-specific expressions such as `EF.Functions.Like` may fail in memory.
+Use a database query to check database-specific predicates.
+
 ## Reusable interfaces and projections
 
 `ISpecification<T>` and `ISpecification<TSource, TResult>` provide immutable,

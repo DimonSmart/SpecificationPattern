@@ -28,6 +28,12 @@ public class EFCoreSpecification<T> : IEFCoreSpecification<T>
     public ISpecificationData<T> SpecificationData => Core.SpecificationData;
     public IReadOnlyList<QueryPipelineStep> PipelineSteps => Core.PipelineSteps;
 
+    /// <summary>
+    /// Tests in-memory LINQ criteria only. EF-only options and global filters do not apply,
+    /// and provider-specific expressions may not execute outside EF Core.
+    /// </summary>
+    public bool IsSatisfiedBy(T candidate) => Core.IsSatisfiedBy(candidate);
+
     IQueryable<T> ISpecification<T, T>.ApplyTo(IQueryable<T> query) =>
         query.BySpecification(this);
 
