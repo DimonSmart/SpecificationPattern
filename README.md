@@ -69,7 +69,13 @@ var adults = Specification.Create<Student>().Where(s => s.Age >= 18);
 bool isAdult = adults.IsSatisfiedBy(student);
 ```
 
-The evaluation uses LINQ-to-Objects. For EF Core specifications, EF-only
+The evaluation uses LINQ-to-Objects, compiling the combined `Where`
+predicate lazily **once per immutable specification** and reusing the delegate
+across calls. It retains short-circuit semantics and supports noncanonical
+pipeline order (such as `Take(0).Where(...)`). Derived immutable
+specifications sharing the exact same core pipeline can reuse the cache.
+
+For EF Core specifications, EF-only
 settings (including database global query filters) are not applied, and
 provider-specific expressions such as `EF.Functions.Like` may fail in memory.
 Use a database query to check database-specific predicates.

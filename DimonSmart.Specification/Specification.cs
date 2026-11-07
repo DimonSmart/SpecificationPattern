@@ -8,11 +8,13 @@ public class Specification<T> : ISpecification<T> where T : class
 {
     private readonly QueryPipeline<T, T> _pipeline;
     private readonly ImmutableArray<SourceOperation<T>> _operations;
+    private readonly Lazy<Func<T, bool>> _compiledCriteria;
 
     internal Specification(QueryPipeline<T, T> pipeline, ImmutableArray<SourceOperation<T>> operations)
     {
         _pipeline = pipeline;
         _operations = operations;
+        _compiledCriteria = new Lazy<Func<T, bool>>(CompileCriteria);
     }
 
     protected Specification(Specification<T> source)
@@ -20,6 +22,7 @@ public class Specification<T> : ISpecification<T> where T : class
         ArgumentNullException.ThrowIfNull(source);
         _pipeline = source._pipeline;
         _operations = source._operations;
+        _compiledCriteria = source._compiledCriteria;
     }
 
     internal QueryPipeline<T, T> Pipeline => _pipeline;
@@ -43,11 +46,28 @@ public class Specification<T> : ISpecification<T> where T : class
     /// <summary>
     /// Checks only filtering criteria against one entity. Ordering, paging and seek boundaries
     /// are ignored, matching BySpecificationCriteria. The predicate must support LINQ-to-Objects.
+    /// The compiled predicate is cached per immutable specification instance.
     /// </summary>
     public bool IsSatisfiedBy(T candidate)
     {
         ArgumentNullException.ThrowIfNull(candidate);
-        return _pipeline.Apply(new[] { candidate }.AsQueryable(), true).Any();
+        return _compiledCriteria.Value(candidate);
+    }
+
+    private Func<T, bool> CompileCriteria()
+    {
+        Expression<Func<T, bool>>? predicate = null;
+        foreach (var operation in _operations)
+        {
+            if (operation.Predicate is not { } current)
+                continue;
+
+            predicate = predicate is null
+                ? current
+                : ExpressionOperations.CombineExpressions(predicate, current, Expression.AndAlso);
+        }
+
+        return predicate is null ? static _ => true : predicate.Compile();
     }
 
     IQueryable<T> ISpecification<T, T>.ApplyTo(IQueryable<T> query)

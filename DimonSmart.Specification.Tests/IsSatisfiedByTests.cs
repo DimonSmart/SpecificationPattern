@@ -43,6 +43,50 @@ public sealed class IsSatisfiedByTests : TestsBase
         Assert.Throws<NotSupportedException>(() => spec.GetWhereExpression());
     }
 
+    private sealed class PredicateProbe
+    {
+        public int CallCount { get; private set; }
+        public bool IsOlderThanTwenty(Student student)
+        {
+            CallCount++;
+            return student.Age > 20;
+        }
+    }
+
+    [Fact]
+    public void MultiplePredicatesShortCircuitAndCacheAcrossCalls()
+    {
+        var probe = new PredicateProbe();
+        var spec = Specification.Create<Student>()
+            .Where(s => s.Age > 20)
+            .Where(s => probe.IsOlderThanTwenty(s))
+            .Take(0)
+            .Where(s => s.Name == "Alex");
+
+        Assert.False(spec.IsSatisfiedBy(Sofia20));
+        Assert.Equal(0, probe.CallCount);
+
+        for (var i = 0; i < 5; i++)
+            Assert.True(spec.IsSatisfiedBy(Alex22));
+
+        Assert.Equal(5, probe.CallCount);
+        Assert.Equal(2, Students.BySpecificationCriteria(spec).Count());
+        Assert.Empty(Students.BySpecification(spec));
+    }
+
+    [Fact]
+    public void CompiledPredicateIsThreadSafeAndImmutableBranchesRemainIndependent()
+    {
+        var original = Specification.Create<Student>().Where(s => s.Age >= 20);
+        var branch = original.Where(s => s.Age >= 30);
+        Parallel.For(0, 100, _ =>
+        {
+            Assert.True(original.IsSatisfiedBy(Alex22));
+            Assert.False(branch.IsSatisfiedBy(Alex22));
+            Assert.True(branch.IsSatisfiedBy(Alex30));
+        });
+    }
+
     [Fact]
     public void NullCandidateIsRejected()
     {
