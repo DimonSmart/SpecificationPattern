@@ -7,6 +7,29 @@ Packages:
 - **DimonSmart.Specification.EntityFrameworkCore** — adds `Include`, `ThenInclude` and EF Core query options.
 
 
+## EF Core SQL LIKE search
+
+`Search(selector, pattern)` is available on root and projected EF Core
+specifications. It adds a normal `Where` step using `EF.Functions.Like`
+and composes with other filters and `And`/`Or` (where their ordinary
+composition restrictions allow). `Search(selector, pattern, condition)`
+skips the operation when `condition` is false.
+
+```csharp
+var matches = EFCoreSpecification.Create<Student>()
+    .Search(s => s.Name, "%Alex%")
+    .OrderBy(s => s.Name);
+var query = dbContext.BySpecification(matches);
+```
+
+The pattern uses **SQL LIKE syntax**, not a plain substring:
+`%` matches any sequence, and `_` matches one character. Comparison,
+case sensitivity and escaping depend on the database provider. No implicit
+wildcards or client-side `Contains` operations are added. `Search` is for
+relational EF Core query providers; it should not be evaluated through
+`IsSatisfiedBy` / LINQ-to-Objects because `EF.Functions.Like` requires
+provider translation.
+
 ## Checking an entity with IsSatisfiedBy
 
 `IsSatisfiedBy(candidate)` is available on `Specification<T>`,

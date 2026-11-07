@@ -92,6 +92,18 @@ public class EFCoreSpecification<T> : IEFCoreSpecification<T>
                 "Project navigations directly in the selector.");
     }
 
+    /// <summary>Applies a relational SQL LIKE pattern; %, _ and escaping follow the database provider.</summary>
+    public EFCoreSpecification<T> Search(Expression<Func<T, string?>> selector, string pattern) =>
+        Where(EFCoreSearchPredicate.Build(selector, pattern));
+
+    public EFCoreSpecification<T> Search(
+        Expression<Func<T, string?>> selector, string pattern, bool condition)
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        ArgumentNullException.ThrowIfNull(pattern);
+        return condition ? Search(selector, pattern) : this;
+    }
+
     public EFCoreSpecification<T> Where(Expression<Func<T, bool>> predicate) =>
         new(Core.Where(predicate), Options);
 

@@ -27,6 +27,19 @@ public sealed class EFCoreProjectedSpecification<TSource, TCurrent> : IEFCoreSpe
     private EFCoreProjectedSpecification<TSource, TCurrent> With(
         ProjectedSpecification<TSource, TCurrent> next) => new(next, Options);
 
+    /// <summary>Applies SQL LIKE to the current projection stage without client evaluation.</summary>
+    public EFCoreProjectedSpecification<TSource, TCurrent> Search(
+        Expression<Func<TCurrent, string?>> selector, string pattern) =>
+        Where(EFCoreSearchPredicate.Build(selector, pattern));
+
+    public EFCoreProjectedSpecification<TSource, TCurrent> Search(
+        Expression<Func<TCurrent, string?>> selector, string pattern, bool condition)
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        ArgumentNullException.ThrowIfNull(pattern);
+        return condition ? Search(selector, pattern) : this;
+    }
+
     public EFCoreProjectedSpecification<TSource, TCurrent> Where(Expression<Func<TCurrent, bool>> expression) =>
         With(Projection.Where(expression));
 
