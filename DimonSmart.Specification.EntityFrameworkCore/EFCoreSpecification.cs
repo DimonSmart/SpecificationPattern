@@ -247,6 +247,19 @@ public class EFCoreSpecification<T> : IEFCoreSpecification<T>
     }
 
 
+    /// <summary>Includes a CLR navigation path, sharing typed Include merging and conflict validation.</summary>
+    public EFCoreSpecification<T> Include(string path) => Include(path, true);
+
+    /// <summary>Conditionally includes a CLR navigation path.</summary>
+    public EFCoreSpecification<T> Include(string path, bool condition)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        if (!condition)
+            return this;
+        var plan = new StringIncludePlan<T>(path, IncludePath.Parse<T>(path));
+        return new(Core, Options.AddInclude(plan, "Include"));
+    }
+
     public EFCoreIncludeSpecification<T, TProperty> Include<TProperty>(
         Expression<Func<T, TProperty>> expression) => Include(expression, true);
 

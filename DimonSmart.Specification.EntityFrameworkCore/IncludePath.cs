@@ -18,6 +18,47 @@ internal static class IncludePath
         nameof(Enumerable.Take)
     ];
 
+    /// <summary>
+    /// Resolves a string navigation path to the same member identities as typed Include expressions.
+    /// EF Core validates whether these CLR members are mapped navigations during execution.
+    /// </summary>
+    internal static IReadOnlyList<IncludeSegment> Parse<TEntity>(string path) where TEntity : class
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var parts = path.Split('.');
+        if (parts.Any(part => string.IsNullOrWhiteSpace(part) || part != part.Trim()))
+            throw new ArgumentException(
+                "Include path must contain non-empty navigation names separated by dots.", nameof(path));
+
+        var result = new List<IncludeSegment>(parts.Length);
+        var current = typeof(TEntity);
+        foreach (var part in parts)
+        {
+            var members = current.GetMember(part, MemberTypes.Property | MemberTypes.Field,
+                BindingFlags.Public | BindingFlags.Instance);
+            var member = (MemberInfo?)members.OfType<PropertyInfo>()
+                .FirstOrDefault(property => property.GetIndexParameters().Length == 0)
+                ?? members.OfType<FieldInfo>().FirstOrDefault();
+            if (member is null)
+                throw new ArgumentException(
+                    $"Include path '{path}' contains unknown CLR member '{part}' on '{current.Name}'. " +
+                    "Only public CLR navigation properties and fields are supported.", nameof(path));
+            result.Add(new IncludeSegment(member, null));
+            var memberType = member switch
+            {
+                PropertyInfo property => property.PropertyType,
+                FieldInfo field => field.FieldType,
+                _ => throw new InvalidOperationException("Unexpected Include member type.")
+            };
+            var collection = memberType == typeof(string) ? null
+                : memberType.GetInterfaces().Prepend(memberType)
+                    .FirstOrDefault(type => type.IsGenericType &&
+                        type.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            current = collection?.GetGenericArguments()[0] ?? memberType;
+        }
+        return result;
+    }
+
     internal static IReadOnlyList<IncludeSegment> Parse(LambdaExpression expression)
     {
         ArgumentNullException.ThrowIfNull(expression);

@@ -7,6 +7,31 @@ Packages:
 - **DimonSmart.Specification.EntityFrameworkCore** — adds `Include`, `ThenInclude` and EF Core query options.
 
 
+## String navigation paths in EF Core
+
+`Include("Books.Author")` accepts a CLR navigation path from a string,
+including paths through collection navigations. It also supports the conditional
+form `Include(path, condition)`.
+
+```csharp
+var spec = EFCoreSpecification.Create<Student>()
+    .Include("Books.Author")
+    .Include(s => s.School)
+    .AsNoTracking();
+```
+
+String paths share the same immutable IncludePlan merging, prefix deduplication,
+diagnostics, and conflict detection as typed `Include` / `ThenInclude`.
+A string Include returns `EFCoreSpecification<T>`; use typed Include if
+you want to continue with a typed `ThenInclude` chain.
+
+Paths are resolved against **public CLR properties and fields** (including
+navigation properties behind `IEnumerable<T>`) when building the specification.
+Invalid or empty paths fail early; EF Core validates that these CLR members
+are mapped navigations when executing the query. Shadow-only navigations
+without CLR members are not supported, since they cannot be merged safely
+with the typed Include paths.
+
 ## EF Core SQL LIKE search
 
 `Search(selector, pattern)` is available on root and projected EF Core

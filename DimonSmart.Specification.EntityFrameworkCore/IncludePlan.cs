@@ -41,6 +41,22 @@ internal sealed class IncludeChain<TEntity, TProperty> : ITypedIncludePlan<TEnti
         new(query => query.Include(expression), IncludePath.Parse(expression));
 }
 
+/// <summary>EF Core string Include, normalized with typed MemberInfo navigation identities.</summary>
+internal sealed class StringIncludePlan<TEntity> : IIncludePlan<TEntity> where TEntity : class
+{
+    private readonly string _path;
+
+    internal StringIncludePlan(string path, IEnumerable<IncludeSegment> segments)
+    {
+        _path = path;
+        Segments = segments.ToImmutableArray();
+    }
+
+    public ImmutableArray<IncludeSegment> Segments { get; }
+
+    public IQueryable<TEntity> Apply(IQueryable<TEntity> query) => query.Include(_path);
+}
+
 /// <summary>Centralized, early conflict detection and stable normalization for all Include entry points.</summary>
 internal static class IncludePlanMerger<TEntity> where TEntity : class
 {
