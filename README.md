@@ -591,6 +591,16 @@ With missing `name` and `maxAge`, only the required age predicate is applied.
 With values present, both optional predicates are added with AND.
 ### Filtered Include and composition
 
+Matching **independently constructed** filtered Include operations are deduplicated,
+including compatible `Include`/`ThenInclude` chains and `And`/`Or` composition.
+Comparison is based on normalized expression trees, not on a random identifier
+or `Expression.ToString()`. Different operators, constants or captured inputs
+remain conflicting. Captured reference values are compared conservatively by
+identity; unsupported expression node kinds are not merged without proof.
+Filtered and unfiltered Include paths still conflict. EF Core itself executes
+the original Include expressions; normalization is used only for conflict detection.
+
+
 EF Core `Include` and `ThenInclude` are executed with **original typed expressions**, including filtered collections. Paths in `EFCoreSpecificationData.Includes` are read-only diagnostics, not executable inputs.
 
 This example is compiled as [`FilteredIncludeExample.cs`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/FilteredIncludeExample.cs). CI checks that this README block matches its compiled source.

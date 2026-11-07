@@ -99,13 +99,18 @@ internal static class IncludePlanMerger<TEntity> where TEntity : class
             return false;
 
         for (var i = 0; i < prefix.Length; i++)
-            if (!SameNavigation(prefix[i], full[i]) || prefix[i].FilterId != full[i].FilterId)
+            if (!SameNavigation(prefix[i], full[i]) || !SameFilter(prefix[i], full[i]))
                 return false;
         return true;
     }
 
     private static bool SameNavigation(IncludeSegment a, IncludeSegment b) =>
         a.Member.Equals(b.Member);
+
+    private static bool SameFilter(IncludeSegment a, IncludeSegment b) =>
+        ReferenceEquals(a.FilterExpression, b.FilterExpression) ||
+        (a.FilterExpression is not null && b.FilterExpression is not null &&
+            IncludeFilterExpressionComparer.AreEquivalent(a.FilterExpression, b.FilterExpression));
 
     private static void CheckCompatibility(
         ImmutableArray<IncludeSegment> left, ImmutableArray<IncludeSegment> right, string operation)
@@ -117,10 +122,10 @@ internal static class IncludePlanMerger<TEntity> where TEntity : class
                 break;
             path.Add(left[i].Name);
 
-            if (left[i].FilterId == right[i].FilterId)
+            if (SameFilter(left[i], right[i]))
                 continue;
 
-            var reason = left[i].FilterId is null || right[i].FilterId is null
+            var reason = left[i].FilterExpression is null || right[i].FilterExpression is null
                 ? "unfiltered vs filtered"
                 : "different filtered includes";
             throw new InvalidOperationException(

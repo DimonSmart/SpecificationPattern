@@ -44,21 +44,37 @@ public class IncludeTests
     }
 
     [Fact]
-    public void DistinctFiltersOnSameNavigationConflictDuringAndOrAndInclude()
+    public void EquivalentIndependentFiltersDeduplicateAndDifferentFiltersConflict()
     {
         var a = EFCoreSpecification.Create<Student>().Include(s => s.Books.Take(2));
-        var b = EFCoreSpecification.Create<Student>().Include(s => s.Books.Take(2));
+        var equivalent = EFCoreSpecification.Create<Student>().Include(s => s.Books.Take(2));
+        var different = EFCoreSpecification.Create<Student>().Include(s => s.Books.Take(3));
 
-        Action and = () => a.And(b);
-        Action or = () => a.Or(b);
+        a.And(equivalent).EFCoreSpecificationData.Includes.Should().Equal("Books");
+        a.Or(equivalent).EFCoreSpecificationData.Includes.Should().Equal("Books");
+        a.Include(s => s.Books.Take(2)).EFCoreSpecificationData.Includes.Should().Equal("Books");
+
+        Action and = () => a.And(different);
+        Action or = () => a.Or(different);
         Action builder = () => a.Include(s => s.Books.Where(b => b.Name.StartsWith("A")));
-
         and.Should().Throw<InvalidOperationException>().WithMessage("*Books*different filtered includes*");
         or.Should().Throw<InvalidOperationException>().WithMessage("*Books*different filtered includes*");
         builder.Should().Throw<InvalidOperationException>().WithMessage("*Books*different filtered includes*");
+    }
 
-        a.EFCoreSpecificationData.Includes.Should().Equal("Books");
-        b.EFCoreSpecificationData.Includes.Should().Equal("Books");
+    [Fact]
+    public void CapturedInputsAreNotIncorrectlyDeduplicated()
+    {
+        var count1 = 1;
+        var count2 = 2;
+        var first = EFCoreSpecification.Create<Student>().Include(s => s.Books.Take(count1));
+        var same = EFCoreSpecification.Create<Student>().Include(s => s.Books.Take(count1));
+        var different = EFCoreSpecification.Create<Student>().Include(s => s.Books.Take(count2));
+
+        first.And(same).EFCoreSpecificationData.Includes.Should().Equal("Books");
+        Action conflicting = () => first.And(different);
+        conflicting.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Books*different filtered includes*");
     }
 
     [Fact]

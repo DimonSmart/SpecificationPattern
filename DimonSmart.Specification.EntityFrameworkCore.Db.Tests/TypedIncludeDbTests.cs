@@ -249,7 +249,7 @@ public class TypedIncludeDbTests
         var author = EFCoreSpecification.Create<IncludeBlog>()
             .Include(b => b.Posts.Take(2)).ThenInclude(p => p.Author);
         var publisher = EFCoreSpecification.Create<IncludeBlog>()
-            .Include(b => b.Posts.Take(2)).ThenInclude(p => p.Publisher);
+            .Include(b => b.Posts.Take(3)).ThenInclude(p => p.Publisher);
 
         var and = Assert.Throws<InvalidOperationException>(() => author.And(publisher));
         var or = Assert.Throws<InvalidOperationException>(() => author.Or(publisher));
@@ -439,6 +439,96 @@ public class TypedIncludeDbTests
         Assert.Equal(1, sql.Split("-- Marker", StringSplitOptions.None).Length - 1);
         Assert.Contains(nameof(CallSiteIsEmittedOnceAlongsideUserTag), sql);
         Assert.Contains(nameof(TypedIncludeDbTests) + ".cs", sql);
+    }
+
+    [Fact]
+    public void IndependentlyCreatedMatchingFilteredBranchesWorkLikeDirectEfCore()
+    {
+        using var direct = Seed();
+        using var wrapped = Seed();
+
+        var author = EFCoreSpecification.Create<IncludeBlog>()
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A")))
+            .ThenInclude(p => p.Author);
+        var publisher = EFCoreSpecification.Create<IncludeBlog>()
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A")))
+            .ThenInclude(p => p.Publisher);
+        var combined = author.And(publisher).AsNoTracking();
+        Assert.Equal(new[] { "Posts.Author", "Posts.Publisher" },
+            combined.EFCoreSpecificationData.Includes);
+        Assert.Equal(combined.EFCoreSpecificationData.Includes,
+            author.Or(publisher).EFCoreSpecificationData.Includes);
+
+        var expected = direct.Blogs.AsNoTracking()
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A"))).ThenInclude(p => p.Author)
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A"))).ThenInclude(p => p.Publisher)
+            .ToList();
+        var actual = wrapped.BySpecification(combined).ToList();
+
+        AssertSamePosts(expected, actual);
+        Assert.Equal(3, Assert.Single(actual).Posts.Count);
+        Assert.All(Assert.Single(actual).Posts, p =>
+        {
+            Assert.NotNull(p.Author);
+            Assert.NotNull(p.Publisher);
+        });
+    }
+
+    [Fact]
+    public void RepeatedFilteredPrefixCanExtendSecondBranch()
+    {
+        using var direct = Seed();
+        using var wrapped = Seed();
+
+        var initial = EFCoreSpecification.Create<IncludeBlog>()
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A")))
+            .ThenInclude(p => p.Author);
+        var expanded = initial.Include(b => b.Posts.Where(p => p.Name.StartsWith("A")))
+            .ThenInclude(p => p.Publisher);
+        Assert.Equal(new[] { "Posts.Author", "Posts.Publisher" },
+            expanded.EFCoreSpecificationData.Includes);
+
+        var expected = direct.Blogs.AsNoTracking()
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A"))).ThenInclude(p => p.Author)
+            .Include(b => b.Posts.Where(p => p.Name.StartsWith("A"))).ThenInclude(p => p.Publisher)
+            .ToList();
+        var actual = wrapped.BySpecification(expanded.AsNoTracking()).ToList();
+        AssertSamePosts(expected, actual);
+        Assert.All(Assert.Single(actual).Posts, p =>
+        {
+            Assert.NotNull(p.Author);
+            Assert.NotNull(p.Publisher);
+        });
+    }
+
+    [Fact]
+    public void NestedFilteredThenIncludeDeduplicatesAndMixedStringPathConflictSurvives()
+    {
+        using var direct = Seed();
+        using var wrapped = Seed();
+
+        var a = EFCoreSpecification.Create<IncludeBlog>()
+            .Include(b => b.Posts)
+            .ThenInclude(p => p.Remarks.Where(r => r.Text.StartsWith("Yes")));
+        var b = EFCoreSpecification.Create<IncludeBlog>()
+            .Include(b => b.Posts)
+            .ThenInclude(p => p.Remarks.Where(r => r.Text.StartsWith("Yes")));
+        var combined = a.And(b).AsNoTracking();
+        Assert.Equal(new[] { "Posts.Remarks" }, combined.EFCoreSpecificationData.Includes);
+
+        var expected = direct.Blogs.AsNoTracking().Include(b => b.Posts)
+            .ThenInclude(p => p.Remarks.Where(r => r.Text.StartsWith("Yes"))).ToList();
+        var actual = wrapped.BySpecification(combined).ToList();
+        AssertSamePosts(expected, actual);
+        Assert.All(Assert.Single(actual).Posts, p => Assert.Single(p.Remarks));
+
+        var unfiltered = EFCoreSpecification.Create<IncludeBlog>().Include("Posts.Remarks");
+        Assert.Contains("unfiltered vs filtered",
+            Assert.Throws<InvalidOperationException>(() => unfiltered.And(a)).Message);
+
+        var disabled = unfiltered.Include(b => b.Posts.Where(p => p.Name.StartsWith("A")), false)
+            .ThenInclude(p => p.Publisher, true);
+        Assert.Equal(new[] { "Posts.Remarks" }, disabled.EFCoreSpecificationData.Includes);
     }
 
     private static void AssertSamePosts(

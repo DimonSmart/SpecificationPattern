@@ -103,10 +103,20 @@ internal static class IncludePath
             if (propertyType == typeof(string) || !typeof(IEnumerable).IsAssignableFrom(propertyType))
                 throw new NotSupportedException("Filtered Include is supported only on collection navigations.");
 
-            result[^1] = new IncludeSegment(last, Guid.NewGuid());
+            // Compare filtered operations independently of how the navigation was reached.
+            var navigation = Expression.Parameter(current.Type, "navigation");
+            var normalized = new NavigationReplacer(current, navigation).Visit(expression.Body)!;
+            result[^1] = new IncludeSegment(last, Expression.Lambda(normalized, navigation));
         }
 
         return result;
+    }
+
+    private sealed class NavigationReplacer(Expression source, ParameterExpression replacement)
+        : ExpressionVisitor
+    {
+        public override Expression? Visit(Expression? node) =>
+            ReferenceEquals(node, source) ? replacement : base.Visit(node);
     }
 
     private static Expression StripConvert(Expression expression)
@@ -122,7 +132,7 @@ internal static class IncludePath
     }
 }
 
-internal sealed record IncludeSegment(MemberInfo Member, Guid? FilterId)
+internal sealed record IncludeSegment(MemberInfo Member, LambdaExpression? FilterExpression)
 {
     internal string Name => Member.Name;
 }
