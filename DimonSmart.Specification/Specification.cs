@@ -267,7 +267,7 @@ internal sealed class SourceConfiguration<T>
 }
 
 /// <summary>Analyzes canonical source-stage operations extracted from the executable pipeline.</summary>
-internal static class SourceOperations<T>
+internal static class SourceOperations<T> where T : class
 {
     internal static SourceConfiguration<T> Analyze(
         QueryPipeline<T, T> pipeline, string operation)
