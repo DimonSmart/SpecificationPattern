@@ -13,6 +13,13 @@ public sealed record QueryPipelineStep(
     IReadOnlyList<LambdaExpression> Expressions,
     bool IsKeysetOrderingBlock);
 
+internal readonly record struct PipelineOperation(
+    string Kind,
+    LambdaExpression? Predicate = null,
+    object? Order = null,
+    int? Count = null,
+    SeekBoundary? Boundary = null);
+
 internal readonly record struct PipelineStage(int Id, bool HasSkip = false, bool HasTake = false, bool HasSeek = false)
 {
     internal PipelineStage Next() => new(Id + 1);
@@ -26,6 +33,14 @@ internal abstract class QueryPipeline<TSource, TCurrent> where TSource : class
 
     internal abstract IQueryable<TCurrent> Apply(IQueryable<TSource> query, bool criteriaOnly);
     internal abstract void Describe(List<QueryPipelineStep> steps);
+    internal abstract void CollectOperations(List<PipelineOperation> operations);
+
+    internal IReadOnlyList<PipelineOperation> Operations()
+    {
+        var operations = new List<PipelineOperation>();
+        CollectOperations(operations);
+        return operations;
+    }
 
     internal IReadOnlyList<QueryPipelineStep> Snapshot()
     {
@@ -41,6 +56,7 @@ internal sealed class RootPipeline<TSource> : QueryPipeline<TSource, TSource> wh
 
     internal override IQueryable<TSource> Apply(IQueryable<TSource> query, bool criteriaOnly) => query;
     internal override void Describe(List<QueryPipelineStep> steps) { }
+    internal override void CollectOperations(List<PipelineOperation> operations) { }
 }
 
 /// <summary>Appends a reusable projected pipeline without materialization or expression compilation.</summary>
@@ -68,6 +84,12 @@ internal sealed class ChainedPipeline<TSource, TCurrent> : QueryPipeline<TSource
         foreach (var step in _projection.Snapshot())
             steps.Add(step with { Index = steps.Count, StageId = step.StageId + stageOffset });
     }
+
+    internal override void CollectOperations(List<PipelineOperation> operations)
+    {
+        _source.CollectOperations(operations);
+        _projection.CollectOperations(operations);
+    }
 }
 
 /// <summary>Each node statically connects the input and output element types. Prefixes are shared.</summary>
@@ -79,6 +101,7 @@ internal sealed class AppendPipeline<TSource, TBefore, TCurrent> : QueryPipeline
     private readonly Func<IQueryable<TBefore>, IQueryable<TCurrent>> _criteria;
     private readonly string _operation;
     private readonly ImmutableArray<LambdaExpression> _expressions;
+    private readonly int? _count;
 
     internal AppendPipeline(
         QueryPipeline<TSource, TBefore> previous,
@@ -86,6 +109,7 @@ internal sealed class AppendPipeline<TSource, TBefore, TCurrent> : QueryPipeline
         string operation,
         Func<IQueryable<TBefore>, IQueryable<TCurrent>> apply,
         Func<IQueryable<TBefore>, IQueryable<TCurrent>> criteria,
+        int? count,
         params LambdaExpression[] expressions) : base(stage)
     {
         _previous = previous;
@@ -93,6 +117,7 @@ internal sealed class AppendPipeline<TSource, TBefore, TCurrent> : QueryPipeline
         _apply = apply;
         _criteria = criteria;
         _expressions = expressions.ToImmutableArray();
+        _count = count;
     }
 
     internal override IQueryable<TCurrent> Apply(IQueryable<TSource> query, bool criteriaOnly)
@@ -106,6 +131,14 @@ internal sealed class AppendPipeline<TSource, TBefore, TCurrent> : QueryPipeline
         _previous.Describe(steps);
         steps.Add(new QueryPipelineStep(steps.Count, Stage.Id, _operation,
             typeof(TBefore), typeof(TCurrent), _expressions, false));
+    }
+
+    internal override void CollectOperations(List<PipelineOperation> operations)
+    {
+        _previous.CollectOperations(operations);
+        operations.Add(new PipelineOperation(_operation,
+            Predicate: _operation == "Where" ? _expressions[0] : null,
+            Count: _count));
     }
 }
 
@@ -178,6 +211,15 @@ internal sealed class OrderedPipeline<TSource, TCurrent> : QueryPipeline<TSource
             steps.Add(new QueryPipelineStep(steps.Count, Stage.Id, "SeekAfter",
                 typeof(TCurrent), typeof(TCurrent), ImmutableArray<LambdaExpression>.Empty, true));
     }
+
+    internal override void CollectOperations(List<PipelineOperation> operations)
+    {
+        _previous.CollectOperations(operations);
+        for (var i = 0; i < Clauses.Length; i++)
+            operations.Add(new PipelineOperation(i == 0 ? "OrderBy" : "ThenBy", Order: Clauses[i]));
+        if (Boundary is not null)
+            operations.Add(new PipelineOperation("SeekAfter", Boundary: Boundary));
+    }
 }
 
 internal static class PipelineOperations
@@ -188,7 +230,7 @@ internal static class PipelineOperations
     {
         ArgumentNullException.ThrowIfNull(expression);
         return new AppendPipeline<TSource, TCurrent, TCurrent>(
-            pipeline, pipeline.Stage, "Where", q => q.Where(expression), q => q.Where(expression), expression);
+            pipeline, pipeline.Stage, "Where", q => q.Where(expression), q => q.Where(expression), null, expression);
     }
 
     internal static QueryPipeline<TSource, TCurrent> OrderBy<TSource, TCurrent, TKey>(
@@ -228,7 +270,7 @@ internal static class PipelineOperations
         if (pipeline.Stage.HasSeek)
             throw new InvalidOperationException("Skip cannot be combined with SeekAfter in the same stage.");
         return new AppendPipeline<TSource, TCurrent, TCurrent>(pipeline,
-            pipeline.Stage with { HasSkip = true }, "Skip", q => q.Skip(count), q => q);
+            pipeline.Stage with { HasSkip = true }, "Skip", q => q.Skip(count), q => q, count);
     }
 
     internal static QueryPipeline<TSource, TCurrent> Take<TSource, TCurrent>(
@@ -236,7 +278,7 @@ internal static class PipelineOperations
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         return new AppendPipeline<TSource, TCurrent, TCurrent>(pipeline,
-            pipeline.Stage with { HasTake = true }, "Take", q => q.Take(count), q => q);
+            pipeline.Stage with { HasTake = true }, "Take", q => q.Take(count), q => q, count);
     }
 
     internal static QueryPipeline<TSource, TResult> Select<TSource, TCurrent, TResult>(
@@ -245,7 +287,7 @@ internal static class PipelineOperations
     {
         ArgumentNullException.ThrowIfNull(selector);
         return new AppendPipeline<TSource, TCurrent, TResult>(pipeline, pipeline.Stage.Next(),
-            "Select", q => q.Select(selector), q => q.Select(selector), selector);
+            "Select", q => q.Select(selector), q => q.Select(selector), null, selector);
     }
 
     internal static QueryPipeline<TSource, TCollection> SelectMany<TSource, TCurrent, TCollection>(
@@ -254,7 +296,7 @@ internal static class PipelineOperations
     {
         ArgumentNullException.ThrowIfNull(selector);
         return new AppendPipeline<TSource, TCurrent, TCollection>(pipeline, pipeline.Stage.Next(),
-            "SelectMany", q => q.SelectMany(selector), q => q.SelectMany(selector), selector);
+            "SelectMany", q => q.SelectMany(selector), q => q.SelectMany(selector), null, selector);
     }
 
     internal static QueryPipeline<TSource, TResult> SelectMany<TSource, TCurrent, TCollection, TResult>(
@@ -266,6 +308,6 @@ internal static class PipelineOperations
         ArgumentNullException.ThrowIfNull(result);
         return new AppendPipeline<TSource, TCurrent, TResult>(pipeline, pipeline.Stage.Next(),
             "SelectMany", q => q.SelectMany(collection, result),
-            q => q.SelectMany(collection, result), collection, result);
+            q => q.SelectMany(collection, result), null, collection, result);
     }
 }

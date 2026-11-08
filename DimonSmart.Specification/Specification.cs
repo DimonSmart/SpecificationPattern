@@ -7,13 +7,11 @@ namespace DimonSmart.Specification;
 public class Specification<T> : ISpecification<T> where T : class
 {
     private readonly QueryPipeline<T, T> _pipeline;
-    private readonly ImmutableArray<SourceOperation<T>> _operations;
     private readonly Lazy<Func<T, bool>> _compiledCriteria;
 
-    internal Specification(QueryPipeline<T, T> pipeline, ImmutableArray<SourceOperation<T>> operations)
+    internal Specification(QueryPipeline<T, T> pipeline)
     {
         _pipeline = pipeline;
-        _operations = operations;
         _compiledCriteria = new Lazy<Func<T, bool>>(CompileCriteria);
     }
 
@@ -21,7 +19,6 @@ public class Specification<T> : ISpecification<T> where T : class
     {
         ArgumentNullException.ThrowIfNull(source);
         _pipeline = source._pipeline;
-        _operations = source._operations;
         _compiledCriteria = source._compiledCriteria;
     }
 
@@ -30,7 +27,7 @@ public class Specification<T> : ISpecification<T> where T : class
     {
         get
         {
-            try { return SourceOperations<T>.Analyze(_operations, "legacy diagnostic").ToData(); }
+            try { return SourceOperations<T>.Analyze(_pipeline, "legacy diagnostic").ToData(); }
             catch (InvalidOperationException error)
             {
                 throw new NotSupportedException(
@@ -57,10 +54,11 @@ public class Specification<T> : ISpecification<T> where T : class
     private Func<T, bool> CompileCriteria()
     {
         Expression<Func<T, bool>>? predicate = null;
-        foreach (var operation in _operations)
+        foreach (var operation in _pipeline.Operations())
         {
-            if (operation.Predicate is not { } current)
+            if (operation.Kind != "Where")
                 continue;
+            var current = (Expression<Func<T, bool>>)operation.Predicate!;
 
             predicate = predicate is null
                 ? current
@@ -82,14 +80,12 @@ public class Specification<T> : ISpecification<T> where T : class
         return _pipeline.Apply(query, true);
     }
 
-    private Specification<T> Append(QueryPipeline<T, T> next, SourceOperation<T> op) =>
-        new(next, _operations.Add(op));
+    private static Specification<T> Append(QueryPipeline<T, T> next) => new(next);
 
     public Specification<T> Where(Expression<Func<T, bool>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        return Append(PipelineOperations.Where(_pipeline, expression),
-            new SourceOperation<T>("Where", Predicate: expression));
+        return Append(PipelineOperations.Where(_pipeline, expression));
     }
 
     public Specification<T> Where(Expression<Func<T, bool>> expression, bool condition)
@@ -141,15 +137,13 @@ public class Specification<T> : ISpecification<T> where T : class
         var next = subsequent
             ? PipelineOperations.ThenBy(_pipeline, expression, direction)
             : PipelineOperations.OrderBy(_pipeline, expression, direction);
-        return Append(next, new SourceOperation<T>(subsequent ? "ThenBy" : "OrderBy",
-            Order: new OrderClause<T, TKey>(expression, direction)));
+        return Append(next);
     }
 
     public Specification<T> Skip(int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
-        return Append(PipelineOperations.Skip(_pipeline, count),
-            new SourceOperation<T>("Skip", Count: count));
+        return Append(PipelineOperations.Skip(_pipeline, count));
     }
 
     public Specification<T> Skip(int count, bool condition)
@@ -161,8 +155,7 @@ public class Specification<T> : ISpecification<T> where T : class
     public Specification<T> Take(int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
-        return Append(PipelineOperations.Take(_pipeline, count),
-            new SourceOperation<T>("Take", Count: count));
+        return Append(PipelineOperations.Take(_pipeline, count));
     }
 
     public Specification<T> Take(int count, bool condition)
@@ -173,9 +166,7 @@ public class Specification<T> : ISpecification<T> where T : class
 
     public Specification<T> SeekAfter<TCursor>(TCursor cursor)
     {
-        var next = PipelineOperations.SeekAfter(_pipeline, cursor);
-        var boundary = ((OrderedPipeline<T, T>)next).Boundary!;
-        return Append(next, new SourceOperation<T>("SeekAfter", Boundary: boundary));
+        return Append(PipelineOperations.SeekAfter(_pipeline, cursor));
     }
 
     public ProjectedSpecification<T, TResult> Select<TResult>(Expression<Func<T, TResult>> selector) =>
@@ -208,8 +199,8 @@ public class Specification<T> : ISpecification<T> where T : class
         Specification<T> other, string operation)
     {
         ArgumentNullException.ThrowIfNull(other);
-        var left = SourceOperations<T>.Analyze(_operations, operation);
-        var right = SourceOperations<T>.Analyze(other._operations, operation);
+        var left = SourceOperations<T>.Analyze(_pipeline, operation);
+        var right = SourceOperations<T>.Analyze(other._pipeline, operation);
         if (left.Boundary is not null && right.Boundary is not null)
             throw new InvalidOperationException($"Cannot combine using {operation}: both define SeekAfter.");
         if ((left.Boundary is not null || right.Boundary is not null) &&
@@ -247,12 +238,7 @@ public class Specification<T> : ISpecification<T> where T : class
             QueryPipeline<T, T> next = new OrderedPipeline<T, T>(
                 combined._pipeline, orders.ToImmutableArray(), boundary,
                 boundary is null ? null : combined._pipeline.Stage with { HasSeek = true });
-            var history = combined._operations;
-            for (var i = 0; i < orders.Count; i++)
-                history = history.Add(new SourceOperation<T>(i == 0 ? "OrderBy" : "ThenBy", Order: orders[i]));
-            if (boundary is not null)
-                history = history.Add(new SourceOperation<T>("SeekAfter", Boundary: boundary));
-            combined = new Specification<T>(next, history);
+            combined = new Specification<T>(next);
         }
 
         var skip = left.Skip ?? right.Skip;
@@ -262,13 +248,6 @@ public class Specification<T> : ISpecification<T> where T : class
         return combined;
     }
 }
-
-internal sealed record SourceOperation<T>(
-    string Kind,
-    Expression<Func<T, bool>>? Predicate = null,
-    IOrderClause<T>? Order = null,
-    int? Count = null,
-    SeekBoundary? Boundary = null);
 
 internal sealed class SourceConfiguration<T>
 {
@@ -287,36 +266,37 @@ internal sealed class SourceConfiguration<T>
     };
 }
 
-/// <summary>Only the canonical source-stage configuration can be merged or exposed as legacy diagnostics.</summary>
+/// <summary>Analyzes canonical source-stage operations extracted from the executable pipeline.</summary>
 internal static class SourceOperations<T>
 {
     internal static SourceConfiguration<T> Analyze(
-        ImmutableArray<SourceOperation<T>> history, string operation)
+        QueryPipeline<T, T> pipeline, string operation)
     {
         var result = new SourceConfiguration<T>();
         // 0: predicates, 1: ordering, 2: seek, 3: skip, 4: take
         var phase = 0;
-        foreach (var item in history)
+        foreach (var item in pipeline.Operations())
         {
             switch (item.Kind)
             {
                 case "Where":
                     if (phase != 0)
                         throw new InvalidOperationException($"Cannot use {operation}: late Where after query configuration.");
-                    result.Predicate = result.Predicate is null ? item.Predicate :
+                    var predicate = (Expression<Func<T, bool>>)item.Predicate!;
+                    result.Predicate = result.Predicate is null ? predicate :
                         ExpressionOperations.CombineExpressions(
-                            result.Predicate, item.Predicate!, Expression.AndAlso);
+                            result.Predicate, predicate, Expression.AndAlso);
                     break;
                 case "OrderBy":
                     if (phase != 0)
                         throw new InvalidOperationException($"Cannot use {operation}: conflicting ordering blocks.");
                     phase = 1;
-                    result.Orders.Add(item.Order!);
+                    result.Orders.Add((IOrderClause<T>)item.Order!);
                     break;
                 case "ThenBy":
                     if (phase != 1)
                         throw new InvalidOperationException($"Cannot use {operation}: disjoint ThenBy.");
-                    result.Orders.Add(item.Order!);
+                    result.Orders.Add((IOrderClause<T>)item.Order!);
                     break;
                 case "SeekAfter":
                     if (phase != 1 || result.Boundary is not null)
@@ -345,7 +325,7 @@ internal static class SourceOperations<T>
 public static class Specification
 {
     public static Specification<T> Create<T>() where T : class =>
-        new(new RootPipeline<T>(), ImmutableArray<SourceOperation<T>>.Empty);
+        new(new RootPipeline<T>());
 }
 
 public static class SpecificationCompositionExtensions

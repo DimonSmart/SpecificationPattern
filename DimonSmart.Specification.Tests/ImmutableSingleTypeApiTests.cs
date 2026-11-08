@@ -34,6 +34,28 @@ public sealed class ImmutableSingleTypeApiTests : TestsBase
             Students.BySpecification(spec).Select(s => s.Id).ToArray());
     }
 
+    [Fact]
+    public void CanonicalDiagnosticsAndCriteriaAreDerivedFromTheExecutablePipeline()
+    {
+        var specification = Specification.Create<Student>()
+            .Where(s => s.Age >= 20)
+            .OrderBy(s => s.Age)
+            .ThenBy(s => s.Id)
+            .Skip(1)
+            .Take(1);
+
+        Assert.Equal(new[] { "Where", "OrderBy", "ThenBy", "Skip", "Take" },
+            specification.PipelineSteps.Select(step => step.Operation));
+        Assert.NotNull(specification.GetWhereExpression());
+        Assert.Equal(2, specification.SpecificationData.OrderExpressions.Count);
+        Assert.Equal(1, specification.SpecificationData.SkipQ);
+        Assert.Equal(1, specification.SpecificationData.TakeQ);
+        Assert.Equal(new[] { 22 },
+            Students.BySpecification(specification).Select(s => s.Age).ToArray());
+        Assert.True(specification.IsSatisfiedBy(Alex30));
+        Assert.False(specification.IsSatisfiedBy(new Student { Age = 19 }));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
