@@ -8,13 +8,7 @@ public class DBLimitTests : TestsBase
 {
     private readonly SchoolContext _testDBContext;
 
-    public DBLimitTests(DatabaseFixture fixture)
-    {
-        Fixture = fixture;
-        _testDBContext = fixture.TestDBContext;
-    }
-
-    public DatabaseFixture Fixture { get; }
+    public DBLimitTests(DatabaseFixture fixture) => _testDBContext = fixture.TestDBContext;
 
     [Fact]
     public void TakeShouldLimitElementsQuantityTest()

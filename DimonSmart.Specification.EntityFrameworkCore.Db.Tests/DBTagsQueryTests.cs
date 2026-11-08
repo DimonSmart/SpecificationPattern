@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using DimonSmart.Specification.Tests.Common;
 using FluentAssertions;
@@ -11,13 +10,7 @@ public class DBTagQueryTests : TestsBase
 {
     private readonly SchoolContext _testDBContext;
 
-    public DBTagQueryTests(DatabaseFixture fixture)
-    {
-        Fixture = fixture;
-        _testDBContext = fixture.TestDBContext;
-    }
-
-    public DatabaseFixture Fixture { get; }
+    public DBTagQueryTests(DatabaseFixture fixture) => _testDBContext = fixture.TestDBContext;
 
     [Fact]
     public void QueryShouldBeTaggedWithOneTag()
@@ -67,11 +60,4 @@ public class DBTagQueryTests : TestsBase
         return callerFilePath;
     }
 
-    public static string MakePathRelativeToSolution(string filePath)
-    {
-        var assemblyLocation = Assembly.GetEntryAssembly()!.Location;
-        var solutionRoot = Path.GetDirectoryName(assemblyLocation)!;
-        var fullPath = Path.GetFullPath(filePath);
-        return Path.GetRelativePath(solutionRoot, fullPath);
-    }
 }

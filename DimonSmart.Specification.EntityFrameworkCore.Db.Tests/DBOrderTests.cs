@@ -8,13 +8,7 @@ public class DBOrderTests : TestsBase
 {
     private readonly SchoolContext _testDBContext;
 
-    public DBOrderTests(DatabaseFixture fixture)
-    {
-        Fixture = fixture;
-        _testDBContext = fixture.TestDBContext;
-    }
-
-    public DatabaseFixture Fixture { get; }
+    public DBOrderTests(DatabaseFixture fixture) => _testDBContext = fixture.TestDBContext;
 
     [Fact]
     public void OneLevelOrderByTest()

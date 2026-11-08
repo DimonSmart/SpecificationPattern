@@ -7,13 +7,7 @@ public class DBIncludeTests : TestsBase
 {
     private readonly SchoolContext _testDBContext;
 
-    public DBIncludeTests(DatabaseFixture fixture)
-    {
-        Fixture = fixture;
-        _testDBContext = fixture.TestDBContext;
-    }
-
-    public DatabaseFixture Fixture { get; }
+    public DBIncludeTests(DatabaseFixture fixture) => _testDBContext = fixture.TestDBContext;
 
     [Fact]
     public void IncludeLoadsNestedNavigationsWithoutTrackingFixup()

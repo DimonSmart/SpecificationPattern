@@ -8,13 +8,7 @@ public class DBWhereTests : TestsBase
 {
     private readonly SchoolContext _testDBContext;
 
-    public DBWhereTests(DatabaseFixture fixture)
-    {
-        Fixture = fixture;
-        _testDBContext = fixture.TestDBContext;
-    }
-
-    public DatabaseFixture Fixture { get; }
+    public DBWhereTests(DatabaseFixture fixture) => _testDBContext = fixture.TestDBContext;
 
     [Fact]
     public void SimpleWhereConditionTest()

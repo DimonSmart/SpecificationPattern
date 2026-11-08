@@ -14,13 +14,7 @@ public class DBSplitQueryTests : TestsBase
 
     private readonly SchoolContext _testDBContext;
 
-    public DBSplitQueryTests(DatabaseFixture fixture)
-    {
-        Fixture = fixture;
-        _testDBContext = fixture.TestDBContext;
-    }
-
-    public DatabaseFixture Fixture { get; }
+    public DBSplitQueryTests(DatabaseFixture fixture) => _testDBContext = fixture.TestDBContext;
 
     [Fact]
     public void QueryShouldBeSplit()
