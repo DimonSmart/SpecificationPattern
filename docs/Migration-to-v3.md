@@ -1,5 +1,9 @@
 # Migration to v3 — Composable LINQ Query Pipeline
 
+> Historical migration instructions for v3. In v4, `SpecificationData`,
+> `ISpecificationData<T>` and `GetWhereExpression()` were removed.
+> See [Migration to v4](Migration-to-v4.md).
+
 Both packages target .NET 10 / EF Core 10 and move from 2.x to **3.0.0** because evaluation semantics change.
 
 ## Ordered execution replaces category-based execution
@@ -78,11 +82,10 @@ conflicting cursor/configurations immediately. `A OR true` still yields
 `true` for its predicate while retaining compatible options. Projected
 specifications do not offer `And`/`Or`.
 
-`PipelineSteps` provides immutable diagnostics across typed stages, operation
-order and original expression trees. Legacy `SpecificationData` and
-`GetWhereExpression()` continue for representable single-stage canonical
-queries; for other queries they now throw `NotSupportedException` rather
-than yielding incorrect data.
+In v3, `PipelineSteps` provided immutable diagnostics across typed stages,
+operation order and original expression trees. The legacy `SpecificationData`
+and `GetWhereExpression()` APIs were still available for canonical queries,
+but were removed in v4.
 
 ## Criteria-only
 

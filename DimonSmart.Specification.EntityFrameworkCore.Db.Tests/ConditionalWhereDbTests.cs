@@ -41,7 +41,7 @@ public class ConditionalWhereDbTests : TestsBase
 
         var empty = EFCoreSpecification.Create<Student>();
         Assert.Same(empty, empty.Where(s => s.Age < 0, false));
-        Assert.Null(empty.SpecificationData.WhereExpression);
+        Assert.Null(empty.WhereStep()?.Expressions[0]);
     }
 
     [Fact]

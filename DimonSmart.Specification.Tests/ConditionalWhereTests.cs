@@ -12,7 +12,7 @@ public class ConditionalWhereTests : TestsBase
         var conditional = Specification.Create<Student>().Where(predicate, true);
         var ordinary = Specification.Create<Student>().Where(predicate);
 
-        Assert.Same(predicate, conditional.GetWhereExpression());
+        Assert.Same(predicate, conditional.WhereStep()?.Expressions[0]);
         Assert.Equal(
             Students.BySpecification(ordinary).Select(s => s.Age).ToArray(),
             Students.BySpecification(conditional).Select(s => s.Age).ToArray());
@@ -22,18 +22,18 @@ public class ConditionalWhereTests : TestsBase
     public void FalseIsAnIdentityOperationEvenForAnExistingFilter()
     {
         var source = Specification.Create<Student>().Where(s => s.Age >= 22);
-        var originalPredicate = source.GetWhereExpression();
+        var originalPredicate = source.WhereStep()?.Expressions[0];
 
         var result = source.Where(s => s.Name == "Nobody", false);
 
         Assert.Same(source, result);
-        Assert.Same(originalPredicate, result.GetWhereExpression());
+        Assert.Same(originalPredicate, result.WhereStep()?.Expressions[0]);
         Assert.Equal(new[] { 22, 30 },
             Students.BySpecification(result).Select(s => s.Age).ToArray());
 
         var empty = Specification.Create<Student>();
         Assert.Same(empty, empty.Where(s => s.Age > 0, false));
-        Assert.Null(empty.GetWhereExpression());
+        Assert.Null(empty.WhereStep()?.Expressions[0]);
     }
 
     [Theory]
@@ -50,7 +50,7 @@ public class ConditionalWhereTests : TestsBase
     }
 
     [Fact]
-    public void MixedConditionalFiltersUseAndAlsoWithoutMutatingEarlierBranches()
+    public void MixedConditionalFiltersComposeWithoutMutatingEarlierBranches()
     {
         var source = Specification.Create<Student>().Where(s => s.Age >= 20);
         var skipped = source.Where(s => s.Name == "Sofia", false);
@@ -60,7 +60,7 @@ public class ConditionalWhereTests : TestsBase
             .Where(s => s.Age == 0, false);
 
         Assert.Same(source, skipped);
-        Assert.Equal(ExpressionType.AndAlso, filtered.GetWhereExpression()!.Body.NodeType);
+        Assert.Equal(3, filtered.PipelineSteps.Count(step => step.Operation == "Where"));
         Assert.Equal(new[] { 22 },
             Students.BySpecification(filtered).Select(s => s.Age).ToArray());
         Assert.Equal(new[] { 20, 22, 30 },
@@ -92,7 +92,7 @@ public class ConditionalWhereTests : TestsBase
         var alex = Specification.Create<Student>().Where(s => s.Name == "Alex", true);
         var older = Specification.Create<Student>().Where(s => s.Age > 22);
 
-        Assert.Null(absent.GetWhereExpression());
+        Assert.Null(absent.WhereStep()?.Expressions[0]);
         Assert.Equal(new[] { 20, 22, 30 },
             Students.BySpecification(absent.Or(alex)).Select(s => s.Age).OrderBy(a => a).ToArray());
         Assert.Equal(new[] { 22, 30 },

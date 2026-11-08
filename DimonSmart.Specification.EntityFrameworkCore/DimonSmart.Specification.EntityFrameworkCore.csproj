@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
-		<Version>3.0.0</Version>
+		<Version>4.0.0</Version>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -17,7 +17,7 @@
 		<PackageLicenseExpression>0BSD</PackageLicenseExpression>
 
 
-		<PackageReleaseNotes>3.0.0: Composable LINQ query pipeline, continuable projections, keyset pagination, typed Include/ThenInclude and EF Core 10 support. See docs/Migration-to-v3.md in the repository.</PackageReleaseNotes>
+		<PackageReleaseNotes>4.0.0: Removed the legacy SpecificationData diagnostic API. Use PipelineSteps for query operations and EFCoreSpecificationData for EF-specific options. See docs/Migration-to-v4.md.</PackageReleaseNotes>
 
 
 	</PropertyGroup>

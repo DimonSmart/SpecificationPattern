@@ -43,15 +43,15 @@ public sealed class TypedOrderingTests
     private static void CheckSelector<TKey>(Expression<Func<OrderingItem, TKey>> selector)
     {
         var spec = Specification.Create<OrderingItem>().OrderBy(selector);
-        var entry = Assert.Single(spec.SpecificationData.OrderExpressions);
-        Assert.Equal(OrderDirectionEnum.Ascending, entry.direction);
-        Assert.Same(selector, entry.expr);
-        Assert.Equal(typeof(TKey), entry.expr.ReturnType);
-        Assert.IsAssignableFrom<Expression<Func<OrderingItem, TKey>>>(entry.expr);
+        var entry = Assert.Single(spec.OrderingSteps());
+        Assert.Equal(OrderDirectionEnum.Ascending, entry.Direction);
+        Assert.Same(selector, entry.Expressions[0]);
+        Assert.Equal(typeof(TKey), entry.Expressions[0].ReturnType);
+        Assert.IsAssignableFrom<Expression<Func<OrderingItem, TKey>>>(entry.Expressions[0]);
 
         var query = new[] { new OrderingItem() }.AsQueryable().BySpecification(spec);
         var call = Assert.IsAssignableFrom<MethodCallExpression>(query.Expression);
-        AssertCall(call, nameof(Queryable.OrderBy), typeof(TKey), entry.expr);
+        AssertCall(call, nameof(Queryable.OrderBy), typeof(TKey), entry.Expressions[0]);
     }
 
     [Fact]
@@ -61,25 +61,25 @@ public sealed class TypedOrderingTests
             .OrderBy(i => i.Name)
             .ThenByDesc(i => i.Id)
             .ThenBy(i => i.Rank);
-        var diagnostics = spec.SpecificationData.OrderExpressions;
+        var diagnostics = spec.OrderingSteps();
 
         Assert.Equal(new[] { typeof(string), typeof(int), typeof(long) },
-            diagnostics.Select(item => item.expr.ReturnType));
+            diagnostics.Select(item => item.Expressions[0].ReturnType));
         Assert.Equal(new[]
         {
             OrderDirectionEnum.Ascending,
             OrderDirectionEnum.Descending,
             OrderDirectionEnum.Ascending
-        }, diagnostics.Select(item => item.direction));
+        }, diagnostics.Select(item => item.Direction));
 
         IQueryable<OrderingItem> source = new[] { new OrderingItem() }.AsQueryable();
         IQueryable<OrderingItem> query = source.BySpecification(spec);
         var third = Assert.IsAssignableFrom<MethodCallExpression>(query.Expression);
-        AssertCall(third, nameof(Queryable.ThenBy), typeof(long), diagnostics[2].expr);
+        AssertCall(third, nameof(Queryable.ThenBy), typeof(long), diagnostics[2].Expressions[0]);
         var second = Assert.IsAssignableFrom<MethodCallExpression>(third.Arguments[0]);
-        AssertCall(second, nameof(Queryable.ThenByDescending), typeof(int), diagnostics[1].expr);
+        AssertCall(second, nameof(Queryable.ThenByDescending), typeof(int), diagnostics[1].Expressions[0]);
         var first = Assert.IsAssignableFrom<MethodCallExpression>(second.Arguments[0]);
-        AssertCall(first, nameof(Queryable.OrderBy), typeof(string), diagnostics[0].expr);
+        AssertCall(first, nameof(Queryable.OrderBy), typeof(string), diagnostics[0].Expressions[0]);
         Assert.Same(source.Expression, first.Arguments[0]);
     }
 
@@ -126,30 +126,28 @@ public sealed class TypedOrderingTests
         var boxedSpec = Specification.Create<Student>().OrderBy(boxed);
         var castSpec = Specification.Create<Student>().OrderBy(s => (object)s.Age);
 
-        Assert.Same(typed, typedSpec.SpecificationData.OrderExpressions[0].expr);
-        Assert.Equal(typeof(int), typedSpec.SpecificationData.OrderExpressions[0].expr.ReturnType);
+        Assert.Same(typed, typedSpec.OrderingSteps()[0].Expressions[0]);
+        Assert.Equal(typeof(int), typedSpec.OrderingSteps()[0].Expressions[0].ReturnType);
         Assert.Equal(ExpressionType.MemberAccess, typed.Body.NodeType);
-        Assert.Same(boxed, boxedSpec.SpecificationData.OrderExpressions[0].expr);
-        Assert.Equal(typeof(object), boxedSpec.SpecificationData.OrderExpressions[0].expr.ReturnType);
-        Assert.Equal(ExpressionType.Convert, boxedSpec.SpecificationData.OrderExpressions[0].expr.Body.NodeType);
-        Assert.Equal(ExpressionType.Convert, castSpec.SpecificationData.OrderExpressions[0].expr.Body.NodeType);
+        Assert.Same(boxed, boxedSpec.OrderingSteps()[0].Expressions[0]);
+        Assert.Equal(typeof(object), boxedSpec.OrderingSteps()[0].Expressions[0].ReturnType);
+        Assert.Equal(ExpressionType.Convert, boxedSpec.OrderingSteps()[0].Expressions[0].Body.NodeType);
+        Assert.Equal(ExpressionType.Convert, castSpec.OrderingSteps()[0].Expressions[0].Body.NodeType);
     }
 
     [Fact]
     public void PublicDiagnosticSnapshotsAreReadOnlyAndCannotAffectExecution()
     {
         var spec = Specification.Create<Student>().OrderBy(s => s.Age);
-        var snapshot = spec.SpecificationData.OrderExpressions;
-        var list = Assert.IsAssignableFrom<IList<(OrderDirectionEnum direction, LambdaExpression expr)>>(snapshot);
+        var snapshot = spec.OrderingSteps();
+        var list = Assert.IsAssignableFrom<IList<QueryPipelineStep>>(snapshot);
         Assert.Throws<NotSupportedException>(() => list.Clear());
 
-        var dataCopy = Assert.IsType<SpecificationData<Student>>(spec.SpecificationData);
-        dataCopy.WhereExpression = s => s.Age == 0;
-        dataCopy.TakeQ = 0;
+        Assert.Equal("OrderBy", Assert.Single(snapshot).Operation);
         Assert.Equal(new[] { 20, 22, 30 },
             TestsStudents().BySpecification(spec).Select(s => s.Age).ToArray());
-        Assert.Single(spec.SpecificationData.OrderExpressions);
-        Assert.Null(spec.SpecificationData.TakeQ);
+        Assert.Single(spec.OrderingSteps());
+        Assert.Null(spec.LastStep("Take")?.Count);
     }
 
     private static IQueryable<Student> TestsStudents() => new[]
@@ -165,12 +163,12 @@ public sealed class TypedOrderingTests
         var byAge = root.OrderBy(i => i.Id);
         var combined = root.And(byName);
 
-        Assert.Empty(root.SpecificationData.OrderExpressions);
-        Assert.Equal(typeof(int), byAge.SpecificationData.OrderExpressions[0].expr.ReturnType);
+        Assert.Empty(root.OrderingSteps());
+        Assert.Equal(typeof(int), byAge.OrderingSteps()[0].Expressions[0].ReturnType);
         Assert.Equal(new[] { typeof(string), typeof(long) },
-            combined.SpecificationData.OrderExpressions.Select(e => e.expr.ReturnType));
+            combined.OrderingSteps().Select(e => e.Expressions[0].ReturnType));
         Assert.Equal(new[] { typeof(string), typeof(long) },
-            byName.SpecificationData.OrderExpressions.Select(e => e.expr.ReturnType));
+            byName.OrderingSteps().Select(e => e.Expressions[0].ReturnType));
         Assert.Throws<InvalidOperationException>(() => byName.Or(byAge));
 
         var items = new[]
@@ -202,19 +200,19 @@ public sealed class TypedOrderingTests
             .ThenByDesc(rank)
             .ThenBy(optional);
 
-        var keys = spec.SpecificationData.OrderExpressions;
+        var keys = spec.OrderingSteps();
         Assert.Equal(new[] { typeof(string), typeof(long), typeof(int?) },
-            keys.Select(x => x.expr.ReturnType));
+            keys.Select(x => x.Expressions[0].ReturnType));
         Assert.Equal(new[]
         {
             OrderDirectionEnum.Ascending,
             OrderDirectionEnum.Descending,
             OrderDirectionEnum.Ascending
-        }, keys.Select(x => x.direction));
-        Assert.Same(name, keys[0].expr);
-        Assert.Same(rank, keys[1].expr);
-        Assert.Same(optional, keys[2].expr);
-        Assert.All(keys, x => Assert.NotEqual(ExpressionType.Convert, x.expr.Body.NodeType));
+        }, keys.Select(x => x.Direction));
+        Assert.Same(name, keys[0].Expressions[0]);
+        Assert.Same(rank, keys[1].Expressions[0]);
+        Assert.Same(optional, keys[2].Expressions[0]);
+        Assert.All(keys, x => Assert.NotEqual(ExpressionType.Convert, x.Expressions[0].Body.NodeType));
 
         var source = new[] { new OrderingItem() }.AsQueryable();
         var third = Assert.IsAssignableFrom<MethodCallExpression>(source.BySpecification(spec).Expression);
@@ -278,22 +276,20 @@ public sealed class TypedOrderingTests
     public void ExplicitSecondaryOrderingKeepsImmutableBranchesAndReadOnlyDiagnostics()
     {
         var first = Specification.Create<OrderingItem>().OrderBy(i => i.Name);
-        var snapshot = first.SpecificationData.OrderExpressions;
+        var snapshot = first.OrderingSteps();
         var byId = first.ThenBy(i => i.Id);
         var byRank = first.ThenByDesc(i => i.Rank);
 
         Assert.Single(snapshot);
-        Assert.Single(first.SpecificationData.OrderExpressions);
-        Assert.Equal(2, byId.SpecificationData.OrderExpressions.Count);
-        Assert.Equal(2, byRank.SpecificationData.OrderExpressions.Count);
-        Assert.Equal(typeof(int), byId.SpecificationData.OrderExpressions[1].expr.ReturnType);
-        Assert.Equal(typeof(long), byRank.SpecificationData.OrderExpressions[1].expr.ReturnType);
-        var list = Assert.IsAssignableFrom<IList<(OrderDirectionEnum direction, LambdaExpression expr)>>(
-            byId.SpecificationData.OrderExpressions);
+        Assert.Single(first.OrderingSteps());
+        Assert.Equal(2, byId.OrderingSteps().Count);
+        Assert.Equal(2, byRank.OrderingSteps().Count);
+        Assert.Equal(typeof(int), byId.OrderingSteps()[1].Expressions[0].ReturnType);
+        Assert.Equal(typeof(long), byRank.OrderingSteps()[1].Expressions[0].ReturnType);
+        var list = Assert.IsAssignableFrom<IList<QueryPipelineStep>>(
+            byId.OrderingSteps());
         Assert.Throws<NotSupportedException>(() => list.Clear());
-        var copy = Assert.IsType<SpecificationData<OrderingItem>>(byId.SpecificationData);
-        copy.TakeQ = 0;
-        Assert.Null(byId.SpecificationData.TakeQ);
+        Assert.Null(byId.LastStep("Take"));
     }
 
     [Fact]
@@ -325,8 +321,8 @@ public sealed class TypedOrderingTests
         Assert.Contains("SeekAfter", Assert.Throws<InvalidOperationException>(() =>
             seek.ThenBy(i => i.Rank)).Message);
         Assert.Throws<InvalidOperationException>(() => seek.ThenByDesc(i => i.Name));
-        Assert.Single(first.SpecificationData.OrderExpressions);
-        Assert.Single(seek.SpecificationData.OrderExpressions);
+        Assert.Single(first.OrderingSteps());
+        Assert.Single(seek.OrderingSteps());
     }
 
     [Fact]
@@ -338,9 +334,9 @@ public sealed class TypedOrderingTests
         var and = filter.And(ordering).ThenByDesc(i => i.Rank);
         var or = filter.Or(ordering).ThenByDesc(i => i.Rank);
 
-        Assert.Equal(3, and.SpecificationData.OrderExpressions.Count);
-        Assert.Equal(3, or.SpecificationData.OrderExpressions.Count);
-        Assert.Single(ordering.SpecificationData.OrderExpressions.Skip(1));
+        Assert.Equal(3, and.OrderingSteps().Count);
+        Assert.Equal(3, or.OrderingSteps().Count);
+        Assert.Single(ordering.OrderingSteps().Skip(1));
         Assert.Throws<InvalidOperationException>(() =>
             ordering.And(Specification.Create<OrderingItem>().OrderBy(i => i.Rank)));
         Assert.Throws<InvalidOperationException>(() =>

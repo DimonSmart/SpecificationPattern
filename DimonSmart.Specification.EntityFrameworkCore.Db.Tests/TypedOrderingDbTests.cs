@@ -24,7 +24,7 @@ public sealed class TypedOrderingDbTests
             .AsSingleQuery();
 
         Assert.Equal(new[] { typeof(string), typeof(int), typeof(string) },
-            spec.SpecificationData.OrderExpressions.Select(item => item.expr.ReturnType));
+            spec.OrderingSteps().Select(item => item.Expressions[0].ReturnType));
         var query = _db.BySpecification(spec);
         var sql = query.ToQueryString();
         var position = sql.IndexOf("ORDER BY", StringComparison.OrdinalIgnoreCase);
@@ -58,7 +58,7 @@ public sealed class TypedOrderingDbTests
         var ordering = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name).ThenByDesc(s => s.Age).ThenBy(s => (long)s.Id);
         Assert.Equal(new[] { typeof(string), typeof(int), typeof(long) },
-            ordering.SpecificationData.OrderExpressions.Select(e => e.expr.ReturnType));
+            ordering.OrderingSteps().Select(e => e.Expressions[0].ReturnType));
         Assert.Equal(new[] { 30, 22, 20 },
             _db.BySpecification(ordering).Select(s => s.Age).ToArray());
     }
@@ -72,8 +72,8 @@ public sealed class TypedOrderingDbTests
             EFCoreSpecification.Create<Student>().OrderByDesc<int>(null!)).ParamName);
 
         var spec = EFCoreSpecification.Create<Student>().OrderBy(s => s.Age);
-        var diagnostic = spec.SpecificationData.OrderExpressions;
-        var editable = Assert.IsAssignableFrom<IList<(OrderDirectionEnum direction, LambdaExpression expr)>>(diagnostic);
+        var diagnostic = spec.OrderingSteps();
+        var editable = Assert.IsAssignableFrom<IList<QueryPipelineStep>>(diagnostic);
         Assert.Throws<NotSupportedException>(() => editable.Clear());
         Assert.Equal(new[] { 20, 22, 30 },
             _db.BySpecification(spec).Select(s => s.Age).ToArray());
@@ -95,7 +95,7 @@ public sealed class TypedOrderingDbTests
         Assert.True(orderClause.Count(c => c == ',') >= 2, sql);
         Assert.Equal(new[] { 30, 22, 20 }, query.Select(s => s.Age).ToArray());
         Assert.Equal(new[] { typeof(string), typeof(int), typeof(int) },
-            spec.SpecificationData.OrderExpressions.Select(x => x.expr.ReturnType));
+            spec.OrderingSteps().Select(x => x.Expressions[0].ReturnType));
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public sealed class TypedOrderingDbTests
         var seek = root.SeekAfter(1);
         Assert.Throws<InvalidOperationException>(() => seek.ThenBy(s => s.Age));
         Assert.Throws<InvalidOperationException>(() => seek.ThenByDesc(s => s.Age));
-        Assert.Single(root.SpecificationData.OrderExpressions);
+        Assert.Single(root.OrderingSteps());
     }
 
     [Fact]
@@ -186,8 +186,8 @@ public sealed class TypedOrderingDbTests
         var spec = filter.And(ordering).ThenByDesc(s => s.Age);
         var specOr = filter.Or(ordering).ThenByDesc(s => s.Age);
 
-        Assert.Equal(3, spec.SpecificationData.OrderExpressions.Count);
-        Assert.Equal(3, specOr.SpecificationData.OrderExpressions.Count);
+        Assert.Equal(3, spec.OrderingSteps().Count);
+        Assert.Equal(3, specOr.OrderingSteps().Count);
         Assert.Throws<InvalidOperationException>(() =>
             spec.And(EFCoreSpecification.Create<Student>().OrderBy(s => s.Age)));
         Assert.Equal(3, _db.BySpecification(spec).Count());

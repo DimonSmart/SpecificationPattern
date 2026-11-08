@@ -38,8 +38,8 @@ public class TypedSpecificationTests : TestsBase
         Action act = () => left.And(right);
 
         act.Should().Throw<InvalidOperationException>().WithMessage("*ordering*");
-        left.SpecificationData.OrderExpressions.Should().HaveCount(1);
-        right.SpecificationData.OrderExpressions.Should().HaveCount(1);
+        left.OrderingSteps().Should().HaveCount(1);
+        right.OrderingSteps().Should().HaveCount(1);
     }
 
     [Fact]
@@ -59,10 +59,10 @@ public class TypedSpecificationTests : TestsBase
         var original = Specification.Create<Student>().Where(s => s.Age > 18);
         var configured = original.OrderBy(s => s.Name).Take(1);
 
-        original.SpecificationData.OrderExpressions.Should().BeEmpty();
-        original.SpecificationData.TakeQ.Should().BeNull();
-        configured.SpecificationData.OrderExpressions.Should().HaveCount(1);
-        configured.SpecificationData.TakeQ.Should().Be(1);
+        original.OrderingSteps().Should().BeEmpty();
+        original.LastStep("Take")?.Count.Should().BeNull();
+        configured.OrderingSteps().Should().HaveCount(1);
+        configured.LastStep("Take")?.Count.Should().Be(1);
     }
 
     [Fact]

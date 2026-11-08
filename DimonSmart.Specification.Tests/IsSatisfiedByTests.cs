@@ -40,7 +40,7 @@ public sealed class IsSatisfiedByTests : TestsBase
         var spec = Specification.Create<Student>().Take(0).Where(s => s.Age >= 22);
         Assert.True(spec.IsSatisfiedBy(Alex22));
         Assert.False(spec.IsSatisfiedBy(Sofia20));
-        Assert.Throws<NotSupportedException>(() => spec.GetWhereExpression());
+        Assert.Equal(new[] { "Take", "Where" }, spec.PipelineSteps.Select(step => step.Operation));
     }
 
     private sealed class PredicateProbe

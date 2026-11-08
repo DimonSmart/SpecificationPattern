@@ -60,9 +60,9 @@ public sealed class ConditionalQueryOperationsDbTests
             .Take(0, false);
 
         Assert.Same(root, disabled);
-        Assert.Empty(disabled.SpecificationData.OrderExpressions);
-        Assert.Null(disabled.SpecificationData.SkipQ);
-        Assert.Null(disabled.SpecificationData.TakeQ);
+        Assert.Empty(disabled.OrderingSteps());
+        Assert.Null(disabled.LastStep("Skip")?.Count);
+        Assert.Null(disabled.LastStep("Take")?.Count);
         Assert.Equal(_db.BySpecification(root).ToQueryString(),
             _db.BySpecification(disabled).ToQueryString());
         Assert.Equal(new[] { "School" }, disabled.EFCoreSpecificationData.Includes);
@@ -76,7 +76,7 @@ public sealed class ConditionalQueryOperationsDbTests
         EFCoreSpecification<Student> configured = composable.OrderBy(s => s.Name, false);
 
         Assert.Same(composable, configured);
-        Assert.Empty(configured.SpecificationData.OrderExpressions);
+        Assert.Empty(configured.OrderingSteps());
         Assert.Same(configured, configured.Skip(10, false));
         Assert.Same(configured, configured.Take(1, false));
         Assert.Equal(new[] { 22, 30 },

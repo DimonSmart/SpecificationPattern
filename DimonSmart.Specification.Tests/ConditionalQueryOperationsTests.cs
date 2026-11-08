@@ -25,15 +25,15 @@ public sealed class ConditionalQueryOperationsTests : TestsBase
             .Take(1);
 
         Assert.Equal(
-            ordinary.SpecificationData.OrderExpressions.Select(x => (x.direction, x.expr.ReturnType)),
-            conditional.SpecificationData.OrderExpressions.Select(x => (x.direction, x.expr.ReturnType)));
-        Assert.Equal(ordinary.SpecificationData.SkipQ, conditional.SpecificationData.SkipQ);
-        Assert.Equal(ordinary.SpecificationData.TakeQ, conditional.SpecificationData.TakeQ);
+            ordinary.OrderingSteps().Select(x => (x.Direction, x.Expressions[0].ReturnType)),
+            conditional.OrderingSteps().Select(x => (x.Direction, x.Expressions[0].ReturnType)));
+        Assert.Equal(ordinary.LastStep("Skip")?.Count, conditional.LastStep("Skip")?.Count);
+        Assert.Equal(ordinary.LastStep("Take")?.Count, conditional.LastStep("Take")?.Count);
         Assert.Equal(new[] { 22 }, Students.BySpecification(conditional).Select(s => s.Age).ToArray());
         Assert.Equal(
             Students.BySpecification(ordinary).Select(s => s.Id).ToArray(),
             Students.BySpecification(conditional).Select(s => s.Id).ToArray());
-        Assert.Empty(root.SpecificationData.OrderExpressions);
+        Assert.Empty(root.OrderingSteps());
     }
 
     [Fact]
@@ -43,10 +43,10 @@ public sealed class ConditionalQueryOperationsTests : TestsBase
         Specification<Student> configured = root.OrderBy(s => s.Name, false);
 
         Assert.Same(root, configured);
-        Assert.Same(root.GetWhereExpression(), configured.GetWhereExpression());
-        Assert.Empty(configured.SpecificationData.OrderExpressions);
-        Assert.Null(configured.SpecificationData.SkipQ);
-        Assert.Null(configured.SpecificationData.TakeQ);
+        Assert.Same(root.WhereStep()?.Expressions[0], configured.WhereStep()?.Expressions[0]);
+        Assert.Empty(configured.OrderingSteps());
+        Assert.Null(configured.LastStep("Skip")?.Count);
+        Assert.Null(configured.LastStep("Take")?.Count);
 
         var unchanged = configured
             .OrderBy(s => s.Age, false)
@@ -59,7 +59,7 @@ public sealed class ConditionalQueryOperationsTests : TestsBase
         Assert.Same(configured, unchanged);
         Assert.Equal(new[] { 20, 22, 30 },
             Students.BySpecification(unchanged).Select(s => s.Age).OrderBy(age => age).ToArray());
-        Assert.Empty(root.SpecificationData.OrderExpressions);
+        Assert.Empty(root.OrderingSteps());
     }
 
     [Fact]
@@ -77,17 +77,17 @@ public sealed class ConditionalQueryOperationsTests : TestsBase
             .ThenBy(age, false)
             .ThenBy(name, true);
 
-        var keys = spec.SpecificationData.OrderExpressions;
+        var keys = spec.OrderingSteps();
         Assert.Equal(3, keys.Count);
         Assert.Equal(new[]
         {
             OrderDirectionEnum.Descending,
             OrderDirectionEnum.Descending,
             OrderDirectionEnum.Ascending
-        }, keys.Select(key => key.direction));
-        Assert.Same(age, keys[0].expr);
-        Assert.Same(id, keys[1].expr);
-        Assert.Same(name, keys[2].expr);
+        }, keys.Select(key => key.Direction));
+        Assert.Same(age, keys[0].Expressions[0]);
+        Assert.Same(id, keys[1].Expressions[0]);
+        Assert.Same(name, keys[2].Expressions[0]);
         Assert.Equal(new[] { 30, 22, 20 },
             Students.BySpecification(spec).Select(s => s.Age).ToArray());
     }

@@ -11,7 +11,22 @@ public sealed record QueryPipelineStep(
     Type InputType,
     Type OutputType,
     IReadOnlyList<LambdaExpression> Expressions,
-    bool IsKeysetOrderingBlock);
+    bool IsKeysetOrderingBlock)
+{
+    /// <summary>The configured value for Skip or Take; null for other operations.</summary>
+    public int? Count { get; init; }
+
+    /// <summary>Indicates whether the step contributes an ordering key.</summary>
+    public bool IsOrdering => Operation is "OrderBy" or "OrderByDesc" or "ThenBy" or "ThenByDesc";
+
+    /// <summary>The direction of an ordering step.</summary>
+    public OrderDirectionEnum Direction => Operation switch
+    {
+        "OrderBy" or "ThenBy" => OrderDirectionEnum.Ascending,
+        "OrderByDesc" or "ThenByDesc" => OrderDirectionEnum.Descending,
+        _ => throw new InvalidOperationException("Direction is only available for ordering steps.")
+    };
+}
 
 internal readonly record struct PipelineOperation(
     string Kind,
@@ -130,7 +145,7 @@ internal sealed class AppendPipeline<TSource, TBefore, TCurrent> : QueryPipeline
     {
         _previous.Describe(steps);
         steps.Add(new QueryPipelineStep(steps.Count, Stage.Id, _operation,
-            typeof(TBefore), typeof(TCurrent), _expressions, false));
+            typeof(TBefore), typeof(TCurrent), _expressions, false) { Count = _count });
     }
 
     internal override void CollectOperations(List<PipelineOperation> operations)

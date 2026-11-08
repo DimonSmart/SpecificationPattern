@@ -348,16 +348,17 @@ conditional operation does not interrupt a block. After `SeekAfter`, adding
 any sorting key in the same stage is forbidden. Keyset cursors must provide
 values for all keys in the current block.
 
-The `SpecificationData.OrderExpressions` diagnostic property exposes a
-**read-only, independent snapshot** of
-`IReadOnlyList<(OrderDirectionEnum direction, LambdaExpression expr)>`.
-Items retain their insertion order, direction and original selector;
-`expr.ReturnType` reports the runtime key type (for example `typeof(int)`).
-The diagnostic snapshot cannot alter query execution. The same information
-is available through `EFCoreSpecification.SpecificationData`.
+The `PipelineSteps` property is the single read-only diagnostic view for
+both core and EF Core specifications. Ordering steps have `IsOrdering = true`,
+expose their `Direction` and retain the original typed selector in
+`Expressions[0]` (`ReturnType` gives the runtime key type).
+`Skip` and `Take` steps expose their configured `Count`. The snapshot
+cannot alter query execution.
 
-This changes the old non-generic ordering method signatures and the former
-mutable `OrderExpressions` list API. Normal lambda expressions and explicitly
+The v4 diagnostic API removes the old `SpecificationData`,
+`ISpecificationData<T>` and `GetWhereExpression()` APIs. Use
+`PipelineSteps` to inspect operations and expressions in execution order.
+Normal lambda expressions and explicitly
 typed `Expression<Func<Student, int>>` selectors continue to work. A
 user-supplied `Expression<Func<Student, object>>`, or an explicit cast
 `s => (object)s.Age`, still has `TKey = object`; the library does not remove
@@ -944,10 +945,10 @@ int total = await dbContext.BySpecificationCriteria(spec).CountAsync();
 ```
 
 `SelectMany(collectionSelector, resultSelector)` is also supported. The
-`PipelineSteps` snapshot exposes the ordered operations, stage IDs, element
-types and original expression trees. Older `SpecificationData` fields remain
-available only for pipelines representable by the v2 canonical normal form.
-Nonrepresentable legacy access throws `NotSupportedException`.
+PipelineSteps` snapshot exposes ordered operations, stage IDs, element
+types, original expression trees, ordering direction and paging counts.
+The old source-stage `SpecificationData` diagnostic API has been removed
+in v4; see [Migration to v4](docs/Migration-to-v4.md).
 
 ## Supported operations
 

@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
-		<Version>3.0.0</Version>
+		<Version>4.0.0</Version>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -15,7 +15,7 @@
 		<RepositoryUrl>https://github.com/DimonSmart/SpecificationPattern</RepositoryUrl>
 		<PackageTags>Specification;IQueryable</PackageTags>
 		<PackageLicenseExpression>0BSD</PackageLicenseExpression>
-		<PackageReleaseNotes>3.0.0: Ordered LINQ query pipeline execution, continuable projections, keyset pagination and updated composition semantics. See docs/Migration-to-v3.md in the repository.</PackageReleaseNotes>
+		<PackageReleaseNotes>4.0.0: Removed the legacy SpecificationData diagnostic API and parallel source configuration state. PipelineSteps is the supported diagnostic API, including ordering direction and paging counts. See docs/Migration-to-v4.md.</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<ItemGroup>

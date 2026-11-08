@@ -29,7 +29,7 @@ public class DocumentationInheritanceTests
 
         var ordered = specification.OrderBy(s => s.Age);
 
-        specification.SpecificationData.OrderExpressions.Should().BeEmpty();
-        ordered.SpecificationData.OrderExpressions.Should().HaveCount(1);
+        specification.OrderingSteps().Should().BeEmpty();
+        ordered.OrderingSteps().Should().HaveCount(1);
     }
 }

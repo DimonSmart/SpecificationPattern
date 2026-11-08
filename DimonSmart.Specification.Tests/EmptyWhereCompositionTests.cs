@@ -13,10 +13,10 @@ public sealed class EmptyWhereCompositionTests : TestsBase
         var unfiltered = Specification.Create<Student>();
         var result = unfilteredOnLeft ? unfiltered.Or(filtered) : filtered.Or(unfiltered);
 
-        Assert.Null(result.GetWhereExpression());
+        Assert.Null(result.WhereStep()?.Expressions[0]);
         Assert.Equal(Students.Count(), Students.BySpecification(result).Count());
         Assert.Equal(Students.Count(), Students.AsEnumerable().BySpecification(result).Count());
-        Assert.NotNull(filtered.GetWhereExpression());
+        Assert.NotNull(filtered.WhereStep()?.Expressions[0]);
     }
 
     [Fact]
@@ -24,7 +24,7 @@ public sealed class EmptyWhereCompositionTests : TestsBase
     {
         var result = Specification.Create<Student>().Or(Specification.Create<Student>());
 
-        Assert.Null(result.GetWhereExpression());
+        Assert.Null(result.WhereStep()?.Expressions[0]);
         Assert.Equal(Students.Count(), Students.BySpecification(result).Count());
     }
 
@@ -34,7 +34,7 @@ public sealed class EmptyWhereCompositionTests : TestsBase
         var filtered = Specification.Create<Student>().Where(s => s.Age >= 22);
         var skipped = Specification.Create<Student>().Where(s => s.Age < 20, false);
 
-        Assert.Null(filtered.Or(skipped).GetWhereExpression());
+        Assert.Null(filtered.Or(skipped).WhereStep()?.Expressions[0]);
         Assert.Equal(Students.Count(), Students.BySpecification(filtered.Or(skipped)).Count());
     }
 
@@ -47,7 +47,7 @@ public sealed class EmptyWhereCompositionTests : TestsBase
         var unfiltered = Specification.Create<Student>();
         var result = unfilteredOnLeft ? unfiltered.And(filtered) : filtered.And(unfiltered);
 
-        Assert.NotNull(result.GetWhereExpression());
+        Assert.NotNull(result.WhereStep()?.Expressions[0]);
         Assert.Equal(2, Students.BySpecification(result).Count());
     }
 
@@ -58,14 +58,16 @@ public sealed class EmptyWhereCompositionTests : TestsBase
         var unfilteredConfigured = Specification.Create<Student>().OrderBy(s => s.Age).Take(2);
         var combined = filtered.Or(unfilteredConfigured);
 
-        Assert.Null(combined.GetWhereExpression());
+        Assert.Null(combined.WhereStep()?.Expressions[0]);
         Assert.Equal(new[] { 20, 22 }, Students.BySpecification(combined).Select(s => s.Age).ToArray());
 
         var narrowed = combined.Where(s => s.Age >= 22);
         Assert.Equal(new[] { 22 }, Students.BySpecification(narrowed).Select(s => s.Age).ToArray());
-        Assert.Throws<NotSupportedException>(() => narrowed.GetWhereExpression());
-        Assert.Null(combined.GetWhereExpression());
-        Assert.NotNull(filtered.GetWhereExpression());
+        Assert.Equal(new[] { "OrderBy", "Take", "Where" },
+            narrowed.PipelineSteps.Select(step => step.Operation));
+        Assert.Throws<InvalidOperationException>(() => narrowed.EnsureCompatibleWith(Specification.Create<Student>()));
+        Assert.Null(combined.WhereStep()?.Expressions[0]);
+        Assert.NotNull(filtered.WhereStep()?.Expressions[0]);
     }
 
     [Fact]

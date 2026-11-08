@@ -25,7 +25,6 @@ public class EFCoreSpecification<T> : IEFCoreSpecification<T>
         Options = source.Options;
     }
 
-    public ISpecificationData<T> SpecificationData => Core.SpecificationData;
     public IReadOnlyList<QueryPipelineStep> PipelineSteps => Core.PipelineSteps;
 
     /// <summary>

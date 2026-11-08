@@ -93,7 +93,8 @@ public sealed class ComposablePipelineTests
         Assert.Equal(new[] { "OrderBy", "OrderBy" },
             repeated.PipelineSteps.Select(s => s.Operation));
         Assert.Equal("OrderBy", ((System.Linq.Expressions.MethodCallExpression)query.Expression).Method.Name);
-        Assert.Throws<NotSupportedException>(() => _ = repeated.SpecificationData);
+        Assert.Throws<InvalidOperationException>(() =>
+            repeated.EnsureCompatibleWith(Specification.Create<Student>()));
 
         Assert.Throws<InvalidOperationException>(() =>
             Specification.Create<Student>().OrderBy(s => s.Id)
@@ -118,11 +119,11 @@ public sealed class ComposablePipelineTests
     }
 
     [Fact]
-    public void SourceLateWhereIsExecutableButNotCanonicallyComposableOrLegacyRepresentable()
+    public void SourceLateWhereIsExecutableButNotCanonicallyComposable()
     {
         var spec = Specification.Create<Student>().Take(1).Where(s => s.Age > 20);
         Assert.Empty(StudentsData().AsQueryable().BySpecification(spec));
-        Assert.Throws<NotSupportedException>(() => spec.GetWhereExpression());
+        Assert.Equal(new[] { "Take", "Where" }, spec.PipelineSteps.Select(step => step.Operation));
         Assert.Throws<InvalidOperationException>(() =>
             spec.EnsureCompatibleWith(Specification.Create<Student>()));
         Assert.Throws<InvalidOperationException>(() =>

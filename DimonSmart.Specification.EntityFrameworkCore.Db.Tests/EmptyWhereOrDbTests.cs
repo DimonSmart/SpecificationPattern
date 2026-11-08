@@ -17,7 +17,7 @@ public sealed class EmptyWhereOrDbTests(DatabaseFixture fixture)
         var unfiltered = EFCoreSpecification.Create<Student>();
         var combined = unfilteredOnLeft ? unfiltered.Or(filtered) : filtered.Or(unfiltered);
 
-        Assert.Null(combined.SpecificationData.WhereExpression);
+        Assert.Null(combined.WhereStep()?.Expressions[0]);
         var query = _db.Students.BySpecification(combined);
         Assert.DoesNotContain("WHERE", query.ToQueryString(), StringComparison.OrdinalIgnoreCase);
         Assert.Equal(await _db.Students.CountAsync(), await query.CountAsync());
@@ -33,7 +33,7 @@ public sealed class EmptyWhereOrDbTests(DatabaseFixture fixture)
             .AsNoTracking().OrderBy(s => s.Age).Take(2).TagWith("EMPTY_WHERE_OR");
         var combined = filtered.Or(options);
 
-        Assert.Null(combined.SpecificationData.WhereExpression);
+        Assert.Null(combined.WhereStep()?.Expressions[0]);
         var query = _db.Students.BySpecification(combined);
         var sql = query.ToQueryString();
         Assert.DoesNotContain("\nWHERE ", sql, StringComparison.OrdinalIgnoreCase);

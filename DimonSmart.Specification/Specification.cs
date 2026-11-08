@@ -23,22 +23,7 @@ public class Specification<T> : ISpecification<T> where T : class
     }
 
     internal QueryPipeline<T, T> Pipeline => _pipeline;
-    internal SpecificationData<T> Data
-    {
-        get
-        {
-            try { return SourceOperations<T>.Analyze(_pipeline, "legacy diagnostic").ToData(); }
-            catch (InvalidOperationException error)
-            {
-                throw new NotSupportedException(
-                    "This LINQ pipeline cannot be represented by legacy SpecificationData; inspect PipelineSteps instead.", error);
-            }
-        }
-    }
-    public ISpecificationData<T> SpecificationData => Data;
     public IReadOnlyList<QueryPipelineStep> PipelineSteps => _pipeline.Snapshot();
-
-    public Expression<Func<T, bool>>? GetWhereExpression() => Data.WhereExpression;
 
     /// <summary>
     /// Checks only filtering criteria against one entity. Ordering, paging and seek boundaries
@@ -206,7 +191,7 @@ public class Specification<T> : ISpecification<T> where T : class
         if ((left.Boundary is not null || right.Boundary is not null) &&
             (left.Skip.HasValue || right.Skip.HasValue))
             throw new InvalidOperationException($"Cannot combine using {operation}: Skip conflicts with SeekAfter.");
-        if (left.Orders.Count != 0 && right.Orders.Count != 0)
+        if (!left.Orders.IsEmpty && !right.Orders.IsEmpty)
             throw new InvalidOperationException($"Cannot combine using {operation}: conflicting ordering.");
         if (left.Skip.HasValue && right.Skip.HasValue)
             throw new InvalidOperationException($"Cannot combine using {operation}: competing Skip.");
@@ -231,12 +216,12 @@ public class Specification<T> : ISpecification<T> where T : class
         if (predicate is not null)
             combined = combined.Where(predicate);
 
-        var orders = left.Orders.Count != 0 ? left.Orders : right.Orders;
+        var orders = !left.Orders.IsEmpty ? left.Orders : right.Orders;
         var boundary = left.Boundary ?? right.Boundary;
-        if (orders.Count != 0)
+        if (!orders.IsEmpty)
         {
             QueryPipeline<T, T> next = new OrderedPipeline<T, T>(
-                combined._pipeline, orders.ToImmutableArray(), boundary,
+                combined._pipeline, orders, boundary,
                 boundary is null ? null : combined._pipeline.Stage with { HasSeek = true });
             combined = new Specification<T>(next);
         }
@@ -249,32 +234,27 @@ public class Specification<T> : ISpecification<T> where T : class
     }
 }
 
-internal sealed class SourceConfiguration<T>
-{
-    internal Expression<Func<T, bool>>? Predicate { get; set; }
-    internal List<IOrderClause<T>> Orders { get; } = new();
-    internal SeekBoundary? Boundary { get; set; }
-    internal int? Skip { get; set; }
-    internal int? Take { get; set; }
-
-    internal SpecificationData<T> ToData() => new()
-    {
-        WhereExpression = Predicate,
-        OrderClauses = new List<IOrderClause<T>>(Orders),
-        SkipQ = Skip,
-        TakeQ = Take
-    };
-}
-
-/// <summary>Analyzes canonical source-stage operations extracted from the executable pipeline.</summary>
+/// <summary>
+/// Validates and reads the canonical source-stage view of a query pipeline for And/Or.
+/// This is computed on demand; the executable pipeline remains the only stored state.
+/// </summary>
 internal static class SourceOperations<T> where T : class
 {
-    internal static SourceConfiguration<T> Analyze(
-        QueryPipeline<T, T> pipeline, string operation)
+    internal static (
+        Expression<Func<T, bool>>? Predicate,
+        ImmutableArray<IOrderClause<T>> Orders,
+        SeekBoundary? Boundary,
+        int? Skip,
+        int? Take) Analyze(QueryPipeline<T, T> pipeline, string operation)
     {
-        var result = new SourceConfiguration<T>();
+        Expression<Func<T, bool>>? predicate = null;
+        var orders = ImmutableArray.CreateBuilder<IOrderClause<T>>();
+        SeekBoundary? boundary = null;
+        int? skip = null;
+        int? take = null;
         // 0: predicates, 1: ordering, 2: seek, 3: skip, 4: take
         var phase = 0;
+
         foreach (var item in pipeline.Operations())
         {
             switch (item.Kind)
@@ -282,43 +262,43 @@ internal static class SourceOperations<T> where T : class
                 case "Where":
                     if (phase != 0)
                         throw new InvalidOperationException($"Cannot use {operation}: late Where after query configuration.");
-                    var predicate = (Expression<Func<T, bool>>)item.Predicate!;
-                    result.Predicate = result.Predicate is null ? predicate :
-                        ExpressionOperations.CombineExpressions(
-                            result.Predicate, predicate, Expression.AndAlso);
+                    var current = (Expression<Func<T, bool>>)item.Predicate!;
+                    predicate = predicate is null ? current :
+                        ExpressionOperations.CombineExpressions(predicate, current, Expression.AndAlso);
                     break;
                 case "OrderBy":
                     if (phase != 0)
                         throw new InvalidOperationException($"Cannot use {operation}: conflicting ordering blocks.");
                     phase = 1;
-                    result.Orders.Add((IOrderClause<T>)item.Order!);
+                    orders.Add((IOrderClause<T>)item.Order!);
                     break;
                 case "ThenBy":
                     if (phase != 1)
                         throw new InvalidOperationException($"Cannot use {operation}: disjoint ThenBy.");
-                    result.Orders.Add((IOrderClause<T>)item.Order!);
+                    orders.Add((IOrderClause<T>)item.Order!);
                     break;
                 case "SeekAfter":
-                    if (phase != 1 || result.Boundary is not null)
+                    if (phase != 1 || boundary is not null)
                         throw new InvalidOperationException($"Cannot use {operation}: conflicting SeekAfter.");
                     phase = 2;
-                    result.Boundary = item.Boundary;
+                    boundary = item.Boundary;
                     break;
                 case "Skip":
-                    if (phase > 3 || result.Skip.HasValue || result.Boundary is not null)
+                    if (phase > 3 || skip.HasValue || boundary is not null)
                         throw new InvalidOperationException($"Cannot use {operation}: competing Skip or SeekAfter.");
                     phase = 3;
-                    result.Skip = item.Count;
+                    skip = item.Count;
                     break;
                 case "Take":
-                    if (phase > 4 || result.Take.HasValue)
+                    if (phase > 4 || take.HasValue)
                         throw new InvalidOperationException($"Cannot use {operation}: competing Take.");
                     phase = 4;
-                    result.Take = item.Count;
+                    take = item.Count;
                     break;
             }
         }
-        return result;
+
+        return (predicate, orders.ToImmutable(), boundary, skip, take);
     }
 }
 

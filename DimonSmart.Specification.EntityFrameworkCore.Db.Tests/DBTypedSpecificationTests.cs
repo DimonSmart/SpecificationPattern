@@ -94,8 +94,8 @@ public class DBTypedSpecificationTests : TestsBase
             .Where(s => s.Age > 18);
 
         var configured = source.Take(1);
-        source.SpecificationData.TakeQ.Should().BeNull();
-        configured.SpecificationData.TakeQ.Should().Be(1);
+        source.LastStep("Take")?.Count.Should().BeNull();
+        configured.LastStep("Take")?.Count.Should().Be(1);
         source.EFCoreSpecificationData.Includes.Should().ContainSingle().Which.Should().Be("School");
     }
 }

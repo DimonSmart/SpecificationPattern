@@ -134,9 +134,9 @@ public sealed class CriteriaOnlyTests : TestsBase
         Assert.Equal(3, Students.BySpecificationCriteria(specification).Count());
         Assert.Equal(original, Students.BySpecification(specification).Select(s => s.Age).ToArray());
         Assert.Equal(new[] { 22 }, original);
-        Assert.Equal(1, specification.SpecificationData.SkipQ);
-        Assert.Equal(1, specification.SpecificationData.TakeQ);
-        Assert.Single(specification.SpecificationData.OrderExpressions);
+        Assert.Equal(1, specification.LastStep("Skip")?.Count);
+        Assert.Equal(1, specification.LastStep("Take")?.Count);
+        Assert.Single(specification.OrderingSteps());
 
         var other = Specification.Create<Student>().OrderByDesc(s => s.Name);
         Assert.Throws<InvalidOperationException>(() => specification.And(other));
