@@ -180,7 +180,11 @@ public class Specification<T> : ISpecification<T> where T : class
     internal void EnsureCompatibleWith(Specification<T> other, string operation) =>
         _ = AnalyzeCombination(other, operation);
 
-    private (SourceConfiguration<T> Left, SourceConfiguration<T> Right) AnalyzeCombination(
+    private (
+        (Expression<Func<T, bool>>? Predicate, ImmutableArray<IOrderClause<T>> Orders,
+            SeekBoundary? Boundary, int? Skip, int? Take) Left,
+        (Expression<Func<T, bool>>? Predicate, ImmutableArray<IOrderClause<T>> Orders,
+            SeekBoundary? Boundary, int? Skip, int? Take) Right) AnalyzeCombination(
         Specification<T> other, string operation)
     {
         ArgumentNullException.ThrowIfNull(other);
