@@ -105,7 +105,7 @@ It creates a new specification by **appending the entire supplied projected
 pipeline** after the source pipeline, without materialization. This includes
 any filters and pagination within the supplied projected specification;
 it is intentionally more than just copying a final selector. All operations
-retain their LINQ v3 order. For reuse of only a mapping, define the
+preserve their configured LINQ operation order. For reuse of only a mapping, define the
 projection with `Select` or `SelectMany` but no additional query operations.
 
 ```csharp
@@ -250,8 +250,6 @@ public static class DynamicEFCoreSpecificationExample
 }
 ```
 
-See [Migration to v3](Migration-to-v3.md) for changes to LINQ operator ordering, composition, keyset pagination and diagnostics. The [v2 guide](Migration-to-v2.md) remains available.
-
 ### IEnumerable overloads (no AsQueryable required)
 
 Both the ordinary and projected `BySpecification` methods also accept `IEnumerable<T>`
@@ -357,9 +355,6 @@ expose their `Direction` and retain the original typed selector in
 `Skip` and `Take` steps expose their configured `Count`. The snapshot
 cannot alter query execution.
 
-The v4 diagnostic API removes the old `SpecificationData`,
-`ISpecificationData<T>` and `GetWhereExpression()` APIs. Use
-`PipelineSteps` to inspect operations and expressions in execution order.
 Normal lambda expressions and explicitly
 typed `Expression<Func<Student, int>>` selectors continue to work. A
 user-supplied `Expression<Func<Student, object>>`, or an explicit cast
@@ -367,9 +362,9 @@ user-supplied `Expression<Func<Student, object>>`, or an explicit cast
 that cast or guarantee database translation of user-authored conversions.
 No library-generated boxing conversion is introduced for naturally typed keys.
 
-Immutable branches and runtime configuration conflict checks remain. Unlike v2,
-the evaluation order of `Where`, sorting, `Skip`, `Take`, `Select` and
-`SelectMany` is exactly the order in which they are configured. For example,
+Specifications are immutable, and composition checks for incompatible
+configurations. The evaluation order of `Where`, sorting, `Skip`, `Take`,
+`Select` and `SelectMany` is exactly the order in which they are configured. For example,
 `Take(10).Where(predicate)` filters only those ten input elements.
 
 ### Conditional ordering and pagination
@@ -949,8 +944,6 @@ int total = await dbContext.BySpecificationCriteria(spec).CountAsync();
 `SelectMany(collectionSelector, resultSelector)` is also supported. The
 `PipelineSteps` snapshot exposes ordered operations, stage IDs, element
 types, original expression trees, ordering direction and paging counts.
-The old source-stage `SpecificationData` diagnostic API has been removed
-in v4; see [Migration to v4](Migration-to-v4.md).
 
 ## Supported operations
 

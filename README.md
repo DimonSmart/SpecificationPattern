@@ -156,6 +156,5 @@ For exact signatures, supported operations, and constraints, follow the [SHOWCAS
 - **[SHOWCASE.md](SHOWCASE.md)** — practical recipes organized around problems you need to solve.
 - **[Complete API reference](docs/REFERENCE.md)** — deeper explanations, signatures, constraints, and compiled examples.
 - **[Keyset pagination details](docs/KeysetPagination-v1.md)** — cursor limitations and ordering requirements.
-- [Migrating to v4](docs/Migration-to-v4.md) · [v3](docs/Migration-to-v3.md) · [v2](docs/Migration-to-v2.md).
 
 **Describe queries once. Compose them anywhere. Keep your repositories small.**

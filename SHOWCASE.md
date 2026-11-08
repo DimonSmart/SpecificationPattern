@@ -325,4 +325,4 @@ In the **production C# implementation**, `object` is not used as a generic bucke
 
 This is a statement about **library-generated code**, not a restriction on caller code: callers can explicitly provide a selector such as `s => (object)s.Age`, and the library does not rewrite it. Also, not every usage error can be caught by the C# compiler: `SeekAfter` validates the cursor's compatibility with the runtime ordering block when building the specification. EF Core providers can impose additional translation limits.
 
-**Next:** [Back to README](README.md) · [Complete API reference](docs/REFERENCE.md) · [Migration guide](docs/Migration-to-v4.md)
+**Next:** [Back to README](README.md) · [Complete API reference](docs/REFERENCE.md)
