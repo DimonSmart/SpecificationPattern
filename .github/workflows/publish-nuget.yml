@@ -1,0 +1,152 @@
+name: Publish NuGet
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: specification-nuget-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate release tag and branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Expected vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+
+          git fetch origin "refs/heads/main:refs/remotes/origin/main" --no-tags
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Release tags must reference a commit on main."
+            exit 1
+          fi
+
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Validate documentation examples
+        run: python3 scripts/check_documentation_examples.py
+
+      - name: Restore
+        run: dotnet restore DimonSmart.Specification.sln
+
+      - name: Test
+        run: dotnet test DimonSmart.Specification.sln --no-restore --configuration Release
+
+      - name: Pack both packages using the tag version
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          for project in \
+            DimonSmart.Specification/DimonSmart.Specification.csproj \
+            DimonSmart.Specification.EntityFrameworkCore/DimonSmart.Specification.EntityFrameworkCore.csproj
+          do
+            dotnet pack "$project" \
+              --configuration Release \
+              --no-restore \
+              --output artifacts \
+              -p:GeneratePackageOnBuild=false \
+              -p:Version="$VERSION" \
+              -p:PackageVersion="$VERSION" \
+              -p:PackageReleaseNotes="https://github.com/DimonSmart/SpecificationPattern/releases/tag/$GITHUB_REF_NAME"
+          done
+
+      - name: Verify package versions and dependency
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from zipfile import ZipFile
+          import xml.etree.ElementTree as ET
+
+          version = os.environ["VERSION"]
+          package_ids = [
+              "DimonSmart.Specification",
+              "DimonSmart.Specification.EntityFrameworkCore",
+          ]
+          expected = {f"{package_id}.{version}.nupkg" for package_id in package_ids}
+          actual = {path.name for path in Path("artifacts").glob("*.nupkg")}
+          assert actual == expected, f"Expected {expected}, found {actual}"
+
+          for package_id in package_ids:
+              path = Path("artifacts") / f"{package_id}.{version}.nupkg"
+              with ZipFile(path) as archive:
+                  nuspec = [name for name in archive.namelist() if name.endswith(".nuspec")]
+                  assert len(nuspec) == 1, f"Invalid .nuspec in {path}"
+                  root = ET.fromstring(archive.read(nuspec[0]))
+
+              elements = list(root.iter())
+              local_name = lambda el: el.tag.rsplit("}", 1)[-1]
+              metadata = next(el for el in elements if local_name(el) == "metadata")
+              values = {local_name(el): el.text for el in metadata if local_name(el) in ("id", "version")}
+              assert values == {"id": package_id, "version": version}, values
+
+              if package_id.endswith(".EntityFrameworkCore"):
+                  dependencies = [
+                      el for el in elements
+                      if local_name(el) == "dependency"
+                      and el.get("id") == "DimonSmart.Specification"
+                  ]
+                  assert len(dependencies) == 1, f"Missing core dependency in {path}"
+                  dependency_version = dependencies[0].get("version", "")
+                  assert version in dependency_version, dependency_version
+
+          print(f"Validated both {version} packages and EF Core's dependency.")
+          PY
+
+      - name: Authenticate to NuGet.org using GitHub OIDC
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: DimonSmart
+
+      - name: Publish NuGet packages
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: |
+          set -euo pipefail
+          for package_id in DimonSmart.Specification DimonSmart.Specification.EntityFrameworkCore; do
+            dotnet nuget push "artifacts/$package_id.$VERSION.nupkg" \
+              --source "https://api.nuget.org/v3/index.json" \
+              --api-key "$NUGET_API_KEY" \
+              --skip-duplicate
+          done
+
+      - name: Create GitHub release with packages
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            echo "GitHub release already exists; leaving it unchanged."
+          else
+            gh release create "$GITHUB_REF_NAME" artifacts/*.nupkg \
+              --verify-tag \
+              --title "SpecificationPattern $GITHUB_REF_NAME" \
+              --generate-notes
+          fi
