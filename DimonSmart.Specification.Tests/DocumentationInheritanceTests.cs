@@ -1,5 +1,6 @@
 using DocumentationExamples;
 using FluentAssertions;
+using DimonSmart.Specification.Tests.Common;
 
 namespace DimonSmart.Specification.Tests;
 
