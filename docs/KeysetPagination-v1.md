@@ -3,7 +3,7 @@
 ## Goal
 Provide forward-only keyset pagination over existing immutable LINQ and EF Core specifications.
 The implementation reuses typed `OrderClause<TEntity, TKey>` expressions, performs no materialization,
-and preserves immutable canonical `And`/`Or` semantics. The v3 pipeline\nrequires consecutive `OrderBy`/`ThenBy` calls and disallows `Take` before `SeekAfter`.
+and preserves immutable canonical `And`/`Or` semantics. The pipeline requires consecutive `OrderBy`/`ThenBy` calls and disallows `Take` before `SeekAfter`.
 
 ## Public API
 ```csharp
@@ -16,8 +16,8 @@ var page = EFCoreSpecification.Create<Order>()
 ```
 
 - `SeekAfter(value)` accepts a single key value; `SeekAfter((a, b, ...))` accepts
-  one typed ValueTuple element per ordering clause. Types and arity are validated
-  when creating the specification.
+  typed tuples with 2–7 elements, one per ordering clause. Types and arity are
+  validated when creating the specification.
 - Cursor values **exclude** the row at the boundary. Ascending keys use `>`;
   descending keys use `<`. Ties are resolved lexicographically across every key.
 - At least one `OrderBy`/`OrderByDesc` is required before `SeekAfter`.
@@ -39,7 +39,8 @@ var page = EFCoreSpecification.Create<Order>()
   the ordering key sequence at the C# type level.
 
 ## Correctness and performance
-- Preserve original selector expression trees and create typed comparisons without
+- Preserve original selector expression trees and typed cursor values (no `object[]`,
+  `ITuple` extraction, or cast back from `object`); create comparisons without
   `Expression.Compile`, LINQ-to-Objects fallback, or intermediate materialization.
 - Capture boundary values for EF Core parameter extraction rather than embedding
   constant SQL values.
@@ -55,5 +56,5 @@ var page = EFCoreSpecification.Create<Order>()
 3. Validation for missing order, wrong arity or type, unsupported keys, `Skip`, repeated
    cursors and ordering changes.
 4. Correct `And`/`Or` semantics, including `Where`, `Take`, and `Select`.
-5. Both packages compile on .NET 10; README sample is a compiled documentation example
-   and the full GitHub Actions test workflow passes.
+5. Both packages compile on .NET 10; the API-reference example is checked against
+   compiled source and the GitHub Actions test workflow passes.
