@@ -36,6 +36,27 @@ public sealed class SeekAfterDbTests
         Assert.Equal(all.Skip(1).Select(x => x.Id), query.ToArray());
     }
 
+    [Fact]
+    public void SqliteTranslatesSeekAfterOnProjectedStage()
+    {
+        var anchor = _db.Students.AsNoTracking()
+            .OrderByDescending(x => x.Age).ThenBy(x => x.Id).First();
+
+        var spec = EFCoreSpecification.Create<Student>()
+            .Select(x => new { x.Age, x.Id })
+            .OrderByDesc(x => x.Age)
+            .ThenBy(x => x.Id)
+            .SeekAfter((anchor.Age, anchor.Id))
+            .Take(20)
+            .Select(x => x.Id);
+
+        var query = _db.BySpecification(spec);
+        var sql = query.ToQueryString();
+        Assert.Contains("WHERE", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ORDER BY", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("OFFSET", sql, StringComparison.OrdinalIgnoreCase);
+    }
+
     public sealed class Row
     {
         public int Id { get; set; }
