@@ -6,27 +6,18 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Title>Specification for Entity Framework</Title>
-		<Description>
-			EFSpecification: Simplify querying with the Specification
-			pattern in Entity Framework Core.
-			Build expressive, composable, and reusable query specifications
-			to enhance your application's data retrieval capabilities
-			effortlessly.
-			Enjoy!
-		</Description>
+		<Title>Specifications for Entity Framework Core</Title>
+		<Description>Immutable, composable specifications for Entity Framework Core, with filtering, ordering, projections, keyset pagination, typed Include/ThenInclude and EF Core query options.</Description>
 		<Copyright>DimonSmart</Copyright>
 		<PackageProjectUrl>https://github.com/DimonSmart/SpecificationPattern</PackageProjectUrl>
 		<PackageIcon>EFCoreSpecification.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/DimonSmart/SpecificationPattern</RepositoryUrl>
-		<PackageTags>Specification;Entity Framwork Core</PackageTags>
+		<PackageTags>Specification;Entity Framework Core;EF Core;IQueryable</PackageTags>
 		<PackageLicenseExpression>0BSD</PackageLicenseExpression>
 
 
-		<PackageReleaseNotes>
-			- Added `TagWith`. [TagWith](https://github.com/DimonSmart/SpecificationPattern/releases/tag/TagWith)
-		</PackageReleaseNotes>
+		<PackageReleaseNotes>3.0.0: Composable LINQ query pipeline, continuable projections, keyset pagination, typed Include/ThenInclude and EF Core 10 support. See docs/Migration-to-v3.md in the repository.</PackageReleaseNotes>
 
 
 	</PropertyGroup>

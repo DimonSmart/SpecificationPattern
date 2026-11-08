@@ -6,11 +6,8 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Title>Specification for use with IQueriable interface</Title>
-		<Description>Specification: Simplify querying with the Specification
-pattern over IQueryable interface. Base package for the
-DimonSmart.Specification.EntityFrameworkCore
-		</Description>
+		<Title>Specifications for IQueryable and LINQ</Title>
+		<Description>Immutable, composable specifications for IQueryable and LINQ, with filtering, ordering, pagination, projections and keyset pagination. Core package for DimonSmart.Specification.EntityFrameworkCore.</Description>
 		<Copyright>DimonSmart</Copyright>
 		<PackageProjectUrl>https://github.com/DimonSmart/SpecificationPattern</PackageProjectUrl>
 		<PackageIcon>Specification.png</PackageIcon>
@@ -18,6 +15,7 @@ DimonSmart.Specification.EntityFrameworkCore
 		<RepositoryUrl>https://github.com/DimonSmart/SpecificationPattern</RepositoryUrl>
 		<PackageTags>Specification;IQueryable</PackageTags>
 		<PackageLicenseExpression>0BSD</PackageLicenseExpression>
+		<PackageReleaseNotes>3.0.0: Ordered LINQ query pipeline execution, continuable projections, keyset pagination and updated composition semantics. See docs/Migration-to-v3.md in the repository.</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -28,10 +26,6 @@ DimonSmart.Specification.EntityFrameworkCore
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="EFSpecification.png">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
 		<None Update="Specification.png">
 		  <Pack>True</Pack>
 		  <PackagePath>\</PackagePath>
