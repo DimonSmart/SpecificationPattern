@@ -7,13 +7,13 @@
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>Specifications for IQueryable and LINQ</Title>
-		<Description>Immutable, composable specifications for IQueryable and LINQ, with filtering, ordering, pagination, projections and keyset pagination. Core package for DimonSmart.Specification.EntityFrameworkCore.</Description>
+		<Description>Stop repository method explosion with immutable, strongly typed LINQ specifications. Compose reusable filters, sorting, projections and pagination without hidden object conversions in ordering selectors.</Description>
 		<Copyright>DimonSmart</Copyright>
 		<PackageProjectUrl>https://github.com/DimonSmart/SpecificationPattern</PackageProjectUrl>
 		<PackageIcon>Specification.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/DimonSmart/SpecificationPattern</RepositoryUrl>
-		<PackageTags>Specification;IQueryable</PackageTags>
+		<PackageTags>Specification;Specification Pattern;LINQ;IQueryable;Immutable;Strongly Typed;Repository Pattern</PackageTags>
 		<PackageLicenseExpression>0BSD</PackageLicenseExpression>
 		<PackageReleaseNotes>4.0.0: Removed the legacy SpecificationData diagnostic API and parallel source configuration state. PipelineSteps is the supported diagnostic API, including ordering direction and paging counts. See docs/Migration-to-v4.md.</PackageReleaseNotes>
 	</PropertyGroup>

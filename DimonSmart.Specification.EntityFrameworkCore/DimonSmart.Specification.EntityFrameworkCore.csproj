@@ -7,13 +7,13 @@
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>Specifications for Entity Framework Core</Title>
-		<Description>Immutable, composable specifications for Entity Framework Core, with filtering, ordering, projections, keyset pagination, typed Include/ThenInclude and EF Core query options.</Description>
+		<Description>One query contract instead of endless repository methods. Immutable, composable, strongly typed specifications for EF Core 10: filters, projections, typed Include, ordering and pagination.</Description>
 		<Copyright>DimonSmart</Copyright>
 		<PackageProjectUrl>https://github.com/DimonSmart/SpecificationPattern</PackageProjectUrl>
 		<PackageIcon>EFCoreSpecification.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/DimonSmart/SpecificationPattern</RepositoryUrl>
-		<PackageTags>Specification;Entity Framework Core;EF Core;IQueryable</PackageTags>
+		<PackageTags>Specification;Specification Pattern;Entity Framework Core;EF Core;IQueryable;Immutable;Repository Pattern;Strongly Typed</PackageTags>
 		<PackageLicenseExpression>0BSD</PackageLicenseExpression>
 
 
