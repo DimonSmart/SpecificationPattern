@@ -281,9 +281,9 @@ internal static class SourceOperations<T> where T : class
                 case "ThenBy":
                     if (phase != 1)
                         throw new InvalidOperationException($"Cannot use {operation}: disjoint ThenBy.");
-                    if (item is not OrderingPipelineOperation<T> ordering)
+                    if (item is not OrderingPipelineOperation<T> nextOrdering)
                         throw new InvalidOperationException("Invalid ordering operation in the source pipeline.");
-                    orders.Add(ordering.Clause);
+                    orders.Add(nextOrdering.Clause);
                     break;
                 case "SeekAfter":
                     if (phase != 1 || boundary is not null)
