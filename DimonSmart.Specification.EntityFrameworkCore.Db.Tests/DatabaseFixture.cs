@@ -25,7 +25,6 @@ public class DatabaseFixture : TestsBase, IDisposable
 
     public void Dispose()
     {
-        TestDBContext.Database.EnsureDeleted();
-        GC.SuppressFinalize(this);
+        TestDBContext.Dispose();
     }
 }
