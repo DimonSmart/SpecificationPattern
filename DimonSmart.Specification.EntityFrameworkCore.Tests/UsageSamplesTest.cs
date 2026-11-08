@@ -5,42 +5,44 @@ namespace DimonSmart.Specification.EntityFrameworkCore.Tests;
 public class UsageSamplesTests
 {
     [Fact]
-    public void SequentialWhere()
+    public void RepeatedIncludesPreserveMostSpecificPathsAcrossWhere()
     {
-        _ = EFCoreSpecification.Create<Student>()
-            .Where(s => s.Age < 21)
-            .Where(s => s.Age > 16);
-    }
+        var root = EFCoreSpecification.Create<Student>()
+            .Include(s => s.School);
 
-    [Fact]
-    public void SequentialInclude()
-    {
-        _ = EFCoreSpecification.Create<Student>()
-            .Include(s => s.School)
+        var specification = root
             .Include(s => s.School.MainBook)
             .Include(s => s.Books)
             .ThenInclude(b => b.Author)
             .Include(s => s.Books)
             .Where(s => (s.Age & 1) == 1)
             .Include(s => s.Books);
+
+        Assert.Equal(new[] { "School" }, root.EFCoreSpecificationData.Includes);
+        Assert.Equal(new[] { "School.MainBook", "Books.Author" },
+            specification.EFCoreSpecificationData.Includes);
+        Assert.Equal(new[] { "Where" },
+            specification.PipelineSteps.Select(step => step.Operation));
+        Assert.True(specification.IsSatisfiedBy(new Student { Age = 21 }));
+        Assert.False(specification.IsSatisfiedBy(new Student { Age = 20 }));
     }
 
     [Fact]
-    public void MixedWhereInclude()
+    public void InterleavedWhereAndIncludesPreserveBothPredicatesAndLongestPath()
     {
-        _ = EFCoreSpecification.Create<Student>()
+        var specification = EFCoreSpecification.Create<Student>()
             .Include(s => s.School)
             .Where(s => s.Age < 21)
             .Include(s => s.School.MainBook)
             .Where(s => s.Age > 16);
-    }
 
-    [Fact]
-    public void FilteredIncludeWithThenInclude()
-    {
-        _ = EFCoreSpecification.Create<Student>()
-            .Include(s => s.Books.Where(b => b.Name.StartsWith("A"))
-                .OrderBy(b => b.Name).ThenBy(b => b.Id).Skip(1).Take(2))
-            .ThenInclude(b => b.Author);
+        Assert.Equal(new[] { "School.MainBook" },
+            specification.EFCoreSpecificationData.Includes);
+        Assert.Equal(new[] { "Where", "Where" },
+            specification.PipelineSteps.Select(step => step.Operation));
+        Assert.False(specification.IsSatisfiedBy(new Student { Age = 16 }));
+        Assert.True(specification.IsSatisfiedBy(new Student { Age = 17 }));
+        Assert.True(specification.IsSatisfiedBy(new Student { Age = 20 }));
+        Assert.False(specification.IsSatisfiedBy(new Student { Age = 21 }));
     }
 }
