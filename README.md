@@ -24,16 +24,10 @@ GetBySchoolAndAgeSortedAsync(school, age)
 Use **one repository method** that accepts a read-only specification:
 
 ~~~csharp
-using DimonSmart.Specification.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
-
-public sealed class StudentRepository(DbContext db)
-{
-    public Task<List<Student>> ListAsync(
-        IEFCoreSpecification<Student> spec,
-        CancellationToken ct = default) =>
-        db.BySpecification(spec).ToListAsync(ct);
-}
+public Task<List<Student>> ListAsync(
+    IEFCoreSpecification<Student> spec,
+    CancellationToken ct = default) =>
+    db.BySpecification(spec).ToListAsync(ct);
 ~~~
 
 Then express each request with a small, reusable query:
