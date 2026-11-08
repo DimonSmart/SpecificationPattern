@@ -21,16 +21,34 @@ GetBySchoolAndAgeAsync(school, age)
 GetBySchoolAndAgeSortedAsync(school, age)
 ~~~
 
-Use **one repository method** that accepts a read-only specification:
+A specification describes **what you want from the repository**: which entities to select, how to filter and sort them, and how many to return. Instead of adding a method for every combination, expose **one generic repository method** that accepts a read-only specification.
+
+The repository contract:
 
 ~~~csharp
-public Task<List<Student>> ListAsync(
-    IEFCoreSpecification<Student> spec,
-    CancellationToken ct = default) =>
-    db.BySpecification(spec).ToListAsync(ct);
+public interface IRepository
+{
+    Task<List<T>> GetAsync<T>(
+        IEFCoreSpecification<T> specification,
+        CancellationToken ct = default) where T : class;
+}
 ~~~
 
-Then express each request with a small, reusable query:
+And its EF Core implementation:
+
+~~~csharp
+public sealed class EfRepository(DbContext db) : IRepository
+{
+    public Task<List<T>> GetAsync<T>(
+        IEFCoreSpecification<T> specification,
+        CancellationToken ct = default) where T : class =>
+        db.BySpecification(specification).ToListAsync(ct);
+}
+~~~
+
+The repository knows **how to execute** the query; the specification tells it **what to retrieve**. The same `GetAsync<T>` method handles different entity types and any combination of supported filters, ordering, and pagination.
+
+For example, express each request with a small, reusable specification:
 
 ~~~csharp
 var byName = EFCoreSpecification.Create<Student>()
@@ -47,8 +65,10 @@ var page = EFCoreSpecification.Create<Student>()
     .ThenBy(s => s.Id)
     .Take(20);
 
-// Same ListAsync method. No new repository methods.
-var results = await repository.ListAsync(page);
+// Same GetAsync<T> method for different queries.
+var namedStudents = await repository.GetAsync(byName);
+var adultStudents = await repository.GetAsync(adults);
+var pageResults = await repository.GetAsync(page);
 ~~~
 
 No repository pattern? Apply the same specification directly:
