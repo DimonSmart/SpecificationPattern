@@ -268,7 +268,7 @@ database-specific expressions may not be executable in memory.
 
 The following example is compiled as
 [`EnumerableBySpecificationExample.cs`](../DimonSmart.Specification.Tests/Documentation/EnumerableBySpecificationExample.cs)
-and checked against README by CI.
+and checked against this API reference by CI.
 
 <!-- compiled-example: EnumerableBySpecificationExample -->
 ```csharp
@@ -312,7 +312,7 @@ without library-generated conversions to `object`.
 
 This example is compiled as
 [`TypedOrderingExample.cs`](../DimonSmart.Specification.Tests/Documentation/TypedOrderingExample.cs)
-and checked against the README by CI.
+and checked against this API reference by CI.
 
 <!-- compiled-example: TypedOrderingExample -->
 ```csharp
@@ -438,7 +438,7 @@ The constructor preserves both LINQ operations and EF Core query options.
 
 The following example is compiled as
 [`CustomEFCoreStudentSpecification.cs`](../DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/CustomEFCoreStudentSpecification.cs)
-and checked against README by CI.
+and checked against this API reference by CI.
 
 <!-- compiled-example: CustomEFCoreStudentSpecification -->
 ```csharp
@@ -505,7 +505,7 @@ silently turn into no-ops on in-memory sources. A provider without
 
 The following example is compiled as
 [`QueryableEFCoreExample.cs`](../DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/QueryableEFCoreExample.cs)
-and checked against README by CI.
+and checked against this API reference by CI.
 
 <!-- compiled-example: QueryableEFCoreExample -->
 ```csharp
@@ -564,7 +564,7 @@ construction; it is not sent to SQL.
 
 The following example is compiled as
 [`ConditionalWhereExample.cs`](../DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/ConditionalWhereExample.cs)
-and verified against README by CI.
+and verified against this API reference by CI.
 
 <!-- compiled-example: ConditionalWhereExample -->
 ```csharp
@@ -606,7 +606,7 @@ the original Include expressions; normalization is used only for conflict detect
 
 EF Core `Include` and `ThenInclude` are executed with **original typed expressions**, including filtered collections. Paths in `EFCoreSpecificationData.Includes` are read-only diagnostics, not executable inputs.
 
-This example is compiled as [`FilteredIncludeExample.cs`](../DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/FilteredIncludeExample.cs). CI checks that this README block matches its compiled source.
+This example is compiled as [`FilteredIncludeExample.cs`](../DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/FilteredIncludeExample.cs). CI checks that this API-reference block matches its compiled source.
 
 <!-- compiled-example: FilteredIncludeExample -->
 ```csharp
@@ -645,7 +645,7 @@ Only member-access paths and the seven collection operators listed above are rec
 
 EF Core 10 supports multiple global query filters registered with `HasQueryFilter(name, predicate)`. The no-argument `.IgnoreQueryFilters()` disables **all** filters, including tenant isolation. The new `.IgnoreQueryFilters("SoftDeletionFilter")` disables **only** the named filter; e.g. `TenantFilter` remains active. Multiple names can be supplied and are accumulated by repeated calls and `And` / `Or` (left-to-right deduplicated); if either side disables all filters, the combined query disables all. Options apply once to the **entire resulting query**, not individual branches or entity types. Filter names are exact and case-sensitive in specification state; EF Core determines how they are resolved.
 
-The example registers both filters and demonstrates selective and complete disabling, `And`, `Or`, and a projection. It is compiled as [`NamedQueryFiltersExample.cs`](../DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/NamedQueryFiltersExample.cs) and verified against this README in CI.
+The example registers both filters and demonstrates selective and complete disabling, `And`, `Or`, and a projection. It is compiled as [`NamedQueryFiltersExample.cs`](../DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/NamedQueryFiltersExample.cs) and verified against this API reference in CI.
 
 <!-- compiled-example: NamedQueryFiltersExample -->
 ```csharp
@@ -756,7 +756,7 @@ It is available for LINQ `IQueryable<T>` and `IEnumerable<T>`, as well as EF Cor
 
 The following example is compiled as
 [`CriteriaOnlyEvaluationExample.cs`](../DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/CriteriaOnlyEvaluationExample.cs)
-and checked against README by CI.
+and checked against this API reference by CI.
 
 <!-- compiled-example: CriteriaOnlyEvaluationExample -->
 ```csharp
@@ -897,7 +897,7 @@ Both LINQ and EF Core specifications are supported. The ordering must be **uniqu
 
 This example is compiled as
 [`KeysetPaginationExample.cs`](../DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/KeysetPaginationExample.cs)
-and verified against README by CI.
+and verified against this API reference by CI.
 
 <!-- compiled-example: KeysetPaginationExample -->
 ```csharp
