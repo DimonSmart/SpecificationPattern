@@ -152,7 +152,25 @@ public class EFCoreSpecification<T> : IEFCoreSpecification<T>
     private EFCoreSpecification<T> WithConditionalCore(Specification<T> core, bool condition) =>
         condition ? new(core, Options) : this;
 
-    public EFCoreSpecification<T> SeekAfter<TCursor>(TCursor cursor) =>
+    public EFCoreSpecification<T> SeekAfter<TKey>(TKey cursor) =>
+        new(Core.SeekAfter(cursor), Options);
+
+    public EFCoreSpecification<T> SeekAfter<T1, T2>((T1, T2) cursor) =>
+        new(Core.SeekAfter(cursor), Options);
+
+    public EFCoreSpecification<T> SeekAfter<T1, T2, T3>((T1, T2, T3) cursor) =>
+        new(Core.SeekAfter(cursor), Options);
+
+    public EFCoreSpecification<T> SeekAfter<T1, T2, T3, T4>((T1, T2, T3, T4) cursor) =>
+        new(Core.SeekAfter(cursor), Options);
+
+    public EFCoreSpecification<T> SeekAfter<T1, T2, T3, T4, T5>((T1, T2, T3, T4, T5) cursor) =>
+        new(Core.SeekAfter(cursor), Options);
+
+    public EFCoreSpecification<T> SeekAfter<T1, T2, T3, T4, T5, T6>((T1, T2, T3, T4, T5, T6) cursor) =>
+        new(Core.SeekAfter(cursor), Options);
+
+    public EFCoreSpecification<T> SeekAfter<T1, T2, T3, T4, T5, T6, T7>((T1, T2, T3, T4, T5, T6, T7) cursor) =>
         new(Core.SeekAfter(cursor), Options);
 
     /// <summary>Explicitly enables EF Core change tracking, even when the context defaults to NoTracking.</summary>
