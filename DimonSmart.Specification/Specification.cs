@@ -274,12 +274,16 @@ internal static class SourceOperations<T> where T : class
                     if (phase != 0)
                         throw new InvalidOperationException($"Cannot use {operation}: conflicting ordering blocks.");
                     phase = 1;
-                    orders.Add((IOrderClause<T>)item.Order!);
+                    if (item is not OrderingPipelineOperation<T> ordering)
+                        throw new InvalidOperationException("Invalid ordering operation in the source pipeline.");
+                    orders.Add(ordering.Clause);
                     break;
                 case "ThenBy":
                     if (phase != 1)
                         throw new InvalidOperationException($"Cannot use {operation}: disjoint ThenBy.");
-                    orders.Add((IOrderClause<T>)item.Order!);
+                    if (item is not OrderingPipelineOperation<T> ordering)
+                        throw new InvalidOperationException("Invalid ordering operation in the source pipeline.");
+                    orders.Add(ordering.Clause);
                     break;
                 case "SeekAfter":
                     if (phase != 1 || boundary is not null)

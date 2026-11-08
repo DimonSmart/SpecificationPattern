@@ -28,12 +28,15 @@ public sealed record QueryPipelineStep(
     };
 }
 
-internal readonly record struct PipelineOperation(
+internal record PipelineOperation(
     string Kind,
     LambdaExpression? Predicate = null,
-    object? Order = null,
     int? Count = null,
     SeekBoundary? Boundary = null);
+
+internal sealed record OrderingPipelineOperation<TEntity>(
+    string Kind,
+    IOrderClause<TEntity> Clause) : PipelineOperation(Kind);
 
 internal readonly record struct PipelineStage(int Id, bool HasSkip = false, bool HasTake = false, bool HasSeek = false)
 {
@@ -231,7 +234,7 @@ internal sealed class OrderedPipeline<TSource, TCurrent> : QueryPipeline<TSource
     {
         _previous.CollectOperations(operations);
         for (var i = 0; i < Clauses.Length; i++)
-            operations.Add(new PipelineOperation(i == 0 ? "OrderBy" : "ThenBy", Order: Clauses[i]));
+            operations.Add(new OrderingPipelineOperation<TCurrent>(i == 0 ? "OrderBy" : "ThenBy", Clauses[i]));
         if (Boundary is not null)
             operations.Add(new PipelineOperation("SeekAfter", Boundary: Boundary));
     }
