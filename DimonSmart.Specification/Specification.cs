@@ -149,10 +149,60 @@ public class Specification<T> : ISpecification<T> where T : class
         return condition ? Take(count) : this;
     }
 
-    public Specification<T> SeekAfter<TCursor>(TCursor cursor)
-    {
-        return Append(PipelineOperations.SeekAfter(_pipeline, cursor));
-    }
+    public Specification<T> SeekAfter<TKey>(TKey cursor) =>
+        Append(PipelineOperations.SeekAfter(_pipeline,
+            clauses => SeekBoundary<T>.Create(clauses, SeekKey<T>.From(cursor))));
+
+    public Specification<T> SeekAfter<T1, T2>((T1, T2) cursor) =>
+        Append(PipelineOperations.SeekAfter(_pipeline,
+            clauses => SeekBoundary<T>.Create(clauses,
+            SeekKey<T>.From(cursor.Item1),
+            SeekKey<T>.From(cursor.Item2))));
+
+    public Specification<T> SeekAfter<T1, T2, T3>((T1, T2, T3) cursor) =>
+        Append(PipelineOperations.SeekAfter(_pipeline,
+            clauses => SeekBoundary<T>.Create(clauses,
+            SeekKey<T>.From(cursor.Item1),
+            SeekKey<T>.From(cursor.Item2),
+            SeekKey<T>.From(cursor.Item3))));
+
+    public Specification<T> SeekAfter<T1, T2, T3, T4>((T1, T2, T3, T4) cursor) =>
+        Append(PipelineOperations.SeekAfter(_pipeline,
+            clauses => SeekBoundary<T>.Create(clauses,
+            SeekKey<T>.From(cursor.Item1),
+            SeekKey<T>.From(cursor.Item2),
+            SeekKey<T>.From(cursor.Item3),
+            SeekKey<T>.From(cursor.Item4))));
+
+    public Specification<T> SeekAfter<T1, T2, T3, T4, T5>((T1, T2, T3, T4, T5) cursor) =>
+        Append(PipelineOperations.SeekAfter(_pipeline,
+            clauses => SeekBoundary<T>.Create(clauses,
+            SeekKey<T>.From(cursor.Item1),
+            SeekKey<T>.From(cursor.Item2),
+            SeekKey<T>.From(cursor.Item3),
+            SeekKey<T>.From(cursor.Item4),
+            SeekKey<T>.From(cursor.Item5))));
+
+    public Specification<T> SeekAfter<T1, T2, T3, T4, T5, T6>((T1, T2, T3, T4, T5, T6) cursor) =>
+        Append(PipelineOperations.SeekAfter(_pipeline,
+            clauses => SeekBoundary<T>.Create(clauses,
+            SeekKey<T>.From(cursor.Item1),
+            SeekKey<T>.From(cursor.Item2),
+            SeekKey<T>.From(cursor.Item3),
+            SeekKey<T>.From(cursor.Item4),
+            SeekKey<T>.From(cursor.Item5),
+            SeekKey<T>.From(cursor.Item6))));
+
+    public Specification<T> SeekAfter<T1, T2, T3, T4, T5, T6, T7>((T1, T2, T3, T4, T5, T6, T7) cursor) =>
+        Append(PipelineOperations.SeekAfter(_pipeline,
+            clauses => SeekBoundary<T>.Create(clauses,
+            SeekKey<T>.From(cursor.Item1),
+            SeekKey<T>.From(cursor.Item2),
+            SeekKey<T>.From(cursor.Item3),
+            SeekKey<T>.From(cursor.Item4),
+            SeekKey<T>.From(cursor.Item5),
+            SeekKey<T>.From(cursor.Item6),
+            SeekKey<T>.From(cursor.Item7))));
 
     public ProjectedSpecification<T, TResult> Select<TResult>(Expression<Func<T, TResult>> selector) =>
         new(PipelineOperations.Select(_pipeline, selector));
@@ -182,9 +232,9 @@ public class Specification<T> : ISpecification<T> where T : class
 
     private (
         (Expression<Func<T, bool>>? Predicate, ImmutableArray<IOrderClause<T>> Orders,
-            SeekBoundary? Boundary, int? Skip, int? Take) Left,
+            SeekBoundary<T>? Boundary, int? Skip, int? Take) Left,
         (Expression<Func<T, bool>>? Predicate, ImmutableArray<IOrderClause<T>> Orders,
-            SeekBoundary? Boundary, int? Skip, int? Take) Right) AnalyzeCombination(
+            SeekBoundary<T>? Boundary, int? Skip, int? Take) Right) AnalyzeCombination(
         Specification<T> other, string operation)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -247,13 +297,13 @@ internal static class SourceOperations<T> where T : class
     internal static (
         Expression<Func<T, bool>>? Predicate,
         ImmutableArray<IOrderClause<T>> Orders,
-        SeekBoundary? Boundary,
+        SeekBoundary<T>? Boundary,
         int? Skip,
         int? Take) Analyze(QueryPipeline<T, T> pipeline, string operation)
     {
         Expression<Func<T, bool>>? predicate = null;
         var orders = ImmutableArray.CreateBuilder<IOrderClause<T>>();
-        SeekBoundary? boundary = null;
+        SeekBoundary<T>? boundary = null;
         int? skip = null;
         int? take = null;
         // 0: predicates, 1: ordering, 2: seek, 3: skip, 4: take
@@ -289,7 +339,9 @@ internal static class SourceOperations<T> where T : class
                     if (phase != 1 || boundary is not null)
                         throw new InvalidOperationException($"Cannot use {operation}: conflicting SeekAfter.");
                     phase = 2;
-                    boundary = item.Boundary;
+                    if (item is not SeekPipelineOperation<T> seek)
+                        throw new InvalidOperationException("Invalid SeekAfter operation in the source pipeline.");
+                    boundary = seek.Boundary;
                     break;
                 case "Skip":
                     if (phase > 3 || skip.HasValue || boundary is not null)
