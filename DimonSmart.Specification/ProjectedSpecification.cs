@@ -85,8 +85,60 @@ public sealed class ProjectedSpecification<TSource, TCurrent> : ISpecification<T
         return condition ? Take(count) : this;
     }
 
-    public ProjectedSpecification<TSource, TCurrent> SeekAfter<TCursor>(TCursor cursor) =>
-        new(PipelineOperations.SeekAfter(Pipeline, cursor));
+    public ProjectedSpecification<TSource, TCurrent> SeekAfter<TKey>(TKey cursor) =>
+        new(PipelineOperations.SeekAfter(Pipeline,
+            clauses => SeekBoundary<TCurrent>.Create(clauses, SeekKey<TCurrent>.From(cursor))));
+
+    public ProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2>((T1, T2) cursor) =>
+        new(PipelineOperations.SeekAfter(Pipeline,
+            clauses => SeekBoundary<TCurrent>.Create(clauses,
+            SeekKey<TCurrent>.From(cursor.Item1),
+            SeekKey<TCurrent>.From(cursor.Item2))));
+
+    public ProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2, T3>((T1, T2, T3) cursor) =>
+        new(PipelineOperations.SeekAfter(Pipeline,
+            clauses => SeekBoundary<TCurrent>.Create(clauses,
+            SeekKey<TCurrent>.From(cursor.Item1),
+            SeekKey<TCurrent>.From(cursor.Item2),
+            SeekKey<TCurrent>.From(cursor.Item3))));
+
+    public ProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2, T3, T4>((T1, T2, T3, T4) cursor) =>
+        new(PipelineOperations.SeekAfter(Pipeline,
+            clauses => SeekBoundary<TCurrent>.Create(clauses,
+            SeekKey<TCurrent>.From(cursor.Item1),
+            SeekKey<TCurrent>.From(cursor.Item2),
+            SeekKey<TCurrent>.From(cursor.Item3),
+            SeekKey<TCurrent>.From(cursor.Item4))));
+
+    public ProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2, T3, T4, T5>((T1, T2, T3, T4, T5) cursor) =>
+        new(PipelineOperations.SeekAfter(Pipeline,
+            clauses => SeekBoundary<TCurrent>.Create(clauses,
+            SeekKey<TCurrent>.From(cursor.Item1),
+            SeekKey<TCurrent>.From(cursor.Item2),
+            SeekKey<TCurrent>.From(cursor.Item3),
+            SeekKey<TCurrent>.From(cursor.Item4),
+            SeekKey<TCurrent>.From(cursor.Item5))));
+
+    public ProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2, T3, T4, T5, T6>((T1, T2, T3, T4, T5, T6) cursor) =>
+        new(PipelineOperations.SeekAfter(Pipeline,
+            clauses => SeekBoundary<TCurrent>.Create(clauses,
+            SeekKey<TCurrent>.From(cursor.Item1),
+            SeekKey<TCurrent>.From(cursor.Item2),
+            SeekKey<TCurrent>.From(cursor.Item3),
+            SeekKey<TCurrent>.From(cursor.Item4),
+            SeekKey<TCurrent>.From(cursor.Item5),
+            SeekKey<TCurrent>.From(cursor.Item6))));
+
+    public ProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2, T3, T4, T5, T6, T7>((T1, T2, T3, T4, T5, T6, T7) cursor) =>
+        new(PipelineOperations.SeekAfter(Pipeline,
+            clauses => SeekBoundary<TCurrent>.Create(clauses,
+            SeekKey<TCurrent>.From(cursor.Item1),
+            SeekKey<TCurrent>.From(cursor.Item2),
+            SeekKey<TCurrent>.From(cursor.Item3),
+            SeekKey<TCurrent>.From(cursor.Item4),
+            SeekKey<TCurrent>.From(cursor.Item5),
+            SeekKey<TCurrent>.From(cursor.Item6),
+            SeekKey<TCurrent>.From(cursor.Item7))));
 
     public ProjectedSpecification<TSource, TResult> Select<TResult>(
         Expression<Func<TCurrent, TResult>> selector) =>
