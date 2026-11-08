@@ -107,7 +107,25 @@ public sealed class EFCoreProjectedSpecification<TSource, TCurrent> : IEFCoreSpe
         return condition ? Take(count) : this;
     }
 
-    public EFCoreProjectedSpecification<TSource, TCurrent> SeekAfter<TCursor>(TCursor cursor) =>
+    public EFCoreProjectedSpecification<TSource, TCurrent> SeekAfter<TKey>(TKey cursor) =>
+        With(Projection.SeekAfter(cursor));
+
+    public EFCoreProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2>((T1, T2) cursor) =>
+        With(Projection.SeekAfter(cursor));
+
+    public EFCoreProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2, T3>((T1, T2, T3) cursor) =>
+        With(Projection.SeekAfter(cursor));
+
+    public EFCoreProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2, T3, T4>((T1, T2, T3, T4) cursor) =>
+        With(Projection.SeekAfter(cursor));
+
+    public EFCoreProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2, T3, T4, T5>((T1, T2, T3, T4, T5) cursor) =>
+        With(Projection.SeekAfter(cursor));
+
+    public EFCoreProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2, T3, T4, T5, T6>((T1, T2, T3, T4, T5, T6) cursor) =>
+        With(Projection.SeekAfter(cursor));
+
+    public EFCoreProjectedSpecification<TSource, TCurrent> SeekAfter<T1, T2, T3, T4, T5, T6, T7>((T1, T2, T3, T4, T5, T6, T7) cursor) =>
         With(Projection.SeekAfter(cursor));
 
     public EFCoreProjectedSpecification<TSource, TResult> Select<TResult>(

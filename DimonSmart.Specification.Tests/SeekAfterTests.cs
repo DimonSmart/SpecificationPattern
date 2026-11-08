@@ -135,6 +135,88 @@ public sealed class SeekAfterTests
     }
 
     [Fact]
+    public void FourFiveAndSixKeyCursorsAreTyped()
+    {
+        var anchor = Items.Single(x => x.Id == 3);
+
+        var four = Specification.Create<Item>()
+            .OrderBy(x => x.Id)
+            .ThenBy(x => x.Rank)
+            .ThenBy(x => x.Sequence)
+            .ThenBy(x => x.CreatedAt)
+            .SeekAfter((anchor.Id, anchor.Rank, anchor.Sequence, anchor.CreatedAt));
+
+        var five = Specification.Create<Item>()
+            .OrderBy(x => x.Id)
+            .ThenBy(x => x.Rank)
+            .ThenBy(x => x.Sequence)
+            .ThenBy(x => x.CreatedAt)
+            .ThenBy(x => x.Amount)
+            .SeekAfter((anchor.Id, anchor.Rank, anchor.Sequence, anchor.CreatedAt, anchor.Amount));
+
+        var six = Specification.Create<Item>()
+            .OrderBy(x => x.Id)
+            .ThenBy(x => x.Rank)
+            .ThenBy(x => x.Sequence)
+            .ThenBy(x => x.CreatedAt)
+            .ThenBy(x => x.Amount)
+            .ThenBy(x => x.Day)
+            .SeekAfter((anchor.Id, anchor.Rank, anchor.Sequence,
+                anchor.CreatedAt, anchor.Amount, anchor.Day));
+
+        var expected = new[] { 4, 5, 6 };
+        Assert.Equal(expected, Items.AsQueryable().BySpecification(four).Select(x => x.Id).ToArray());
+        Assert.Equal(expected, Items.AsQueryable().BySpecification(five).Select(x => x.Id).ToArray());
+        Assert.Equal(expected, Items.AsQueryable().BySpecification(six).Select(x => x.Id).ToArray());
+    }
+
+    [Fact]
+    public void SevenKeyCursorRemainsTypedAndLexicographic()
+    {
+        var anchor = Items.Single(x => x.Id == 3);
+        var ordering = Specification.Create<Item>()
+            .OrderBy(x => x.Id)
+            .ThenBy(x => x.Rank)
+            .ThenBy(x => x.Sequence)
+            .ThenBy(x => x.CreatedAt)
+            .ThenBy(x => x.Amount)
+            .ThenBy(x => x.Day)
+            .ThenBy(x => x.Id);
+
+        var spec = ordering.SeekAfter((
+            anchor.Id, anchor.Rank, anchor.Sequence, anchor.CreatedAt,
+            anchor.Amount, anchor.Day, anchor.Id));
+
+        Assert.Equal(new[] { 4, 5, 6 },
+            Items.AsQueryable().BySpecification(spec).Select(x => x.Id).ToArray());
+    }
+
+    [Fact]
+    public void ProjectedOrderingUsesTypedCompositeCursor()
+    {
+        var spec = Specification.Create<Item>()
+            .Select(x => new { x.Id, x.Rank })
+            .OrderBy(x => x.Id)
+            .ThenBy(x => x.Rank)
+            .SeekAfter((3, 1))
+            .Take(2)
+            .Select(x => x.Id);
+
+        Assert.Equal(new[] { 4, 5 }, Items.AsQueryable().BySpecification(spec).ToArray());
+    }
+
+    [Fact]
+    public void SeekCursorCapturesItsValueWhenSpecificationIsCreated()
+    {
+        var cursor = 3;
+        var spec = Specification.Create<Item>().OrderBy(x => x.Id).SeekAfter(cursor);
+        cursor = 6;
+
+        Assert.Equal(new[] { 4, 5, 6 },
+            Items.AsQueryable().BySpecification(spec).Select(x => x.Id).ToArray());
+    }
+
+    [Fact]
     public void RejectsMissingOrderingIncorrectCursorShapeAndUnsupportedKeyTypes()
     {
         Assert.Throws<InvalidOperationException>(() => Specification.Create<Item>().SeekAfter(1));
