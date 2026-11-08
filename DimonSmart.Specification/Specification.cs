@@ -282,7 +282,6 @@ internal sealed class SourceConfiguration<T>
     {
         WhereExpression = Predicate,
         OrderClauses = new List<IOrderClause<T>>(Orders),
-        Seek = Boundary,
         SkipQ = Skip,
         TakeQ = Take
     };
