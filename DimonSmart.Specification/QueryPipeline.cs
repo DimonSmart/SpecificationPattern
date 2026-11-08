@@ -31,12 +31,14 @@ public sealed record QueryPipelineStep(
 internal record PipelineOperation(
     string Kind,
     LambdaExpression? Predicate = null,
-    int? Count = null,
-    SeekBoundary? Boundary = null);
+    int? Count = null);
 
 internal sealed record OrderingPipelineOperation<TEntity>(
     string Kind,
     IOrderClause<TEntity> Clause) : PipelineOperation(Kind);
+
+internal sealed record SeekPipelineOperation<TEntity>(
+    SeekBoundary<TEntity> Boundary) : PipelineOperation("SeekAfter");
 
 internal readonly record struct PipelineStage(int Id, bool HasSkip = false, bool HasTake = false, bool HasSeek = false)
 {
@@ -166,10 +168,10 @@ internal sealed class OrderedPipeline<TSource, TCurrent> : QueryPipeline<TSource
 {
     private readonly QueryPipeline<TSource, TCurrent> _previous;
     internal ImmutableArray<IOrderClause<TCurrent>> Clauses { get; }
-    internal SeekBoundary? Boundary { get; }
+    internal SeekBoundary<TCurrent>? Boundary { get; }
 
     internal OrderedPipeline(QueryPipeline<TSource, TCurrent> previous,
-        ImmutableArray<IOrderClause<TCurrent>> clauses, SeekBoundary? boundary = null,
+        ImmutableArray<IOrderClause<TCurrent>> clauses, SeekBoundary<TCurrent>? boundary = null,
         PipelineStage? stage = null) : base(stage ?? previous.Stage)
     {
         _previous = previous;
@@ -186,9 +188,9 @@ internal sealed class OrderedPipeline<TSource, TCurrent> : QueryPipeline<TSource
             Clauses.Add(new OrderClause<TCurrent, TKey>(selector, direction)), Boundary, Stage);
     }
 
-    internal OrderedPipeline<TSource, TCurrent> Seek<TCursor>(TCursor cursor)
+    internal OrderedPipeline<TSource, TCurrent> Seek(
+        Func<IReadOnlyList<IOrderClause<TCurrent>>, SeekBoundary<TCurrent>> createBoundary)
     {
-        ArgumentNullException.ThrowIfNull(cursor);
         if (Stage.HasSeek)
             throw new InvalidOperationException("SeekAfter is already configured in this stage.");
         if (Stage.HasSkip)
@@ -196,7 +198,7 @@ internal sealed class OrderedPipeline<TSource, TCurrent> : QueryPipeline<TSource
         if (Stage.HasTake)
             throw new InvalidOperationException("Take before SeekAfter is not supported in the same stage.");
         return new OrderedPipeline<TSource, TCurrent>(_previous, Clauses,
-            SeekBoundary.Create(cursor!, Clauses), Stage with { HasSeek = true });
+            createBoundary(Clauses), Stage with { HasSeek = true });
     }
 
     internal override IQueryable<TCurrent> Apply(IQueryable<TSource> query, bool criteriaOnly)
@@ -205,7 +207,7 @@ internal sealed class OrderedPipeline<TSource, TCurrent> : QueryPipeline<TSource
         if (criteriaOnly)
             return result;
         if (Boundary is { } boundary)
-            result = result.Where(SeekPredicateBuilder.Build(Clauses, boundary));
+            result = result.Where(boundary.Predicate);
         IOrderedQueryable<TCurrent> ordered = Clauses[0].ApplyFirst(result);
         for (var i = 1; i < Clauses.Length; i++)
             ordered = Clauses[i].ApplyNext(ordered);
@@ -236,7 +238,7 @@ internal sealed class OrderedPipeline<TSource, TCurrent> : QueryPipeline<TSource
         for (var i = 0; i < Clauses.Length; i++)
             operations.Add(new OrderingPipelineOperation<TCurrent>(i == 0 ? "OrderBy" : "ThenBy", Clauses[i]));
         if (Boundary is not null)
-            operations.Add(new PipelineOperation("SeekAfter", Boundary: Boundary));
+            operations.Add(new SeekPipelineOperation<TCurrent>(Boundary));
     }
 }
 
@@ -272,13 +274,14 @@ internal static class PipelineOperations
         return ordered.AddKey(expression, direction);
     }
 
-    internal static QueryPipeline<TSource, TCurrent> SeekAfter<TSource, TCurrent, TCursor>(
-        QueryPipeline<TSource, TCurrent> pipeline, TCursor cursor) where TSource : class
+    internal static QueryPipeline<TSource, TCurrent> SeekAfter<TSource, TCurrent>(
+        QueryPipeline<TSource, TCurrent> pipeline,
+        Func<IReadOnlyList<IOrderClause<TCurrent>>, SeekBoundary<TCurrent>> createBoundary)
+        where TSource : class
     {
-        ArgumentNullException.ThrowIfNull(cursor);
         if (pipeline is not OrderedPipeline<TSource, TCurrent> ordered)
             throw new InvalidOperationException("SeekAfter requires an immediately preceding OrderBy or ThenBy.");
-        return ordered.Seek(cursor);
+        return ordered.Seek(createBoundary);
     }
 
     internal static QueryPipeline<TSource, TCurrent> Skip<TSource, TCurrent>(
