@@ -945,7 +945,7 @@ int total = await dbContext.BySpecificationCriteria(spec).CountAsync();
 ```
 
 `SelectMany(collectionSelector, resultSelector)` is also supported. The
-PipelineSteps` snapshot exposes ordered operations, stage IDs, element
+`PipelineSteps` snapshot exposes ordered operations, stage IDs, element
 types, original expression trees, ordering direction and paging counts.
 The old source-stage `SpecificationData` diagnostic API has been removed
 in v4; see [Migration to v4](docs/Migration-to-v4.md).
