@@ -28,8 +28,20 @@ public class DBTypedSpecificationTests : TestsBase
 
         result.EFCoreSpecificationData.Includes.Should()
             .BeEquivalentTo(new[] { "Books.Author", "School" });
-        _context.BySpecification(result).Select(s => s.Age).ToList()
-            .Should().Equal(22, 30);
+        var students = _context.BySpecification(result.AsNoTracking()).ToList();
+        students.Select(s => s.Age).Should().Equal(22, 30);
+
+        Assert.NotSame(Alex22, students[0]);
+        Assert.NotSame(Alex30, students[1]);
+        Assert.Equal("Elementary School", students[0].School.Name);
+        Assert.Equal("High School", students[1].School.Name);
+        Assert.Equal(3, students[0].Books.Count);
+        Assert.Equal(4, students[1].Books.Count);
+        Assert.All(students.SelectMany(s => s.Books), book =>
+        {
+            Assert.NotNull(book.Author);
+            Assert.False(string.IsNullOrWhiteSpace(book.Author.Name));
+        });
     }
 
     [Fact]

@@ -253,7 +253,7 @@ public sealed class TypedOrderingTests
     }
 
     [Fact]
-    public void ExplicitLegacyAndMixedOrderingHaveIdenticalResults()
+    public void MixedDirectionThenByOrderingMatchesLinq()
     {
         var rows = new[]
         {
@@ -262,17 +262,16 @@ public sealed class TypedOrderingTests
             new OrderingItem { Id = 2, Name = "A", Rank = 5 },
             new OrderingItem { Id = 4, Name = "A", Rank = 3 }
         }.AsQueryable();
-        var legacy = Specification.Create<OrderingItem>()
-            .OrderBy(i => i.Name).ThenByDesc(i => i.Rank).ThenBy(i => i.Id);
-        var explicitKeys = Specification.Create<OrderingItem>()
-            .OrderBy(i => i.Name).ThenByDesc(i => i.Rank).ThenBy(i => i.Id);
-        var mixed = Specification.Create<OrderingItem>()
+
+        var specification = Specification.Create<OrderingItem>()
             .OrderBy(i => i.Name).ThenByDesc(i => i.Rank).ThenBy(i => i.Id);
 
-        var expected = rows.BySpecification(legacy).Select(i => i.Id).ToArray();
-        Assert.Equal(new[] { 2, 3, 4, 1 }, expected);
-        Assert.Equal(expected, rows.BySpecification(explicitKeys).Select(i => i.Id).ToArray());
-        Assert.Equal(expected, rows.BySpecification(mixed).Select(i => i.Id).ToArray());
+        var expected = rows.OrderBy(i => i.Name).ThenByDescending(i => i.Rank)
+            .ThenBy(i => i.Id).Select(i => i.Id).ToArray();
+        var actual = rows.BySpecification(specification).Select(i => i.Id).ToArray();
+
+        Assert.Equal(new[] { 2, 3, 4, 1 }, actual);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]

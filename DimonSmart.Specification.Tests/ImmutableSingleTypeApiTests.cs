@@ -87,9 +87,10 @@ public sealed class ImmutableSingleTypeApiTests : TestsBase
         Assert.Equal(2, or.SpecificationData.TakeQ);
         Assert.Single(and.SpecificationData.OrderExpressions);
         Assert.Single(or.SpecificationData.OrderExpressions);
-        Assert.Equal(
-            Students.BySpecification(and).Select(s => s.Id),
-            Students.BySpecification(and).Select(s => s.Id));
+        Assert.Equal(new[] { 22, 30 },
+            Students.BySpecification(and).Select(s => s.Age).ToArray());
+        Assert.Equal(new[] { 20, 22 },
+            Students.BySpecification(or).Select(s => s.Age).ToArray());
         Assert.Same(left, left.OrderBy(s => s.Name, false));
         Assert.Same(right, right.Take(7, false));
     }

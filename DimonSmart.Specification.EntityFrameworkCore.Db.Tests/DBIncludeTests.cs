@@ -1,6 +1,4 @@
 using DimonSmart.Specification.Tests.Common;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 
 namespace DimonSmart.Specification.EntityFrameworkCore.Db.Tests;
 
@@ -18,19 +16,19 @@ public class DBIncludeTests : TestsBase
     public DatabaseFixture Fixture { get; }
 
     [Fact]
-    public void IncludeTest()
+    public void IncludeLoadsNestedNavigationsWithoutTrackingFixup()
     {
-        // Arrange
         var specification = EFCoreSpecification.Create<Student>()
             .Where(s => s.Age < 21)
-            .Include(s => s.School.MainBook.Author);
+            .Include(s => s.School.MainBook.Author)
+            .AsNoTracking();
 
-        // Act
-        var under21 = _testDBContext.BySpecification(specification).IgnoreQueryFilters().ToList();
+        var student = Assert.Single(_testDBContext.BySpecification(specification).ToList());
 
-        // Assert
-        under21
-            .Should()
-            .BeEquivalentTo(new List<Student> { Sofia20 }, options => options.Excluding(e => e.Books));
+        Assert.Equal("Sofia", student.Name);
+        Assert.NotSame(Sofia20, student);
+        Assert.Equal("High School", student.School.Name);
+        Assert.Equal("The Great Gatsby", student.School.MainBook.Name);
+        Assert.Equal("F. Scott Fitzgerald", student.School.MainBook.Author.Name);
     }
 }
