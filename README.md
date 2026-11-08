@@ -1,6 +1,6 @@
 # DimonSmart.Specification
 
-**One query method. Unlimited combinations. Strong types all the way.**
+**One query method. Countless combinations. Strong types all the way.**
 
 A **strongly typed, immutable Specification Pattern library for .NET 10, LINQ, and Entity Framework Core 10**. Write reusable query rules instead of growing a repository full of `GetByName`, `GetByAge`, `GetByNameAndAge`, and `GetByNameAndAgeSorted` methods.
 
@@ -27,10 +27,13 @@ Use **one repository method** that accepts a read-only specification:
 using DimonSmart.Specification.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-public Task<List<Student>> ListAsync(
-    IEFCoreSpecification<Student> spec,
-    CancellationToken ct = default) =>
-    dbContext.BySpecification(spec).ToListAsync(ct);
+public sealed class StudentRepository(DbContext db)
+{
+    public Task<List<Student>> ListAsync(
+        IEFCoreSpecification<Student> spec,
+        CancellationToken ct = default) =>
+        db.BySpecification(spec).ToListAsync(ct);
+}
 ~~~
 
 Then express each request with a small, reusable query:
@@ -51,7 +54,7 @@ var page = EFCoreSpecification.Create<Student>()
     .Take(20);
 
 // Same ListAsync method. No new repository methods.
-var results = await ListAsync(page);
+var results = await repository.ListAsync(page);
 ~~~
 
 No repository pattern? Apply the same specification directly:
