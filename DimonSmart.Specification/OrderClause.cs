@@ -10,12 +10,16 @@ internal interface IOrderClause<TEntity>
 
     IOrderedQueryable<TEntity> ApplyFirst(IQueryable<TEntity> query);
     IOrderedQueryable<TEntity> ApplyNext(IOrderedQueryable<TEntity> query);
-    (Expression Equal, Expression After) BuildSeekComparison(ParameterExpression parameter, object value);
+}
+
+internal interface IOrderClause<TEntity, TKey> : IOrderClause<TEntity>
+{
+    (Expression Equal, Expression After) BuildSeekComparison(ParameterExpression parameter, TKey value);
 }
 
 internal sealed record OrderClause<TEntity, TKey>(
     Expression<Func<TEntity, TKey>> Selector,
-    OrderDirectionEnum Direction) : IOrderClause<TEntity>
+    OrderDirectionEnum Direction) : IOrderClause<TEntity, TKey>
 {
     public LambdaExpression KeySelector => Selector;
 
@@ -29,12 +33,11 @@ internal sealed record OrderClause<TEntity, TKey>(
             ? query.ThenBy(Selector)
             : query.ThenByDescending(Selector);
 
-    public (Expression Equal, Expression After) BuildSeekComparison(ParameterExpression parameter, object value)
+    public (Expression Equal, Expression After) BuildSeekComparison(ParameterExpression parameter, TKey value)
     {
         var key = new ParameterReplacer(Selector.Parameters[0], parameter).Visit(Selector.Body)!;
-        var typedValue = (TKey)value;
-        // Capturing the value lets EF Core parameterize it instead of embedding a SQL literal.
-        Expression<Func<TKey>> cursor = () => typedValue;
+        // Capturing the typed value lets EF Core parameterize it instead of embedding a SQL literal.
+        Expression<Func<TKey>> cursor = () => value;
         var after = Direction == OrderDirectionEnum.Ascending
             ? Expression.GreaterThan(key, cursor.Body)
             : Expression.LessThan(key, cursor.Body);
