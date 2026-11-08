@@ -22,12 +22,13 @@ public class DBTagQueryTests : TestsBase
         // Act
         var taggedSpecification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name)
-            .OrderBy(s => s.Age)
+            .ThenBy(s => s.Age)
             .TagWith(tag);
 
-        _ = _testDBContext.BySpecification(taggedSpecification.AsSplitQuery()).ToList();
+        var results = _testDBContext.BySpecification(taggedSpecification.AsSplitQuery()).ToList();
 
         // Assert
+        results.Select(s => s.Age).Should().Equal(22, 30, 20);
         _testDBContext.DbCommandsLog
             .Single()
             .Should()
@@ -43,12 +44,13 @@ public class DBTagQueryTests : TestsBase
         // Act
         var taggedSpecification = EFCoreSpecification.Create<Student>()
             .OrderBy(s => s.Name)
-            .OrderBy(s => s.Age)
+            .ThenBy(s => s.Age)
             .TagWithCallSite();
 
-        _ = _testDBContext.BySpecification(taggedSpecification.AsSplitQuery()).ToList();
+        var results = _testDBContext.BySpecification(taggedSpecification.AsSplitQuery()).ToList();
 
         // Assert
+        results.Select(s => s.Age).Should().Equal(22, 30, 20);
         _testDBContext.DbCommandsLog
             .Single()
             .Should()

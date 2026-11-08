@@ -10,7 +10,7 @@ public class DBSplitQueryTests : TestsBase
         .Include(s => s.Books)
         .ThenInclude(b => b.Author)
         .OrderBy(s => s.Name)
-        .OrderBy(s => s.Age);
+        .ThenBy(s => s.Age);
 
     private readonly SchoolContext _testDBContext;
 
@@ -23,9 +23,10 @@ public class DBSplitQueryTests : TestsBase
         _testDBContext.DbCommandsLog.Clear();
 
         // Act
-        _ = _testDBContext.BySpecification(_splitTestSpecification.AsSplitQuery()).ToList();
+        var results = _testDBContext.BySpecification(_splitTestSpecification.AsSplitQuery()).ToList();
 
         // Assert
+        results.Select(s => s.Age).Should().Equal(22, 30, 20);
         _testDBContext.DbCommandsLog.Count.Should().Be(2);
     }
 
@@ -36,9 +37,10 @@ public class DBSplitQueryTests : TestsBase
         _testDBContext.DbCommandsLog.Clear();
 
         // Act
-        _ = _testDBContext.BySpecification(_splitTestSpecification.AsSingleQuery()).ToList();
+        var results = _testDBContext.BySpecification(_splitTestSpecification.AsSingleQuery()).ToList();
 
         // Assert
+        results.Select(s => s.Age).Should().Equal(22, 30, 20);
         _testDBContext.DbCommandsLog.Count.Should().Be(1);
     }
 }
