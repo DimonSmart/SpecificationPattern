@@ -2,7 +2,7 @@
 
 **Have a query problem? Find the scenario, copy the pattern, and keep your repository API small.**
 
-These recipes use the actual `DimonSmart.Specification` and `DimonSmart.Specification.EntityFrameworkCore` APIs for .NET 10 / EF Core 10. They're intentionally short; the [API reference](docs/REFERENCE.md) explains every option and constraint.
+These recipes use the actual `DimonSmart.Specification` and `DimonSmart.Specification.EntityFrameworkCore` APIs for .NET 10 / EF Core 10. They're intentionally short; the [IDD product intent](.idd/intent/INDEX.md) defines behavior and constraints.
 
 **Example model:** `Student` has `Id` (int), `Name` (string), `Age` (int), `School` (navigation with `Name` and `MainBook`), and `Books` (collection). The EF Core examples assume a `DbContext dbContext` with a `DbSet<Student>`. Async examples require `Microsoft.EntityFrameworkCore`.
 
@@ -153,7 +153,7 @@ var nextPageSpec = EFCoreSpecification.Create<Student>()
 var nextPage = await dbContext.BySpecification(nextPageSpec).ToListAsync();
 ~~~
 
-`SeekAfter` keeps each cursor key typed; no `object[]`, `ITuple` unpacking, or boxed cursor storage. It supports **1–7 keys**, currently limited to non-nullable `byte`, `short`, `int`, `long`, `decimal`, `DateTime`, and `DateOnly` keys. The cursor must match the sorting keys in order, number, and type; the combination is validated at runtime. For reliable paging, use a unique, deterministic ordering (here `Id` is the tie-breaker). See [keyset pagination details](docs/KeysetPagination-v1.md).
+`SeekAfter` keeps each cursor key typed; no `object[]`, `ITuple` unpacking, or boxed cursor storage. It supports **1–7 keys**, currently limited to non-nullable `byte`, `short`, `int`, `long`, `decimal`, `DateTime`, and `DateOnly` keys. The cursor must match the sorting keys in order, number, and type; the combination is validated at runtime. For reliable paging, use a unique, deterministic ordering (here `Id` is the tie-breaker). See the [keyset pagination contract](.idd/intent/IDD-0006.spec-forward-keyset-pagination.md).
 
 ## Project to a typed result
 
@@ -325,4 +325,134 @@ In the **production C# implementation**, `object` is not used as a generic bucke
 
 This is a statement about **library-generated code**, not a restriction on caller code: callers can explicitly provide a selector such as `s => (object)s.Age`, and the library does not rewrite it. Also, not every usage error can be caught by the C# compiler: `SeekAfter` validates the cursor's compatibility with the runtime ordering block when building the specification. EF Core providers can impose additional translation limits.
 
-**Next:** [Back to README](README.md) · [Complete API reference](docs/REFERENCE.md)
+## Advanced behavior and constraints
+
+**Source queries stay intact.** EF Core specifications can run on `DbContext` or an existing `IQueryable`. A prior `Take`, `OrderBy` or `Where` remains on the input; applying another specification does not overwrite it. EF-specific specifications reject LINQ-to-Objects providers instead of ignoring Include/tracking settings.
+
+**Criteria-only semantics.** `BySpecificationCriteria` ignores the specification's own ordering, paging, seek boundary, Includes, tracking, splitting and SQL tags. It retains all `Where` clauses, `Select` and `SelectMany` stages, the incoming query's operators, and EF global filters unless explicitly disabled. The final projected type is counted. `IsSatisfiedBy` checks a single entity in memory against criteria only; provider-specific SQL LIKE predicates are not supported in memory.
+
+**Typed Includes and projections.** `Include("Books.Author")` supports public CLR navigation paths and participates in the same deduplication and conflict rules as typed Includes; string Includes cannot continue with typed `ThenInclude`. Filtered collection Includes support `Where`, ordering and `Skip`/`Take`, but not arbitrary methods, shadow navigation paths or derived-type casts. Equivalent independent filtered Includes can merge when their normalized expression trees demonstrably match; different filters and filtered/unfiltered Includes on the same collection conflict. Explicit Include plans cannot be used with `Select`/`SelectMany` on a specification; project navigation properties directly.
+
+**Composition and conditional operations.** Independent specifications only compose when their query-level ordering, paging, cursor and EF options are compatible. An unrestricted `Or` branch makes the predicate unrestricted. Disabled conditional operations do not change the specification, but invalid null selectors and negative page sizes still fail validation. `ThenBy` needs a directly preceding active sort block.
+
+**Provider and security limits.** `Search(selector, pattern)` uses SQL LIKE, with `%`/`_` wildcards and provider-specific case/escaping rules. `IgnoreQueryFilters("Name")` selectively disables EF Core 10 named filters, and `IgnoreQueryFilters()` disables all filters; **never accept untrusted requests to bypass tenant or authorization-relevant filters**. `TagWithCallSite` can expose the call-site file path in SQL logs. SQLite and other providers may reject valid Include/projection combinations requiring unsupported SQL operators.
+
+**Named specifications.** Subclass `Specification<T>` or `EFCoreSpecification<T>` using the protected copy constructor, passing a configured immutable specification. Subsequent fluent calls produce new immutable values.
+
+## Compiled API examples
+
+The following example files are compiled as part of the test solution. They provide complete code where the concise recipes above omit setup:
+
+- [`DynamicSpecificationExample`](DimonSmart.Specification.Tests/Documentation/DynamicSpecificationExample.cs)
+- [`DynamicEFCoreSpecificationExample`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/DynamicEFCoreSpecificationExample.cs)
+- [`CustomStudentSpecification`](DimonSmart.Specification.Tests/Documentation/CustomStudentSpecification.cs)
+- [`CustomEFCoreStudentSpecification`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/CustomEFCoreStudentSpecification.cs)
+- [`FilteredIncludeExample`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/FilteredIncludeExample.cs)
+- [`ProjectionExample`](DimonSmart.Specification.Tests/Documentation/ProjectionExample.cs)
+- [`EFCoreProjectionExample`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/EFCoreProjectionExample.cs)
+- [`NamedQueryFiltersExample`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/NamedQueryFiltersExample.cs)
+- [`TrackingExample`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/TrackingExample.cs)
+- [`KeysetPaginationExample`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/KeysetPaginationExample.cs)
+- [`ConditionalWhereExample`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/ConditionalWhereExample.cs)
+- [`TypedOrderingExample`](DimonSmart.Specification.Tests/Documentation/TypedOrderingExample.cs)
+- [`EnumerableBySpecificationExample`](DimonSmart.Specification.Tests/Documentation/EnumerableBySpecificationExample.cs)
+- [`CriteriaOnlyEvaluationExample`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/CriteriaOnlyEvaluationExample.cs)
+- [`QueryableEFCoreExample`](DimonSmart.Specification.EntityFrameworkCore.Db.Tests/Documentation/QueryableEFCoreExample.cs)
+
+The three examples below are also checked by CI for exact agreement with their compiled source files.
+
+### KeysetPaginationExample
+
+<!-- compiled-example: KeysetPaginationExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using DimonSmart.Specification.Tests.Common;
+using Microsoft.EntityFrameworkCore;
+
+namespace DocumentationExamples;
+
+public static class KeysetPaginationExample
+{
+    public static IQueryable<Student> NextPage(
+        DbContext dbContext, int lastAge, int lastId) =>
+        dbContext.BySpecification(
+            EFCoreSpecification.Create<Student>()
+                .Where(s => s.Age >= 18)
+                .OrderByDesc(s => s.Age)
+                .ThenBy(s => s.Id)
+                .SeekAfter((lastAge, lastId))
+                .Take(20));
+}
+```
+
+### FilteredIncludeExample
+
+<!-- compiled-example: FilteredIncludeExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using DimonSmart.Specification.Tests.Common;
+using Microsoft.EntityFrameworkCore;
+
+namespace DocumentationExamples;
+
+public static class FilteredIncludeExample
+{
+    public static IQueryable<Student> Query(DbContext dbContext)
+    {
+        var books = EFCoreSpecification.Create<Student>()
+            .Include(s => s.Books
+                .Where(b => b.Name.StartsWith("A"))
+                .OrderBy(b => b.Name)
+                .Take(5))
+            .ThenInclude(b => b.Author);
+
+        var school = EFCoreSpecification.Create<Student>()
+            .Include(s => s.School);
+
+        return dbContext.BySpecification(books.And(school).AsNoTracking());
+    }
+}
+```
+
+### QueryableEFCoreExample
+
+<!-- compiled-example: QueryableEFCoreExample -->
+```csharp
+using DimonSmart.Specification.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using StudentEntity = DimonSmart.Specification.Tests.Common.Student;
+
+namespace DocumentationExamples;
+
+public static class QueryableEFCoreExample
+{
+    public static IQueryable<StudentEntity> Query(DbContext context, int minimumAge)
+    {
+        var specification = EFCoreSpecification.Create<StudentEntity>()
+            .Where(s => s.Name.StartsWith("A"))
+            .Include(s => s.School)
+            .AsNoTracking()
+            .OrderBy(s => s.Id)
+            .Take(20);
+
+        return context.Set<StudentEntity>()
+            .Where(s => s.Age >= minimumAge)
+            .BySpecification(specification);
+    }
+
+    public static IQueryable<string> Names(DbContext context, int minimumAge)
+    {
+        var specification = EFCoreSpecification.Create<StudentEntity>()
+            .OrderBy(s => s.Id)
+            .AsNoTracking()
+            .Select(s => s.Name);
+
+        return context.Set<StudentEntity>()
+            .Where(s => s.Age >= minimumAge)
+            .BySpecification(specification);
+    }
+}
+```
+
+
+**Next:** [Back to README](README.md) · [Product intent](.idd/intent/INDEX.md)
