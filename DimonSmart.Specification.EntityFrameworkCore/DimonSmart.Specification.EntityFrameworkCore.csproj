@@ -17,7 +17,7 @@
 		<PackageLicenseExpression>0BSD</PackageLicenseExpression>
 
 
-		<PackageReleaseNotes>4.0.0: Removed the legacy SpecificationData diagnostic API. Use PipelineSteps for query operations and EFCoreSpecificationData for EF-specific options. See docs/Migration-to-v4.md.</PackageReleaseNotes>
+		<PackageReleaseNotes>4.0.0: Removed the legacy SpecificationData diagnostic API. Use PipelineSteps for query operations and EFCoreSpecificationData for EF-specific options.</PackageReleaseNotes>
 
 
 	</PropertyGroup>

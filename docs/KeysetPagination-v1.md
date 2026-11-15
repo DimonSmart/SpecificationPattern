@@ -35,8 +35,8 @@ var page = EFCoreSpecification.Create<Order>()
   `And`/`Or` merge normal filters; a single cursor filters the **entire**
   resulting expression, not one branch of `Or`.
 - Keyset filtering precedes sorting, `Take`, and projection when applying a specification.
-- Cursor key types are checked at runtime: the existing two-state API does not encode
-  the ordering key sequence at the C# type level.
+- Cursor key types are validated at runtime against the configured ordering clauses.
+  The full ordering key sequence is not encoded in the specification's C# type.
 
 ## Correctness and performance
 - Preserve original selector expression trees and typed cursor values (no `object[]`,
